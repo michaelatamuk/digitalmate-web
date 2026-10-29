@@ -147,6 +147,7 @@ export interface RssItem {
   summary: string;
   published?: string;
   author?: string;
+  image?: string;
 }
 
 export interface RssFeed {

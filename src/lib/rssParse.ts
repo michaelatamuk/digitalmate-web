@@ -77,18 +77,55 @@ function normalize(value: string, base: string): string {
   }
 }
 
+function looksLikeImage(url: string, type = ''): boolean {
+  if (type.startsWith('image/')) return true;
+  return /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url);
+}
+
+function imageFromMedia(value: unknown, base: string): string {
+  for (const item of asArray<unknown>(value)) {
+    if (typeof item === 'string') {
+      if (looksLikeImage(item)) return normalize(item, base);
+      continue;
+    }
+    if (!item || typeof item !== 'object') continue;
+    const record = item as Record<string, unknown>;
+    const url = text(record['@_url']) || text(record['@_href']);
+    const type = text(record['@_type']);
+    if (url && (looksLikeImage(url, type) || record['@_medium'] === 'image')) {
+      return normalize(url, base);
+    }
+  }
+  return '';
+}
+
+function imageOf(record: Record<string, unknown>, rawHtml: string, base: string): string | undefined {
+  const fromMedia =
+    imageFromMedia(record.enclosure, base) ||
+    imageFromMedia(record['media:content'], base) ||
+    imageFromMedia(record['media:thumbnail'], base) ||
+    imageFromMedia(record['itunes:image'], base) ||
+    imageFromMedia(record.image, base);
+  if (fromMedia) return fromMedia;
+
+  const match = rawHtml.match(/<img[^>]+src=["']([^"']+)["']/i);
+  return match ? normalize(match[1], base) : undefined;
+}
+
 function itemOf(value: unknown, base: string): RssItem | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
   const title = text(record.title) || text(record['dc:title']);
   const link = normalize(linkOf(record.link) || text(record.guid) || text(record.id), base);
-  const summary = plainSummary(
+  const rawSummary = text(
     record.description ??
       record.summary ??
       record['content:encoded'] ??
       record.content ??
       record['media:description']
   );
+  const summary = plainSummary(rawSummary);
+  const image = imageOf(record, rawSummary, base);
   const published =
     text(record.pubDate) ||
     text(record.published) ||
@@ -101,7 +138,7 @@ function itemOf(value: unknown, base: string): RssItem | null {
     text(record['dc:creator']) ||
     undefined;
   if (!title || !link) return null;
-  return { title, link, summary, published, author };
+  return { title, link, summary, published, author, ...(image ? { image } : {}) };
 }
 
 export function parseFeedXml(xml: string, feedUrl?: string): RssFeed {

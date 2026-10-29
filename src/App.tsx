@@ -784,6 +784,7 @@ export default function App() {
         summary,
         glyph: item.title.slice(0, 1).toUpperCase(),
         cover: palette[index % palette.length],
+        image: item.image,
         readingTime: tr(`${minutes} min read`, `${minutes} 分钟阅读`),
         published: item.published || tr('From feed', '来自订阅'),
         url: item.link || url,

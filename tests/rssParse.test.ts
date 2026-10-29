@@ -73,6 +73,36 @@ describe('RSS / Atom parser', () => {
     expect(() => parseFeedXml('   ')).toThrow(/empty/i);
     expect(() => parseFeedXml('<html><body>not a feed</body></html>')).toThrow(/Unsupported/);
   });
+
+  it('extracts article images from media, enclosures and descriptions', () => {
+    const feed = parseFeedXml(
+      `<?xml version="1.0"?>
+      <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+        <channel>
+          <title>Images</title>
+          <item>
+            <title>Media image</title>
+            <link>https://example.com/one</link>
+            <media:content url="https://example.com/media.jpg" type="image/jpeg"/>
+          </item>
+          <item>
+            <title>Enclosure image</title>
+            <link>https://example.com/two</link>
+            <enclosure url="https://example.com/enclosure.png" type="image/png"/>
+          </item>
+          <item>
+            <title>HTML image</title>
+            <link>https://example.com/three</link>
+            <description><![CDATA[<p>Hello</p><img src="/inline.webp" alt="x"/>]]></description>
+          </item>
+        </channel>
+      </rss>`,
+      'https://example.com/feed.xml'
+    );
+    expect(feed.items[0].image).toBe('https://example.com/media.jpg');
+    expect(feed.items[1].image).toBe('https://example.com/enclosure.png');
+    expect(feed.items[2].image).toBe('https://example.com/inline.webp');
+  });
 });
 
 describe('RSS proxy URL guard', () => {
