@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 31 A2UI-style components / 13 mock scenarios
+- [x] 33 A2UI-style components / 13 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -53,7 +53,8 @@
 - [ ] OAuth and marketplace skill publishing *(not required without an account)*
 - [x] Local memory editing, evidence notes and forget-all
 - [ ] Public profile import
-- [ ] Stripe account card and deeper scenario states
+- [x] Stripe receiving-account card and A2UI thinking card
+- [ ] Deeper scenario states
 - [ ] Mobile viewport and accessibility audit
 
 ## Phase 4 — Android

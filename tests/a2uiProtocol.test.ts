@@ -116,5 +116,9 @@ describe('protocol demo surface', () => {
     expect(english?.components.flights.component).toBe('FlightBoard');
     expect(english?.data.flights).toHaveLength(2);
     expect(english?.components.hero.component).toBe('HeroBanner');
+    expect(english?.components.thinking.component).toBe('ThinkingCard');
+    expect(english?.components.receiving.component).toBe('StripeReceivingAccountCard');
+    expect((english?.data.thinking as Record<string, unknown>).done).toBe(true);
+    expect((english?.data.receiving as Record<string, unknown>).maskedAccount).toBe('•••• 4242');
   });
 });

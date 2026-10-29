@@ -53,6 +53,8 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
   await expect(page.locator('.flight-board')).toBeVisible();
   await expect(page.locator('.flight-row')).toHaveCount(2);
   await expect(page.locator('.tool-connect-card')).toBeVisible();
+  await expect(page.locator('.a2ui-thinking-card')).toBeVisible();
+  await expect(page.locator('.receiving-card')).toBeVisible();
   await expect(page.locator('.skeleton-card')).toBeVisible();
 });
 

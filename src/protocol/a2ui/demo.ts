@@ -17,7 +17,7 @@ export function protocolDemoSurface(lang: Language): A2uiSurface | undefined {
   const body = {
     id: 'body',
     component: 'Column',
-    children: ['hero', 'intro', 'flights', 'list', 'tools', 'expand', 'skeleton']
+    children: ['hero', 'intro', 'flights', 'list', 'tools', 'expand', 'thinking', 'receiving', 'skeleton']
   };
   const hero = {
     id: 'hero',
@@ -79,10 +79,22 @@ export function protocolDemoSurface(lang: Language): A2uiSurface | undefined {
     component: 'SkeletonCard',
     title: localized(lang, 'Loading state', '加载状态')
   };
+  const thinking = {
+    id: 'thinking',
+    component: 'ThinkingCard',
+    title: localized(lang, 'Thinking component', '思考卡片组件'),
+    dataPath: '/thinking'
+  };
+  const receiving = {
+    id: 'receiving',
+    component: 'StripeReceivingAccountCard',
+    title: localized(lang, 'Receiving account', '收款账户'),
+    dataPath: '/receiving'
+  };
 
   const lines = [
     { version: 'v0.9.1', createSurface: { surfaceId: 'surface_protocol', root: 'root', title, subtitle: localized(lang, 'Parsed from newline-delimited JSON', '从换行分隔的 JSON 解析') } },
-    { version: 'v0.9.1', updateComponents: { surfaceId: 'surface_protocol', components: [root, body, hero, intro, flights, list, tools, expand, skeleton] } },
+    { version: 'v0.9.1', updateComponents: { surfaceId: 'surface_protocol', components: [root, body, hero, intro, flights, list, tools, expand, thinking, receiving, skeleton] } },
     {
       version: 'v0.9.1',
       updateDataModel: {
@@ -115,6 +127,42 @@ export function protocolDemoSurface(lang: Language): A2uiSurface | undefined {
           { label: localized(lang, 'Payload', '载荷'), value: 'JSONL' },
           { label: localized(lang, 'Store', '存储'), value: 'A2uiSurfaceStore' }
         ]
+      }
+    },
+    {
+      version: 'v0.9.1',
+      updateDataModel: {
+        surfaceId: 'surface_protocol',
+        path: '/thinking',
+        value: {
+          title: localized(lang, 'Protocol store applied 3 envelopes', '协议存储已应用 3 个信封'),
+          done: true,
+          steps: [
+            { label: 'createSurface', status: 'done' },
+            { label: 'updateComponents', status: 'done' },
+            { label: 'updateDataModel', status: 'done' }
+          ]
+        }
+      }
+    },
+    {
+      version: 'v0.9.1',
+      updateDataModel: {
+        surfaceId: 'surface_protocol',
+        path: '/receiving',
+        value: {
+          provider: 'Stripe (demo)',
+          maskedAccount: '•••• 4242',
+          status: localized(lang, 'Not connected', '未连接'),
+          schedule: localized(lang, '2-day rolling', '2 天滚动'),
+          currency: 'USD',
+          balance: '$0.00',
+          note: localized(
+            lang,
+            'Demo card only. No account, payout or payment is connected.',
+            '仅演示卡片。未连接账号、结算或支付。'
+          )
+        }
       }
     }
   ];

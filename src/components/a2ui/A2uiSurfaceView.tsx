@@ -870,6 +870,69 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
       );
     }
 
+    case 'ThinkingCard': {
+      const state = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      const steps = (state.steps as Array<Record<string, string>>) ?? [];
+      const done = state.done === true;
+      return (
+        <div className={`a2ui-thinking-card ${done ? 'is-done' : ''}`} key={key}>
+          <div className="a2ui-thinking-head">
+            <span className={`a2ui-thinking-orb ${done ? 'is-done' : ''}`}>
+              <Icon name={done ? 'check' : 'spark'} size={13} />
+            </span>
+            <strong>{textOf(state.title) || component.title || tr('Thinking', '思考中')}</strong>
+            <span className="a2ui-thinking-state">
+              {done ? tr('Done', '已完成') : tr('Working', '处理中')}
+            </span>
+          </div>
+          <div className="thinking-inline">
+            {steps.map((step, index) => (
+              <div className="thinking-step" key={`${key}-a2ui-think-${index}`}>
+                <span className={`step-dot ${step.status ?? 'pending'}`} />
+                <span>{textOf(step.label)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'StripeReceivingAccountCard': {
+      const account = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      return (
+        <div className="receiving-card" key={key}>
+          <div className="receiving-head">
+            <span className="receiving-mark">
+              <Icon name="shield" size={16} />
+            </span>
+            <div>
+              <strong>{textOf(account.provider) || component.title}</strong>
+              <span>{textOf(account.maskedAccount)}</span>
+            </div>
+            <span className="receiving-status">{textOf(account.status)}</span>
+          </div>
+          <div className="info-rows">
+            {[
+              [tr('Payout schedule', '结算周期'), account.schedule],
+              [tr('Currency', '币种'), account.currency],
+              [tr('Available balance', '可用余额'), account.balance]
+            ]
+              .filter(([, value]) => textOf(value))
+              .map(([label, value]) => (
+                <div className="info-row" key={`${key}-receiving-${String(label)}`}>
+                  <span>{String(label)}</span>
+                  <strong>{textOf(value)}</strong>
+                </div>
+              ))}
+          </div>
+          <p className="receiving-note">
+            <Icon name="lock" size={12} />
+            {textOf(account.note)}
+          </p>
+        </div>
+      );
+    }
+
     case 'ThinkingStream': {
       const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
       return (

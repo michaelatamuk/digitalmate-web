@@ -23,18 +23,19 @@ envelopes and parses them with `A2uiSurfaceStore` before the renderer sees anyth
 `ConfirmPanel`, `GenericToolResults`, `MetricGrid`, `ScheduleStack`, `HeroBanner`,
 `FlightBoard`, `List`, `ToolConnectCard`, `ExpandableCard`, `SkeletonCard`, `MediaSlider`,
 `SceneTabs`, `MasonryGrid`, `HotelOptions`, `RideOptions`, `PaymentCard`,
-`SegmentedRingChart`, `MultiSeriesLineChart`, `MatrixHeatmap`.
+`SegmentedRingChart`, `MultiSeriesLineChart`, `MatrixHeatmap`, `ThinkingCard`,
+`StripeReceivingAccountCard`.
 
 ## Components still missing
 
-`StripeReceivingAccountCard`, `ThinkingCard` (the chat currently uses a custom thinking card).
+None from the tracked native catalog. Future native additions may still appear.
 
 ## Next implementation steps
 
 1. Add partial-update throttling and coalescing.
-2. Add the remaining chart/data components.
-3. Connect the store to a real gateway stream behind `ChatTransport`.
-4. Add component-catalog schema validation before rendering unknown payloads.
+2. Connect the store to a real gateway stream behind `ChatTransport`.
+3. Add component-catalog schema validation before rendering unknown payloads.
+4. Add any new components introduced by future native builds.
 
 ## Target wire format
 

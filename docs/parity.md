@@ -36,15 +36,14 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 31 components |
-| Full component catalog | 🟡 | ~two-thirds of native catalog |
+| A2UI surface renderer | ✅ | 33 components |
+| Full component catalog | ✅ | Tracked native catalog covered |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ❌ | Not implemented |
 | Data-model pointer semantics | 🟡 | Basic paths only |
 | Unknown component rejection | ✅ | Renders an error card |
 
-Missing examples: `StripeReceivingAccountCard`, `ThinkingCard` (the chat currently uses a
-custom thinking card).
+No components from the tracked native list remain. Future native additions may still appear.
 
 ## Scenarios/tools
 

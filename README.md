@@ -41,7 +41,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
+| A2UI | Declarative renderer for 33 components, 13 scenarios and a JSONL protocol demo |
 | Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
