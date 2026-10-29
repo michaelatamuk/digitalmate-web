@@ -102,6 +102,8 @@ export interface Skill {
   installed: boolean;
   enabled: boolean;
   builtin?: boolean;
+  version?: string;
+  capabilities?: string[];
 }
 
 export type Reaction = 'like' | 'dislike' | 'save' | undefined;

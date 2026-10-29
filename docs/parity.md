@@ -18,8 +18,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ✅ | Searches local and imported RSS inventory |
 | Saved cards / share | ✅ | Save works and cards or replies can be shared |
-| Skill center | 🟡 | Install/toggle only |
-| Skill detail / publish / OAuth | ❌ | Not implemented |
+| Skill center | ✅ | Detail view, install/toggle and local JSON import/export |
+| Skill publish / OAuth | ❌ | Not implemented; marketplace publishing would need an account |
 | Memory profile | ✅ | Editable local profile, persisted |
 | Memory edit / forget / evidence | ✅ | Edit, forget and per-section evidence notes are local |
 | Calendar read | ✅ | Mock schedule |
@@ -72,7 +72,7 @@ custom thinking card).
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, attachments, sharing, retry/clear, memory, discovery search, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 52 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup and attachments |
+| Automated UI tests | ✅ | Playwright: chat, attachments, sharing, retry/clear, memory, skills, discovery search, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Unit tests | ✅ | 56 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

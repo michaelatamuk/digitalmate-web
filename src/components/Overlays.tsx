@@ -4,6 +4,7 @@ import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
 import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
+import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
@@ -220,19 +221,54 @@ export function SkillsSheet({
   onClose,
   onToggle,
   onUninstall,
+  onImport,
   onNotice
 }: {
   skills: Skill[];
   onClose: () => void;
   onToggle: (id: string) => void;
   onUninstall: (id: string) => void;
+  onImport: (skills: Skill[]) => void;
   onNotice: (message: string) => void;
 }) {
   const { tr } = useI18n();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('All');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const categories = ['All', ...Array.from(new Set(skills.map(skill => skill.category)))];
   const installedCount = skills.filter(skill => skill.installed).length;
+
+  const exportSkills = () => {
+    const bundle = createSkillBundle(skills);
+    const blob = new Blob([serializeSkillBundle(bundle)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `digitalmate-skills-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    onNotice(
+      tr(`Exported ${bundle.skills.length} skills locally.`, `已在本地导出 ${bundle.skills.length} 个技能。`)
+    );
+  };
+
+  const importSkills = async (file: File) => {
+    try {
+      const imported = parseSkillBundle(await file.text());
+      onImport(imported);
+      onNotice(
+        tr(`Imported ${imported.length} skills locally.`, `已在本地导入 ${imported.length} 个技能。`)
+      );
+    } catch (error) {
+      onNotice(
+        tr(
+          `Could not import skills: ${error instanceof Error ? error.message : 'invalid file'}`,
+          `无法导入技能：${error instanceof Error ? error.message : '文件无效'}`
+        )
+      );
+    }
+  };
 
   const visible = skills.filter(skill => {
     if (category !== 'All' && skill.category !== category) return false;
@@ -258,6 +294,27 @@ export function SkillsSheet({
           </button>
         ))}
       </div>
+      <div className="settings-actions">
+        <button type="button" className="secondary-action" onClick={exportSkills}>
+          <Icon name="download" size={14} />
+          {tr('Export skills', '导出技能')}
+        </button>
+        <button type="button" className="secondary-action" onClick={() => importRef.current?.click()}>
+          <Icon name="download" size={14} />
+          {tr('Import skills', '导入技能')}
+        </button>
+      </div>
+      <input
+        ref={importRef}
+        type="file"
+        accept="application/json,.json"
+        className="hidden-file-input skill-import-input"
+        onChange={event => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) void importSkills(file);
+        }}
+      />
       <div className="skill-list">
         {visible.map(skill => (
           <article className={`skill-card ${skill.installed ? 'is-installed' : ''}`} key={skill.id}>
@@ -270,6 +327,14 @@ export function SkillsSheet({
               </div>
               <p>{skill.description}</p>
               <span className="skill-author">{tr(`by ${skill.author}`, `作者 ${skill.author}`)}</span>
+              <button
+                type="button"
+                className="skill-detail-link"
+                onClick={() => setExpandedId(current => (current === skill.id ? null : skill.id))}
+              >
+                {expandedId === skill.id ? tr('Hide details', '收起详情') : tr('View details', '查看详情')}
+                <Icon name={expandedId === skill.id ? 'chevronDown' : 'chevronRight'} size={11} />
+              </button>
             </div>
             <div className="skill-actions">
               <button
@@ -288,6 +353,48 @@ export function SkillsSheet({
                 </button>
               ) : null}
             </div>
+            {expandedId === skill.id ? (
+              <div className="skill-detail">
+                <div className="info-rows">
+                  <div className="info-row">
+                    <span>{tr('Category', '分类')}</span>
+                    <strong>{skill.category}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>{tr('Author', '作者')}</span>
+                    <strong>{skill.author}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>{tr('Source', '来源')}</span>
+                    <strong>{skill.builtin ? tr('Built-in', '内置') : tr('Local / imported', '本地 / 导入')}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>{tr('Version', '版本')}</span>
+                    <strong>{skill.version ?? '1.0.0'}</strong>
+                  </div>
+                  <div className="info-row">
+                    <span>{tr('Status', '状态')}</span>
+                    <strong>{skill.installed ? (skill.enabled ? tr('Enabled', '已启用') : tr('Disabled', '已停用')) : tr('Not installed', '未安装')}</strong>
+                  </div>
+                </div>
+                <div className="skill-capabilities">
+                  <span className="settings-label">{tr('Capabilities', '能力')}</span>
+                  <div className="tag-row">
+                    {(skill.capabilities ?? [tr('Runs locally in this demo', '在本地演示中运行')]).map(capability => (
+                      <span className="mini-tag" key={capability}>
+                        {capability}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <p className="settings-note">
+                  {tr(
+                    'Skills are local metadata in this demo. No marketplace download, OAuth or account permission is used.',
+                    '演示版中的技能只是本地元数据，不会从市场下载，也不使用 OAuth 或账号权限。'
+                  )}
+                </p>
+              </div>
+            ) : null}
           </article>
         ))}
       </div>

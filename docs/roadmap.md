@@ -49,7 +49,8 @@
 - [x] Local attachments with text/image preview
 - [ ] PDF text extraction and richer artifact preview
 - [ ] Approval cards and connection/quota states
-- [ ] Skill detail, publish and OAuth setup
+- [x] Skill detail and local JSON import/export
+- [ ] OAuth and marketplace skill publishing *(not required without an account)*
 - [x] Local memory editing, evidence notes and forget-all
 - [ ] Public profile import
 - [ ] Stripe account card and deeper scenario states

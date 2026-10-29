@@ -27,6 +27,7 @@ import { Composer } from './components/Composer';
 import { DetailsSheet } from './components/DetailsSheet';
 import { AttachmentSheet } from './components/AttachmentSheet';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
+import { mergeSkills } from './lib/skillBundle';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
@@ -904,6 +905,7 @@ export default function App() {
           <SkillsSheet
             skills={skills}
             onClose={() => setSheet(null)}
+            onImport={imported => setSkills(previous => mergeSkills(previous, imported))}
             onToggle={id => {
               setSkills(previous =>
                 previous.map(skill => {

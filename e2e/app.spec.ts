@@ -56,6 +56,50 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
   await expect(page.locator('.skeleton-card')).toBeVisible();
 });
 
+test('inspects, exports and imports local skills', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Skill center/ }).click();
+  await page.locator('.skill-detail-link').first().click();
+  await expect(page.locator('.skill-detail')).toBeVisible();
+  await expect(page.locator('.skill-detail')).toContainText('Version');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export skills' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^digitalmate-skills-\d{4}-\d{2}-\d{2}\.json$/);
+
+  await page.locator('.skill-import-input').setInputFiles({
+    name: 'skills.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        app: 'digitalmate-web',
+        kind: 'skills',
+        version: 1,
+        exportedAt: '2026-10-29T10:00:00.000Z',
+        skills: [
+          {
+            id: 'local-test',
+            name: 'Local test skill',
+            icon: 'T',
+            category: 'Local',
+            description: 'A skill imported from a local file.',
+            author: 'Tester',
+            version: '1.0.0',
+            capabilities: ['Read a file', 'Summarize locally']
+          }
+        ]
+      })
+    )
+  });
+
+  await expect(page.getByText('Local test skill')).toBeVisible();
+  await page.locator('.sheet-head .icon-button').click();
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Skill center/ }).click();
+  await expect(page.getByText('Local test skill')).toBeVisible();
+});
+
 test('searches the local discovery feed', async ({ page }) => {
   await page.getByRole('button', { name: 'Discover' }).click();
   const cards = page.locator('.feed-card');

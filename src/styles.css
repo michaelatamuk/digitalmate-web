@@ -4011,6 +4011,7 @@ a {
 .skill-card {
   display: flex;
   align-items: flex-start;
+  flex-wrap: wrap;
   gap: 9px;
   padding: 9px 10px;
   border-radius: 14px;
@@ -4077,6 +4078,34 @@ a {
 .skill-author {
   font-size: 7.5px;
   color: rgba(122, 110, 100, 0.7);
+}
+
+.skill-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 3px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.skill-detail {
+  flex-basis: 100%;
+  margin-top: 2px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(33, 27, 23, 0.05);
+}
+
+.skill-detail .info-rows {
+  margin-bottom: 8px;
+}
+
+.skill-capabilities {
+  margin-bottom: 4px;
 }
 
 .skill-actions {

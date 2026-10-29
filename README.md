@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 52 unit tests plus 16 Playwright UI, mobile and accessibility checks
+- 56 unit tests plus 17 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -43,7 +43,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
 | Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
-| Skills | Install, enable, disable and uninstall demo skills |
+| Skills | Detail view, install/toggle, local JSON import/export |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
@@ -152,6 +152,13 @@ key to a JSON file and import it again. Export includes chats, calendar events, 
 RSS subscriptions, skills and settings. Import validates the app marker, version and keys,
 replaces only DigitalMate keys, then reloads the app. Unrelated browser storage is untouched.
 
+## Local skill bundles
+
+**Skill center** can export every skill to `digitalmate-skills-YYYY-MM-DD.json` and import a
+bundle again. Imports are validated and sanitised, capped at 50 skills, and merged by id; an
+imported skill is installed and enabled locally. This is file-based sharing only — no account,
+marketplace or OAuth flow.
+
 ## Local attachments
 
 The composer can attach up to five local files (5 MB each). Text-like files are read in the
@@ -221,6 +228,7 @@ src/
     rssParse.ts           RSS 2.0 / Atom / RDF parser and HTML cleanup
     backup.ts             local JSON export/import and validation
     attachments.ts        local file validation, reading and preview metadata
+    skillBundle.ts        local skill import/export and sanitising
   transport/
     types.ts              ChatTransport and turn-event contract
     mock.ts               local mock transport
@@ -250,6 +258,7 @@ tests/
   orbitTransport.test.ts  bridge config, SSE parsing and transport events
   backup.test.ts          local backup export, validation and restore
   attachments.test.ts     local attachment kinds, validation and reading
+  skillBundle.test.ts     skill bundle parsing, sanitising and merging
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 scripts/
