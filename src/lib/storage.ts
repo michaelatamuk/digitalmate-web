@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
   topicMigration: `${PREFIX}topicMigration.v1`,
   persona: `${PREFIX}persona.v1`,
   personaNotes: `${PREFIX}personaNotes.v1`,
+  personaProfiles: `${PREFIX}personaProfiles.v1`,
   model: `${PREFIX}model.v1`,
   project: `${PREFIX}project.v1`,
   projects: `${PREFIX}projects.v1`,

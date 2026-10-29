@@ -22,7 +22,8 @@ export function HomeView({
   personaPrompts,
   onOpenPersona,
   recentTasks,
-  onOpenTasks
+  onOpenTasks,
+  onResumeTask
 }: {
   messages: Message[];
   reducedMotion: boolean;
@@ -35,6 +36,7 @@ export function HomeView({
   onOpenPersona?: () => void;
   recentTasks?: Array<{ id: string; title: string; status: string }>;
   onOpenTasks?: () => void;
+  onResumeTask?: (id: string) => void;
 }) {
   const { lang, tr, locale } = useI18n();
   const [now, setNow] = useState(() => new Date());
@@ -135,7 +137,7 @@ export function HomeView({
           </div>
           <div className="recent-task-row">
             {recentTasks.slice(0, 3).map(task => (
-              <button type="button" className="recent-task" key={task.id} onClick={onOpenTasks}>
+              <button type="button" className="recent-task" key={task.id} onClick={() => onResumeTask?.(task.id)}>
                 <span className={`task-dot is-${task.status}`} />
                 {task.title}
               </button>

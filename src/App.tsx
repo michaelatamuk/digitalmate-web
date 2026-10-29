@@ -89,6 +89,9 @@ export default function App() {
   const [activeSkill, setActiveSkill] = useState('');
   const [activePersona, setActivePersona] = usePersistentState<PersonaId>(STORAGE_KEYS.persona, DEFAULT_PERSONA);
   const [personaNotes, setPersonaNotes] = usePersistentState<Record<string, string>>(STORAGE_KEYS.personaNotes, {});
+  const [personaProfiles, setPersonaProfiles] = usePersistentState<
+    Record<string, { soul?: string; skills?: string[] }>
+  >(STORAGE_KEYS.personaProfiles, {});
   const [model, setModel] = usePersistentState<string>(STORAGE_KEYS.model, 'local-balanced');
   const [project, setProject] = usePersistentState<string>(STORAGE_KEYS.project, 'none');
   const [projects, setProjects] = usePersistentState<ProjectOption[]>(STORAGE_KEYS.projects, DEFAULT_PROJECTS);
@@ -100,6 +103,7 @@ export default function App() {
   const [deepSearch, setDeepSearch] = usePersistentState<boolean>(STORAGE_KEYS.deepSearch, false);
   const [welcomeSeen, setWelcomeSeen] = usePersistentState<boolean>(STORAGE_KEYS.welcomeSeen, false);
   const [sheet, setSheet] = useState<SheetName>(null);
+  const [taskFocus, setTaskFocus] = useState<string | null>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
   const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -1085,6 +1089,10 @@ export default function App() {
                 onOpenPersona={() => setSheet('persona')}
                 recentTasks={tasks.slice(0, 3).map(task => ({ id: task.id, title: task.title, status: task.status }))}
                 onOpenTasks={() => setSheet('tasks')}
+                onResumeTask={id => {
+                  setTaskFocus(id);
+                  setSheet('tasks');
+                }}
               />
             ) : (
               <ChatView
@@ -1268,7 +1276,10 @@ export default function App() {
             onDemo={() => void startDemo()}
             onProtocol={openProtocolDemo}
             onArtifacts={() => setSheet('artifacts')}
-            onTasks={() => setSheet('tasks')}
+            onTasks={() => {
+              setTaskFocus(null);
+              setSheet('tasks');
+            }}
             onLabs={() => setSheet('labs')}
           />
         ) : null}
@@ -1316,6 +1327,26 @@ export default function App() {
           <PersonaSheet
             active={activePersona}
             notes={personaNotes[activePersona] ?? ''}
+            soul={
+              personaProfiles[activePersona]?.soul ??
+              activePersonaDefinition.soul[lang === 'zh' ? 'zh' : 'en']
+            }
+            skills={
+              personaProfiles[activePersona]?.skills ??
+              activePersonaDefinition.skills[lang === 'zh' ? 'zh' : 'en']
+            }
+            onSoul={value =>
+              setPersonaProfiles(previous => ({
+                ...previous,
+                [activePersona]: { ...previous[activePersona], soul: value }
+              }))
+            }
+            onSkills={value =>
+              setPersonaProfiles(previous => ({
+                ...previous,
+                [activePersona]: { ...previous[activePersona], skills: value }
+              }))
+            }
             onSelect={id => {
               setActivePersona(id);
               showToast(tr(`Companion: ${personaName(id, lang)}`, `已切换分身：${personaName(id, lang)}`));
@@ -1390,6 +1421,7 @@ export default function App() {
         {sheet === 'tasks' ? (
           <TaskShellSheet
             tasks={tasks}
+            initialTaskId={taskFocus ?? undefined}
             onRetry={prompt => {
               setSheet(null);
               void send(prompt);

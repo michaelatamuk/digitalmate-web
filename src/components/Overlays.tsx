@@ -1516,14 +1516,16 @@ function taskStatusLabel(status: TaskRecord['status'], tr: (en: string, zh: stri
 export function TaskShellSheet({
   tasks,
   onRetry,
-  onClose
+  onClose,
+  initialTaskId
 }: {
   tasks: TaskRecord[];
   onRetry: (prompt: string) => void;
   onClose: () => void;
+  initialTaskId?: string;
 }) {
   const { tr, locale } = useI18n();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialTaskId ?? null);
   const selected = tasks.find(task => task.id === selectedId);
 
   return (

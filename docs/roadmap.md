@@ -116,11 +116,11 @@ completed without a real service, but their UI/fallbacks can be built locally.
 
 - [x] Add the seven upstream personas: default, food, travel, work, entertainment, game, shopping (M)
 - [x] Persona picker in the composer, replacing the flat skill pill row (M)
-- [ ] Per-persona soul, skills and memory files stored locally (M)
+- [x] Per-persona soul, skills and memory files stored locally (M)
 - [x] Persona-aware mock responses and suggested prompts (M)
 - [x] Persona-aware home greeting and suggestion cards (S)
-- [ ] Persona status/“using for this task” chip in chat (S)
-- [ ] Persona editor screen for soul, skills and memory (M)
+- [x] Persona status/"using for this task" chip in chat (S)
+- [x] Persona editor screen for soul, skills and memory (M)
 - [x] Integrate persona switching with About You / memory sheet (S)
 - [x] Model picker in the composer (local mock list; bridge models later) (M)
 - [x] Project-directory picker using Capacitor Filesystem / File System Access API (M)
@@ -161,7 +161,7 @@ completed without a real service, but their UI/fallbacks can be built locally.
 ### 6.5 Home, settings and utility screens
 
 - [x] Startup splash and welcome card deck (S)
-- [ ] Resume a specific recent task, not only the last chat (M)
+- [x] Resume a specific recent task, not only the last chat (M)
 - [ ] In-app update card: check GitHub APK version, download and launch installer (M)
 - [x] Expanded diagnostics panel with build info, storage usage and connection state (S)
 - [x] Settings sections for models, MCP services, projects and sources (M)

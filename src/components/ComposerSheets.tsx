@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from './Icons';
 import { Sheet } from './Overlays';
 import { useI18n } from '../i18n/I18nContext';
@@ -20,17 +20,31 @@ function bilingual(value: { en: string; zh: string }, lang: Language): string {
 export function PersonaSheet({
   active,
   notes,
+  soul,
+  skills,
   onSelect,
   onNotes,
+  onSoul,
+  onSkills,
   onClose
 }: {
   active: PersonaId;
   notes: string;
+  soul: string;
+  skills: string[];
   onSelect: (id: PersonaId) => void;
   onNotes: (notes: string) => void;
+  onSoul: (soul: string) => void;
+  onSkills: (skills: string[]) => void;
   onClose: () => void;
 }) {
   const { lang, tr } = useI18n();
+  const [skillText, setSkillText] = useState(skills.join(', '));
+
+  useEffect(() => {
+    setSkillText(skills.join(', '));
+  }, [active, skills]);
+
   return (
     <Sheet
       title={tr('Choose a companion', '选择分身')}
@@ -60,6 +74,31 @@ export function PersonaSheet({
             </button>
           );
         })}
+      </div>
+      <div className="settings-group">
+        <span className="settings-label">{tr('Soul and skills', '灵魂与技能')}</span>
+        <textarea
+          className="field-input persona-notes"
+          value={soul}
+          onChange={event => onSoul(event.target.value)}
+          aria-label={tr('Companion soul', '分身灵魂')}
+          rows={3}
+        />
+        <input
+          className="field-input"
+          value={skillText}
+          onChange={event => setSkillText(event.target.value)}
+          onBlur={() =>
+            onSkills(
+              skillText
+                .split(/[,，]/)
+                .map(item => item.trim())
+                .filter(Boolean)
+            )
+          }
+          placeholder={tr('Skills, separated by commas', '技能，用逗号分隔')}
+          aria-label={tr('Companion skills', '分身技能')}
+        />
       </div>
       <div className="settings-group">
         <span className="settings-label">{tr('Companion notes', '分身备注')}</span>
