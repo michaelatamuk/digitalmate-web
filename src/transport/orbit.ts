@@ -6,6 +6,7 @@ export interface OrbitHealth {
   mode: 'live' | 'unconfigured';
   gatewayHost?: string;
   bindingId?: string;
+  roomId?: string;
 }
 
 export async function orbitHealth(signal?: AbortSignal): Promise<OrbitHealth> {

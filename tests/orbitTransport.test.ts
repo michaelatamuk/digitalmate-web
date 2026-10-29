@@ -9,6 +9,7 @@ import {
 import { MockChatTransport } from '../src/transport/mock';
 import { OrbitChatTransport, parseSseBlock, toTransportEvent } from '../src/transport/orbit';
 import type { ChatTurnEvent } from '../src/transport/types';
+import { OrbitSessionStore, readCookie, sessionCookie } from '../server/orbitSession';
 
 describe('Orbit bridge config', () => {
   it('is unconfigured without a gateway URL or token', () => {
@@ -137,6 +138,46 @@ describe('SSE and transport events', () => {
     expect(events.map(event => event.type)).toEqual(['thinking', 'text', 'done']);
     expect(events[1]).toEqual({ type: 'text', text: 'Hello' });
     vi.unstubAllGlobals();
+  });
+});
+
+describe('Orbit bridge sessions', () => {
+  it('parses and writes the session cookie without exposing extras', () => {
+    expect(readCookie('a=1; dm_orbit_session=abc; b=2', 'dm_orbit_session')).toBe('abc');
+    expect(readCookie('a=1', 'dm_orbit_session')).toBeUndefined();
+    expect(sessionCookie('abc', false)).toBe(
+      'dm_orbit_session=abc; Path=/; HttpOnly; SameSite=Lax; Max-Age=1800'
+    );
+    expect(sessionCookie('abc', true)).toContain('Secure');
+    expect(sessionCookie('abc', false)).not.toContain('Secure');
+  });
+
+  it('keeps room and submission state per session', () => {
+    let now = 1_000;
+    const store = new OrbitSessionStore(1_000, () => now);
+    const session = store.getOrCreate('s1');
+    store.setRoom(session, 'room_1');
+    store.rememberSubmission(session, 'sub_1', { text: 'Hello', taskId: 'task_1' });
+
+    expect(store.get('s1')?.roomId).toBe('room_1');
+    expect(store.getSubmission(session, 'sub_1')).toMatchObject({
+      text: 'Hello',
+      taskId: 'task_1',
+      done: false
+    });
+
+    store.rememberSubmission(session, 'sub_1', { done: true });
+    expect(store.getSubmission(session, 'sub_1')).toMatchObject({ done: true, text: 'Hello' });
+  });
+
+  it('prunes sessions after the TTL', () => {
+    let now = 1_000;
+    const store = new OrbitSessionStore(500, () => now);
+    store.getOrCreate('old');
+    now = 1_600;
+    store.prune();
+    expect(store.get('old')).toBeUndefined();
+    expect(store.size()).toBe(0);
   });
 });
 

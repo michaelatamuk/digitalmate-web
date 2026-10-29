@@ -125,6 +125,16 @@ One turn:
 5. maps `orbit.task.text` to SSE text events and `final: true` to `done`;
 6. maps task errors to an SSE error and closes the socket.
 
+Session continuity:
+
+- the bridge sets an HttpOnly `dm_orbit_session` cookie with a 30-minute TTL;
+- the room id is remembered per session and reused when `roomId` is omitted;
+- completed `submission_id` values are cached in memory; a repeat replays the cached text
+  with a `Reuse cached result` thinking step instead of re-sending the action;
+- errors are cached as completed results so retries do not loop.
+
+`/api/orbit/health` includes the remembered `roomId` when a session cookie is present.
+
 Limits and safety:
 
 - `wss://` only unless explicitly overridden;
@@ -133,9 +143,9 @@ Limits and safety:
 - token never sent to the browser and never included in health output;
 - a fresh socket per turn, with no task replay.
 
-Remaining work: account exchange, persistent session/room state, snapshot reconciliation,
-and reconnect/backoff. A browser cannot safely hold the Gateway token, so those pieces belong
-in the bridge.
+Remaining work: account exchange, persistent session storage (the current cache is per-process),
+snapshot reconciliation, and reconnect/backoff. A browser cannot safely hold the Gateway token,
+so those pieces belong in the bridge.
 
 ## Local fake gateway
 

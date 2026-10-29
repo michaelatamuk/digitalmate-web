@@ -444,8 +444,8 @@ export function SettingsSheet({
                 ? tr('Checking the bridge…', '正在检查桥接…')
                 : orbitStatus.configured
                   ? tr(
-                      `Bridge ready · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}`,
-                      `桥接就绪 · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}`
+                      `Bridge ready · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}${orbitStatus.roomId ? ` · ${orbitStatus.roomId}` : ''}`,
+                      `桥接就绪 · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}${orbitStatus.roomId ? ` · ${orbitStatus.roomId}` : ''}`
                     )
                   : tr(
                       'Bridge not configured — set ORBIT_GATEWAY_URL and ORBIT_TOKEN on the server.',

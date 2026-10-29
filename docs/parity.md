@@ -66,10 +66,11 @@ custom thinking card).
 | --- | --- | --- |
 | Transport abstraction | ✅ | `ChatTransport` with mock and Orbit implementations |
 | Real Orbit/WorkSwarm transport | 🟡 | Bridge implemented; needs gateway URL + Bearer token |
+| Bridge sessions | ✅ | HttpOnly cookie, room continuity, submission-id cache |
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
-| Unit tests | ✅ | 40 tests for mock logic, scenarios, A2UI, RSS and transport |
+| Unit tests | ✅ | 43 tests for mock logic, scenarios, A2UI, RSS, transport and sessions |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ❌ | Not yet |

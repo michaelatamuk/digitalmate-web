@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 40 unit tests plus Playwright UI, mobile and accessibility checks
+- 43 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -137,12 +137,15 @@ Flow per turn:
 2. call `room.home` to authorise the room,
 3. send `room.message` with a `submission_id`,
 4. forward `orbit.task.text` / task error events as SSE,
-5. close the socket when the task reports `final`.
+5. close the socket when the task reports `final`,
+6. remember the room id and completed submission in an in-memory session keyed by an
+   HttpOnly cookie. A repeated `submission_id` replays the cached result instead of sending
+   the action twice.
 
 The bridge is intentionally conservative: `wss://` only unless `ORBIT_ALLOW_INSECURE_WS=1`,
 12-second request timeouts, 120-second turn timeout, 32 KB request body, and no token logging.
 It currently uses a fresh upstream socket per turn; reconnect reconciliation and snapshot
-recovery are still roadmap items.
+recovery are still roadmap items. Sessions expire after 30 minutes.
 
 ## Repository layout
 
@@ -194,6 +197,7 @@ services/
 server/
   rss.ts                  dev/preview /api/rss proxy, size/redirect/SSRF guards
   orbit.ts                /api/orbit health + SSE turn bridge, WSS upstream
+  orbitSession.ts         cookie sessions, room continuity, submission cache
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
   a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo

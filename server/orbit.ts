@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Plugin } from 'vite';
 import WebSocket from 'ws';
+import { orbitSessions, readCookie, sessionCookie } from './orbitSession';
+import type { OrbitSession } from './orbitSession';
 
 const MAX_BODY_BYTES = 32_000;
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -18,6 +20,7 @@ export interface OrbitHealth {
   mode: 'live' | 'unconfigured';
   gatewayHost?: string;
   bindingId?: string;
+  roomId?: string;
 }
 
 type BridgeEvent =
@@ -150,18 +153,38 @@ async function readJson(request: IncomingMessage): Promise<Record<string, unknow
   return value;
 }
 
-async function streamTurn(
-  config: OrbitConfig,
-  input: { text: string; roomId?: string; submissionId: string },
-  response: ServerResponse,
-  request: IncomingMessage
-): Promise<void> {
+function openSse(response: ServerResponse): void {
   response.statusCode = 200;
   response.setHeader('content-type', 'text/event-stream; charset=utf-8');
   response.setHeader('cache-control', 'no-store, no-transform');
   response.setHeader('connection', 'keep-alive');
   response.setHeader('x-accel-buffering', 'no');
   response.flushHeaders();
+}
+
+function streamCachedTurn(response: ServerResponse, text: string): void {
+  openSse(response);
+  sendEvent(response, {
+    type: 'thinking',
+    step: 'Reuse cached result',
+    steps: ['Reuse cached result'],
+    index: 0,
+    total: 1
+  });
+  if (text) sendEvent(response, { type: 'text', text });
+  sendEvent(response, { type: 'done' });
+  response.end();
+}
+
+async function streamTurn(
+  config: OrbitConfig,
+  input: { text: string; roomId?: string; submissionId: string },
+  response: ServerResponse,
+  request: IncomingMessage,
+  session: OrbitSession,
+  cachedText = ''
+): Promise<void> {
+  openSse(response);
 
   const upstreamUrl = new URL(config.url.toString());
   if (!upstreamUrl.searchParams.has('binding_id')) {
@@ -182,10 +205,19 @@ async function streamTurn(
   >();
   let ended = false;
   let taskId: string | undefined;
+  let accumulated = cachedText;
   let resolveClosed: () => void = () => undefined;
   const closed = new Promise<void>(resolve => {
     resolveClosed = resolve;
   });
+
+  const remember = (done: boolean) => {
+    orbitSessions.rememberSubmission(session, input.submissionId, {
+      text: accumulated,
+      done,
+      taskId
+    });
+  };
 
   const finish = (event: BridgeEvent) => {
     if (ended) return;
@@ -203,7 +235,12 @@ async function streamTurn(
     resolveClosed();
   };
 
-  const fail = (message: string) => finish({ type: 'error', message });
+  const fail = (message: string) => {
+    if (ended) return;
+    const text = accumulated ? `${accumulated}\n\n${message}` : message;
+    orbitSessions.rememberSubmission(session, input.submissionId, { text, done: true, taskId });
+    finish({ type: 'error', message });
+  };
 
   const requestUpstream = (payload: OrbitRequest): Promise<Record<string, unknown>> =>
     new Promise((resolve, reject) => {
@@ -263,8 +300,20 @@ async function streamTurn(
     }
 
     for (const event of normalizeOrbitEvent(payload)) {
-      if (event.type === 'text' || event.type === 'error') sendEvent(response, event);
-      if (event.type === 'done') finish({ type: 'done' });
+      if (event.type === 'text') {
+        accumulated += event.text;
+        remember(false);
+        sendEvent(response, event);
+      }
+      if (event.type === 'error') {
+        accumulated = accumulated ? `${accumulated}\n\n${event.message}` : event.message;
+        remember(true);
+        sendEvent(response, event);
+      }
+      if (event.type === 'done') {
+        remember(true);
+        finish({ type: 'done' });
+      }
     }
 
     if (typeof message.task_id === 'string') taskId = message.task_id;
@@ -308,9 +357,11 @@ async function streamTurn(
     if (ended) return;
     const roomId =
       input.roomId ||
+      session.roomId ||
       (typeof home.room_id === 'string' ? home.room_id : undefined) ||
       (typeof record(home.snapshot)?.room_id === 'string' ? record(home.snapshot)?.room_id : undefined);
     if (!roomId) throw new Error('Orbit did not return a room id');
+    orbitSessions.setRoom(session, roomId);
 
     sendEvent(response, {
       type: 'thinking',
@@ -330,6 +381,7 @@ async function streamTurn(
     if (ended) return;
 
     taskId = typeof accepted.task_id === 'string' ? accepted.task_id : taskId;
+    remember(false);
 
     sendEvent(response, {
       type: 'thinking',
@@ -354,10 +406,12 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
   const config = readOrbitConfig();
 
   if (url.pathname === '/api/orbit/health') {
+    const sessionId = readCookie(request.headers.cookie, 'dm_orbit_session');
+    const session = sessionId ? orbitSessions.get(sessionId) : undefined;
     response.statusCode = 200;
     response.setHeader('content-type', 'application/json; charset=utf-8');
     response.setHeader('cache-control', 'no-store');
-    response.end(JSON.stringify(orbitHealth(config)));
+    response.end(JSON.stringify({ ...orbitHealth(config), roomId: session?.roomId }));
     return;
   }
 
@@ -404,18 +458,34 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
     return;
   }
 
+  const submissionId =
+    typeof body.submissionId === 'string' && body.submissionId
+      ? body.submissionId
+      : `sub-${Date.now().toString(36)}`;
+  const sessionId = readCookie(request.headers.cookie, 'dm_orbit_session');
+  const session = orbitSessions.getOrCreate(sessionId);
+  const secure =
+    String(request.headers['x-forwarded-proto'] ?? '').split(',')[0].trim() === 'https' ||
+    Boolean((request.socket as { encrypted?: boolean }).encrypted);
+  response.setHeader('set-cookie', sessionCookie(session.id, secure));
+
+  const cached = orbitSessions.getSubmission(session, submissionId);
+  if (cached?.done) {
+    streamCachedTurn(response, cached.text);
+    return;
+  }
+
   await streamTurn(
     config,
     {
       text: text.slice(0, 8_000),
       roomId: typeof body.roomId === 'string' ? body.roomId : undefined,
-      submissionId:
-        typeof body.submissionId === 'string' && body.submissionId
-          ? body.submissionId
-          : `sub-${Date.now().toString(36)}`
+      submissionId
     },
     response,
-    request
+    request,
+    session,
+    cached?.text ?? ''
   );
 }
 

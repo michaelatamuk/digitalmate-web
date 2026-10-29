@@ -36,7 +36,8 @@
 - [ ] Gateway auth exchange or delegated session
 - [x] WSS `/orbit/ws` proxy with `room.home` / `room.message`
 - [x] Token isolation and redaction
-- [ ] Reconnect, snapshot recovery and submission-id handling
+- [x] Session cookie, room continuity and submission-id idempotency
+- [ ] Reconnect and snapshot recovery
 - [x] Document the bridge security model
 
 ## Phase 3 — Feature parity
