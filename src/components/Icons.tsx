@@ -49,6 +49,7 @@ export type IconName =
   | 'car'
   | 'copy'
   | 'edit'
+  | 'share'
   | 'volume';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -393,6 +394,15 @@ export function Icon({ name, size = 22, filled = false, ...rest }: IconProps) {
         <svg {...common}>
           <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
           <path d="m13.5 7 3.5 3.5" />
+        </svg>
+      );
+    case 'share':
+      return (
+        <svg {...common}>
+          <circle cx="18" cy="5.5" r="2.5" />
+          <circle cx="6" cy="12" r="2.5" />
+          <circle cx="18" cy="18.5" r="2.5" />
+          <path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4" />
         </svg>
       );
     case 'volume':

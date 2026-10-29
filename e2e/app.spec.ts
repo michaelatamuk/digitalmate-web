@@ -63,6 +63,9 @@ test('is installable and advertises account-free offline access', async ({ page 
   await expect(page.getByText('Account-free access')).toBeVisible();
   await expect(page.getByText(/No account is required/)).toBeVisible();
   await expect(page.getByText(/Offline ·|Online ·/)).toBeVisible();
+  await expect(page.getByText(/^Version \d+\.\d+\.\d+$/)).toBeVisible();
+  await page.getByRole('button', { name: 'Check for updates' }).click();
+  await expect(page.getByText(/No offline cache is registered/)).toBeVisible();
 });
 
 test('previews and sends a local attachment without uploading', async ({ page }) => {
@@ -83,6 +86,26 @@ test('previews and sends a local attachment without uploading', async ({ page })
   await expect(page.locator('.message-assistant')).toBeVisible();
 });
 
+test('shares a reply through the Web Share API', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __shared: string | null }).__shared = null;
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data: { text?: string }) => {
+        (window as unknown as { __shared: string | null }).__shared = data.text ?? '';
+      }
+    });
+  });
+  await page.reload();
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await page.locator('.message-actions').last().getByRole('button', { name: 'Share' }).click();
+  const shared = await page.evaluate(
+    () => (window as unknown as { __shared: string | null }).__shared
+  );
+  expect(shared).toContain('coffee');
+});
+
 test('retries and clears a local message exchange', async ({ page }) => {
   await sendMessage(page, 'Find coffee nearby');
   await expect(page.locator('.a2ui-surface')).toBeVisible();
@@ -100,6 +123,7 @@ test('retries and clears a local message exchange', async ({ page }) => {
 
 test('edits and forgets local memory without an account', async ({ page }) => {
   await page.getByRole('button', { name: 'About you' }).click();
+  await expect(page.getByText(/From the local demo profile/)).toBeVisible();
   await page.getByRole('button', { name: 'Edit memory' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Test User');
   await page.getByLabel('Summary').fill('Prefers local-first tools and short replies.');

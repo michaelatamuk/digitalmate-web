@@ -357,6 +357,8 @@ export function SettingsSheet({
   const [orbitStatus, setOrbitStatus] = useState<OrbitHealth | null>(null);
   const [online, setOnline] = useState(() => navigator.onLine);
   const [offlineReady, setOfflineReady] = useState(false);
+  const [updateReady, setUpdateReady] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const backupInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -397,6 +399,58 @@ export function SettingsSheet({
       window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    let active = true;
+    navigator.serviceWorker
+      .getRegistration()
+      .then(registration => {
+        if (!active || !registration) return;
+        if (registration.waiting) setUpdateReady(true);
+        registration.addEventListener('updatefound', () => {
+          const worker = registration.installing;
+          worker?.addEventListener('statechange', () => {
+            if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              setUpdateReady(true);
+            }
+          });
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const checkForUpdates = async () => {
+    if (!('serviceWorker' in navigator)) {
+      onNotice(tr('Offline updates require a production build.', '离线更新需要生产构建。'));
+      return;
+    }
+    setCheckingUpdate(true);
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        onNotice(
+          tr(
+            'No offline cache is registered in development. Use the production build to test updates.',
+            '开发模式未注册离线缓存，请使用生产构建测试更新。'
+          )
+        );
+        return;
+      }
+      await registration.update();
+      if (registration.waiting || registration.installing) {
+        setUpdateReady(true);
+      } else {
+        onNotice(tr('You are up to date.', '已是最新版本。'));
+      }
+    } catch {
+      onNotice(tr('Could not check for updates.', '无法检查更新。'));
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
 
   const downloadBackup = () => {
     const backup = collectBackup(window.localStorage);
@@ -581,6 +635,28 @@ export function SettingsSheet({
                 )}
           </span>
         </div>
+        <div className="offline-line">
+          <Icon name="info" size={13} />
+          <span>{tr(`Version ${__APP_VERSION__}`, `版本 ${__APP_VERSION__}`)}</span>
+        </div>
+        <div className="settings-actions">
+          {updateReady ? (
+            <button type="button" className="primary-action" onClick={() => window.location.reload()}>
+              <Icon name="refresh" size={14} />
+              {tr('Reload to update', '重新加载以更新')}
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="secondary-action"
+              disabled={checkingUpdate}
+              onClick={() => void checkForUpdates()}
+            >
+              <Icon name="refresh" size={14} />
+              {checkingUpdate ? tr('Checking…', '检查中…') : tr('Check for updates', '检查更新')}
+            </button>
+          )}
+        </div>
         {installPrompt ? (
           <button
             type="button"
@@ -747,7 +823,11 @@ export function MemorySheet({
         .filter(Boolean),
       sections: draft.sections
         .filter(section => section.title.trim() || section.body.trim())
-        .map(section => ({ title: section.title.trim() || tr('Untitled', '未命名'), body: section.body.trim() }))
+        .map(section => ({
+          title: section.title.trim() || tr('Untitled', '未命名'),
+          body: section.body.trim(),
+          evidence: section.evidence?.trim() || undefined
+        }))
     };
     onSave(next);
     setDraft(next);
@@ -870,6 +950,19 @@ export function MemorySheet({
                   }))
                 }
               />
+              <input
+                value={section.evidence ?? ''}
+                placeholder={tr('Evidence or source (optional)', '证据或来源（可选）')}
+                aria-label={tr('Evidence or source', '证据或来源')}
+                onChange={event =>
+                  setDraft(current => ({
+                    ...current,
+                    sections: current.sections.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, evidence: event.target.value } : item
+                    )
+                  }))
+                }
+              />
             </div>
           ))}
 
@@ -900,6 +993,12 @@ export function MemorySheet({
               <article className="memory-section" key={section.title}>
                 <h4>{section.title}</h4>
                 <p>{section.body}</p>
+                {section.evidence ? (
+                  <span className="memory-evidence">
+                    <Icon name="info" size={11} />
+                    {section.evidence}
+                  </span>
+                ) : null}
               </article>
             ))}
           </div>

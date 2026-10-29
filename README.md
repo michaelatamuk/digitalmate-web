@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 52 unit tests plus Playwright UI, mobile and accessibility checks
+- 52 unit tests plus 14 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -35,11 +35,11 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Area | Current behaviour |
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
-| Chat | Transport streaming, execution trace, markdown, follow-ups, copy/retry/clear |
+| Chat | Transport streaming, execution trace, markdown, follow-ups, copy/share/retry/clear |
 | Attachments | Local file picker, text/image preview, PDF metadata; nothing uploaded |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
-| Memory | Editable local profile with tags and sections; forget everything |
+| Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
@@ -47,7 +47,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
-| Offline / PWA | Installable production build; shell and assets cached, no API caching |
+| Offline / PWA | Installable build, offline shell and update check with app version |
 | Your data | Export/import a local JSON backup of chats, calendar, saved cards and settings |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |

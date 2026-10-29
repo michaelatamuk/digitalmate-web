@@ -96,6 +96,7 @@ interface MessageBubbleProps {
   onRetry: (id: string) => void;
   onClear: (id: string) => void;
   onCopy: (text: string) => void;
+  onShare: (text: string) => void;
 }
 
 export function MessageBubble({
@@ -107,7 +108,8 @@ export function MessageBubble({
   onFollowUp,
   onRetry,
   onClear,
-  onCopy
+  onCopy,
+  onShare
 }: MessageBubbleProps) {
   const { tr, locale } = useI18n();
   if (message.role === 'user') {
@@ -171,6 +173,12 @@ export function MessageBubble({
               <button type="button" onClick={() => onCopy(message.text)}>
                 <Icon name="copy" size={12} />
                 {tr('Copy', '复制')}
+              </button>
+            ) : null}
+            {message.text ? (
+              <button type="button" onClick={() => onShare(message.text)}>
+                <Icon name="share" size={12} />
+                {tr('Share', '分享')}
               </button>
             ) : null}
             {isLast ? (

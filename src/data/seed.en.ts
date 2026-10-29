@@ -376,19 +376,23 @@ export const memoryProfile: MemoryProfile = {
   sections: [
     {
       title: 'Background',
-      body: 'Works on product design in Shenzhen, with experience in mobile tools and content products. Spent the last year focused on agent interaction and structured interfaces.'
+      body: 'Works on product design in Shenzhen, with experience in mobile tools and content products. Spent the last year focused on agent interaction and structured interfaces.',
+      evidence: 'From the local demo profile · editable in Settings'
     },
     {
       title: 'Interests and preferences',
-      body: 'Likes low-saturation, warm-white visuals, design retrospectives and implementation details. Usually orders an oat latte with less sugar.'
+      body: 'Likes low-saturation, warm-white visuals, design retrospectives and implementation details. Usually orders an oat latte with less sugar.',
+      evidence: 'Inferred from saved cards and reactions · demo data'
     },
     {
       title: 'Communication style',
-      body: 'Prefers the conclusion first, then the evidence. Dislikes aggressive marketing language and wants failures and limits stated clearly.'
+      body: 'Prefers the conclusion first, then the evidence. Dislikes aggressive marketing language and wants failures and limits stated clearly.',
+      evidence: 'Inferred from chat preferences · demo data'
     },
     {
       title: 'Recent focus',
-      body: 'On-device memory, the A2UI component catalog, discovery deduplication and ranking, and HarmonyOS 2-in-1 support.'
+      body: 'On-device memory, the A2UI component catalog, discovery deduplication and ranking, and HarmonyOS 2-in-1 support.',
+      evidence: 'From discovery topics · demo data'
     }
   ]
 };

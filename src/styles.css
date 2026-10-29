@@ -4482,6 +4482,19 @@ a {
   color: var(--muted);
 }
 
+.memory-evidence {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.memory-evidence svg {
+  flex-shrink: 0;
+}
+
 .memory-actions {
   display: flex;
   gap: 6px;
@@ -4551,6 +4564,21 @@ a {
 }
 
 .memory-section-edit-head input:focus {
+  border-color: rgba(153, 95, 76, 0.4);
+}
+
+.memory-section-edit > input {
+  width: 100%;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(33, 27, 23, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--muted);
+  font-size: 8.5px;
+  outline: none;
+}
+
+.memory-section-edit > input:focus {
   border-color: rgba(153, 95, 76, 0.4);
 }
 

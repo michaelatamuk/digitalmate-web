@@ -43,14 +43,14 @@
 ## Phase 3 — Feature parity
 
 - [ ] Orbit room/session/task shell
-- [x] Stop, retry, copy and clear a message exchange
+- [x] Stop, retry, copy, share and clear a message exchange
 - [ ] Long-press and per-task detail rows
 - [x] Local attachments with text/image preview
 - [ ] PDF text extraction and richer artifact preview
 - [ ] Approval cards and connection/quota states
 - [ ] Skill detail, publish and OAuth setup
-- [x] Local memory editing and forget-all
-- [ ] Memory evidence and public profile import
+- [x] Local memory editing, evidence notes and forget-all
+- [ ] Public profile import
 - [ ] Stripe account card and deeper scenario states
 - [ ] Mobile viewport and accessibility audit
 
@@ -66,6 +66,7 @@
 
 - [x] Automated UI tests and critical accessibility checks
 - [x] Installable PWA with offline shell
+- [x] PWA version display and update check
 - [x] Local JSON backup and restore
 - [ ] Wider accessibility audit and manual screen-reader pass
 - [ ] Deployment pipeline and environment configuration

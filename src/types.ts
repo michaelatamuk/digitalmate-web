@@ -148,5 +148,5 @@ export interface MemoryProfile {
   summary: string;
   tags: string[];
   mbti: string;
-  sections: { title: string; body: string }[];
+  sections: { title: string; body: string; evidence?: string }[];
 }

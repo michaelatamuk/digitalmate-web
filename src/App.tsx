@@ -392,6 +392,18 @@ export default function App() {
     }
   };
 
+  const shareText = async (text: string) => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'DigitalMate', text });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+    await copyText(text);
+  };
+
   const newChat = () => {
     generation.current += 1;
     activeController.current?.abort();
@@ -768,6 +780,7 @@ export default function App() {
                 onRetry={retryMessage}
                 onClear={clearMessage}
                 onCopy={text => void copyText(text)}
+                onShare={text => void shareText(text)}
               />
             )
           ) : (

@@ -1,7 +1,12 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { rssProxyPlugin } from './server/rss';
 import { orbitBridgePlugin } from './server/orbit';
+
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as {
+  version: string;
+};
 
 export default defineConfig(({ mode }) => {
   const fileEnv = loadEnv(mode, process.cwd(), '');
@@ -10,6 +15,9 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(pkg.version)
+    },
     plugins: [react(), rssProxyPlugin(), orbitBridgePlugin()],
     server: {
       host: '127.0.0.1',

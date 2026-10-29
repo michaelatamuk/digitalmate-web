@@ -17,16 +17,16 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Artifacts and preview | 🟡 | Local text/image preview; PDF text and rich artifacts absent |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ❌ | Interest feed only |
-| Saved cards / share | 🟡 | Save works; share absent |
+| Saved cards / share | 🟡 | Save works and replies can be shared; card share absent |
 | Skill center | 🟡 | Install/toggle only |
 | Skill detail / publish / OAuth | ❌ | Not implemented |
 | Memory profile | ✅ | Editable local profile, persisted |
-| Memory edit / forget / evidence | 🟡 | Edit and forget work; evidence view absent |
+| Memory edit / forget / evidence | ✅ | Edit, forget and per-section evidence notes are local |
 | Calendar read | ✅ | Mock schedule |
 | Calendar event create | 🟡 | Local browser state only |
 | Login / onboarding | ❌ | Not required — the app works fully without an account |
 | Account switching | ❌ | Not applicable; no account or login gate |
-| Settings / app update | 🟡 | Demo settings; browser notifications only |
+| Settings / app update | 🟡 | Demo settings, version display and PWA update check |
 | Notifications / background tasks | 🟡 | Browser notification when hidden and permitted |
 | Offline use | ✅ | Production PWA shell cached; local data persists |
 | Local backup | ✅ | Export/import JSON in Settings; validated and scoped to app keys |
@@ -72,7 +72,7 @@ custom thinking card).
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, attachments, retry/clear, memory, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Automated UI tests | ✅ | Playwright: chat, attachments, share, retry/clear, memory, language, protocol, RSS, backup, Orbit fallback, mobile |
 | Unit tests | ✅ | 52 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup and attachments |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

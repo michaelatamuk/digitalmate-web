@@ -11,7 +11,8 @@ export function ChatView({
   onFollowUp,
   onRetry,
   onClear,
-  onCopy
+  onCopy,
+  onShare
 }: {
   messages: Message[];
   showThinking: boolean;
@@ -21,6 +22,7 @@ export function ChatView({
   onRetry: (id: string) => void;
   onClear: (id: string) => void;
   onCopy: (text: string) => void;
+  onShare: (text: string) => void;
 }) {
   const { tr } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
@@ -55,6 +57,7 @@ export function ChatView({
           onRetry={onRetry}
           onClear={onClear}
           onCopy={onCopy}
+          onShare={onShare}
         />
       ))}
       <div ref={endRef} />
