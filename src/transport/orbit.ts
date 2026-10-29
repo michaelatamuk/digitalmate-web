@@ -1,4 +1,5 @@
 import type { A2uiSurface } from '../types';
+import { apiUrl } from '../lib/api';
 import type { ChatTransport, ChatTurnEvent, ChatTurnRequest } from './types';
 
 export interface OrbitHealth {
@@ -12,7 +13,7 @@ export interface OrbitHealth {
 }
 
 export async function orbitHealth(signal?: AbortSignal): Promise<OrbitHealth> {
-  const response = await fetch('/api/orbit/health', {
+  const response = await fetch(apiUrl('/api/orbit/health'), {
     headers: { accept: 'application/json' },
     signal
   });
@@ -21,7 +22,7 @@ export async function orbitHealth(signal?: AbortSignal): Promise<OrbitHealth> {
 }
 
 export async function resetOrbitSession(): Promise<void> {
-  const response = await fetch('/api/orbit/reset', { method: 'POST' });
+  const response = await fetch(apiUrl('/api/orbit/reset'), { method: 'POST' });
   if (!response.ok) throw new Error(`Orbit session reset failed with HTTP ${response.status}`);
 }
 
@@ -48,7 +49,7 @@ async function openStream(request: ChatTurnRequest, signal: AbortSignal): Promis
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      const response = await fetch('/api/orbit/turn', {
+      const response = await fetch(apiUrl('/api/orbit/turn'), {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

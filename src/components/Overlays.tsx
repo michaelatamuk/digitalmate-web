@@ -7,6 +7,7 @@ import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBa
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
 import { artifactDownloadContent, artifactFilename, artifactSlides } from '../lib/artifacts';
 import { parseMemoryProfile } from '../lib/memoryProfile';
+import { requestNativeNotificationPermission } from '../lib/native';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
@@ -894,6 +895,17 @@ export function SettingsSheet({
           description={tr('Notify when a task completes while the tab is in the background.', '任务在后台完成时发送系统通知。')}
           checked={settings.notifications}
           onChange={async value => {
+            if (value) {
+              const native = await requestNativeNotificationPermission();
+              if (native === false) {
+                onNotice(tr('Notification permission was not granted.', '未获得通知权限。'));
+                return;
+              }
+              if (native === true) {
+                onChange({ ...settings, notifications: true });
+                return;
+              }
+            }
             if (value && typeof Notification !== 'undefined') {
               try {
                 const permission = await Notification.requestPermission();

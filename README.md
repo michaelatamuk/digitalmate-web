@@ -237,6 +237,21 @@ the optional Orbit bridge.
 
 To host under a different path, set `VITE_BASE` at build time.
 
+## Android
+
+A Capacitor Android project is included:
+
+```bash
+npm run android:sync
+cd android
+./gradlew assembleDebug
+```
+
+Local mode needs no account. The native shell adds share, local notifications and a
+home-screen widget. RSS/Orbit require `VITE_API_BASE` pointing at a hosted bridge; otherwise
+they fail gracefully while all local features keep working. See
+[docs/android-build.md](docs/android-build.md).
+
 ## Repository layout
 
 ```text
@@ -291,6 +306,7 @@ docs/
   architecture.md         current layers and future Android/web split
   roadmap.md              mock → protocol → real backend → Android
   android.md              PWA-first / Capacitor-later decision
+  android-build.md        APK build, widget, sharing and signing
   threat-model.md         local-first assets, boundaries and mitigations
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
@@ -304,6 +320,7 @@ server/
   a2uiStream.ts           bridge-side A2UI parsing and queue coalescing
 services/bridge/
   index.ts                standalone production static + API server
+android/                  Capacitor Android project, widget and signing config
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
   a2uiProtocol.test.ts    JSONL parser, surface store and update queue

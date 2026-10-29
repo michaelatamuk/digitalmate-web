@@ -83,4 +83,4 @@ No components from the tracked native list remain. Future native additions may s
 | Unit tests | ✅ | 89 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts and profiles |
 | Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills and settings |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
-| Android shell | 🟡 | PWA install works; Capacitor planned only for native features |
+| Android shell | ✅ | Capacitor 8 shell, widget, share and notifications |

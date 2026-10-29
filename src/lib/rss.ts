@@ -1,7 +1,8 @@
 import type { RssFeed } from '../types';
+import { apiUrl } from './api';
 
 export async function fetchRssFeed(url: string, signal?: AbortSignal): Promise<RssFeed> {
-  const response = await fetch(`/api/rss?url=${encodeURIComponent(url)}`, {
+  const response = await fetch(apiUrl(`/api/rss?url=${encodeURIComponent(url)}`), {
     headers: { accept: 'application/json' },
     signal
   });

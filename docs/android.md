@@ -36,13 +36,12 @@ Constraints:
   Either point `VITE_API_BASE` at a hosted bridge or hide those actions in the native build.
 - Do not add Huawei/AGC login for local features.
 
-## First native milestone
+## Status
 
-1. Scaffold Capacitor with `@capacitor/core`, `@capacitor/cli`, `@capacitor/android`.
-2. Reuse `dist/` as the web directory.
-3. Verify: home, chat, attachments, local backup, PWA-independent reload.
-4. Add native share and local notifications.
-5. Only then evaluate widgets, Play Store signing and background tasks.
+Capacitor Android is now scaffolded. See `docs/android-build.md`.
+
+The native login / account exchange remains intentionally out of scope; the app starts in
+local mode with no account.
 
 ## Not planned
 

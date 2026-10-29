@@ -63,11 +63,12 @@
 ## Phase 4 — Android
 
 - [x] Decide PWA-first with Capacitor as the later native shell (see `docs/android.md`)
-- [ ] Scaffold Capacitor only when native notifications/widgets are required
-- [ ] Keep local mode account-free in the native build
-- [ ] Point `VITE_API_BASE` at an optional hosted bridge for RSS/Orbit
-- [ ] Native notifications, widgets and sharing
-- [ ] Device regression and signing
+- [x] Scaffold Capacitor Android project
+- [x] Keep local mode account-free in the native build
+- [x] Point `VITE_API_BASE` at an optional hosted bridge for RSS/Orbit
+- [x] Native notifications, widget and sharing
+- [x] Automated debug APK build and release signing configuration
+- [ ] Physical device regression (notifications, share sheet, widget, keyboard, back button)
 
 ## Phase 5 — Production hardening
 

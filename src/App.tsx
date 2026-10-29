@@ -33,6 +33,7 @@ import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
+import { nativeNotification, nativeShare } from './lib/native';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
@@ -173,10 +174,17 @@ export default function App() {
     activeTaskId.current = null;
   };
 
-  const notifyCompletion = (body: string) => {
-    if (!settings.notifications || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !document.hidden) return;
+  const notifyCompletion = async (body: string) => {
+    if (!settings.notifications) return;
+    const title = tr('DigitalMate task complete', 'DigitalMate 任务完成');
     try {
-      new Notification(tr('DigitalMate task complete', 'DigitalMate 任务完成'), {
+      if (await nativeNotification(title, body.slice(0, 140))) return;
+    } catch {
+      // Fall through to the browser notification.
+    }
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || !document.hidden) return;
+    try {
+      new Notification(title, {
         body: body.slice(0, 140),
         tag: 'digitalmate-task'
       });
@@ -387,7 +395,7 @@ export default function App() {
     setBusy(false);
     patchTask('done');
     activeTaskId.current = null;
-    notifyCompletion(accumulated);
+    void notifyCompletion(accumulated);
   };
 
   const stop = () => {
@@ -471,6 +479,11 @@ export default function App() {
   };
 
   const shareText = async (text: string) => {
+    try {
+      if (await nativeShare('DigitalMate', text)) return;
+    } catch {
+      // Fall back to the web share sheet or clipboard.
+    }
     if (navigator.share) {
       try {
         await navigator.share({ title: 'DigitalMate', text });
