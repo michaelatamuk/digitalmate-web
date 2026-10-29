@@ -27,7 +27,7 @@ export function Composer({
   onSend,
   onStop,
   busy,
-  placeholder = 'Ask DigitalMate anything',
+  placeholder = 'Ask anything',
   attachments = [],
   onAddFiles,
   onPreviewAttachment,
@@ -41,6 +41,7 @@ export function Composer({
   const voiceRef = useRef<VoiceSession | null>(null);
   const voiceBase = useRef('');
   const [listening, setListening] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const { lang, tr } = useI18n();
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !busy;
 
@@ -104,7 +105,8 @@ export function Composer({
     const input = inputRef.current;
     if (!input) return;
     input.style.height = '0px';
-    input.style.height = `${Math.min(input.scrollHeight, 132)}px`;
+    const next = value.trim() ? Math.min(input.scrollHeight, 132) : 42;
+    input.style.height = `${next}px`;
   }, [value]);
 
   return (
@@ -180,19 +182,38 @@ export function Composer({
       />
 
       <div className={`composer ${busy ? 'is-busy' : ''}`}>
-        <button
-          type="button"
-          className="composer-camera"
-          onClick={() => cameraRef.current?.click()}
-          aria-label={tr('Take a photo', '拍照')}
-        >
-          <Icon name="camera" size={20} />
-        </button>
+        {attachMenuOpen ? (
+          <div className="attach-menu" role="menu">
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setAttachMenuOpen(false);
+                fileRef.current?.click();
+              }}
+            >
+              <Icon name="grid" size={15} />
+              {tr('Files', '文件')}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setAttachMenuOpen(false);
+                cameraRef.current?.click();
+              }}
+            >
+              <Icon name="camera" size={15} />
+              {tr('Camera', '拍照')}
+            </button>
+          </div>
+        ) : null}
         <button
           type="button"
           className="composer-plus"
-          onClick={() => fileRef.current?.click()}
+          onClick={() => setAttachMenuOpen(open => !open)}
           aria-label={tr('Add attachment', '添加附件')}
+          aria-expanded={attachMenuOpen}
         >
           <Icon name="plus" size={22} />
         </button>
@@ -200,7 +221,7 @@ export function Composer({
           ref={inputRef}
           value={value}
           rows={1}
-          placeholder={placeholder === 'Ask DigitalMate anything' ? tr('Ask DigitalMate anything', '告诉 DigitalMate 你想完成什么') : placeholder}
+          placeholder={placeholder === 'Ask anything' ? tr('Ask anything', '问点什么') : placeholder}
           onChange={event => onChange(event.target.value)}
           onKeyDown={event => {
             if (event.key === 'Enter' && !event.shiftKey) {
