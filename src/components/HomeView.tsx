@@ -68,7 +68,7 @@ export function HomeView({
 
   return (
     <div className="home-view">
-      <BeeBou className="is-home" size={78} still={reducedMotion} />
+      <BeeBou className="is-home" size={72} still={reducedMotion} />
       <div className="clock-block">
         <div className="clock">{clock}</div>
         <div className="clock-date">
