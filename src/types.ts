@@ -66,6 +66,19 @@ export interface Artifact {
   createdAt: number;
 }
 
+export type TaskStatus = 'running' | 'done' | 'stopped' | 'error';
+
+export interface TaskRecord {
+  id: string;
+  title: string;
+  prompt: string;
+  status: TaskStatus;
+  createdAt: number;
+  updatedAt: number;
+  roomId: string;
+  skill: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';

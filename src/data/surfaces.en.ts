@@ -614,6 +614,74 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function approvalSurface(): A2uiSurface {
+  return makeSurface(
+    'Approval & connection',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Tool access review', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['approval', 'quota', 'note'] },
+      { id: 'approval', component: 'ApprovalCard', dataPath: '/approval', actions: [
+        { id: 'approve-demo', label: 'Allow once', prompt: 'Approve the demo tool access', variant: 'primary' },
+        { id: 'deny-demo', label: 'Not now', prompt: 'Cancel the demo approval', variant: 'ghost' }
+      ] },
+      { id: 'quota', component: 'ConnectionQuotaCard', title: 'Connection quota', dataPath: '/quota' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: 'This is a local approval and quota demo. No account, OAuth scope or live tool is created.'
+      }
+    ],
+    {
+      approval: {
+        title: 'Connect the local travel tool?',
+        body: 'Requests read-only access to demo 12306 and VariFlight sources.',
+        risk: 'Medium risk',
+        expires: 'Expires in 10 min',
+        scope: 'This browser only'
+      },
+      quota: {
+        service: 'Orbit bridge',
+        status: 'Demo',
+        plan: 'Local session',
+        used: '12',
+        limit: '60 requests',
+        percent: 20,
+        reset: 'Resets in 40 min',
+        note: 'No live connection or account is used.'
+      }
+    },
+    'Local demo · no real permission is granted'
+  );
+}
+
+export function serviceErrorSurface(): A2uiSurface {
+  return makeSurface(
+    'Action unavailable',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Could not complete the action', status: 'error' },
+      { id: 'body', component: 'Column', children: ['error', 'next'] },
+      {
+        id: 'error',
+        component: 'ErrorNotice',
+        title: 'No live availability',
+        body: 'The demo source returned no bookable option. Nothing was reserved, charged or sent.'
+      },
+      {
+        id: 'next',
+        component: 'ConfirmPanel',
+        title: 'What you can do',
+        body: 'Try another date, review the mock options, or check the source manually.',
+        actions: [
+          { id: 'error-retry', label: 'Try mock options', prompt: 'Find trains from Beijing to Shanghai tomorrow evening', variant: 'primary' },
+          { id: 'error-coffee', label: 'Do something else', prompt: 'Find coffee nearby', variant: 'ghost' }
+        ]
+      }
+    ],
+    {},
+    'Explicit failure state · no side effects'
+  );
+}
+
 export function shoppingSurface(): A2uiSurface {
   return makeSurface(
     'Shopping list',

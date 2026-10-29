@@ -11,18 +11,19 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Streaming chat | 🟡 | Transport-driven; live only with Orbit bridge config |
 | Card detail sheets | ✅ | Travel, train and food |
 | Guided demo | ✅ | Scripted walkthrough |
-| Orbit rooms/sessions/task rows | ❌ | Single mock thread |
-| Stop / retry / task clear | ✅ | Stop, retry, copy and clear per exchange |
+| Orbit rooms/sessions/task rows | 🟡 | Local task shell; remote room switching needs the optional bridge |
+| Stop / retry / task clear | ✅ | Stop, retry, copy, share and clear; task detail rows |
+| Approvals / quota | ✅ | ApprovalCard, ConnectionQuotaCard and failure surfaces |
 | Attachments and upload | ✅ | Local picker, text/image preview, PDF text extraction; no upload |
-| Artifacts and preview | ✅ | Saved text and A2UI surfaces render in the preview |
-| Local artifacts | ✅ | Save, browse, render surfaces, download and delete |
+| Artifacts and preview | ✅ | Saved text, slides and A2UI surfaces render in the preview |
+| Local artifacts | ✅ | Save, browse, render surfaces, slides, download and delete |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ✅ | Searches local and imported RSS inventory |
 | Saved cards / share | ✅ | Save works and cards or replies can be shared |
 | Skill center | ✅ | Detail view, install/toggle and local JSON import/export |
-| Skill publish / OAuth | ❌ | Not implemented; marketplace publishing would need an account |
+| Skill publish / OAuth | 🟡 | Local publish bundle export; no OAuth or marketplace account |
 | Memory profile | ✅ | Editable local profile, persisted |
-| Memory edit / forget / evidence | ✅ | Edit, forget and per-section evidence notes are local |
+| Memory edit / forget / evidence | ✅ | Edit, forget, evidence notes and local profile import |
 | Calendar read | ✅ | Mock schedule |
 | Calendar event create | 🟡 | Local browser state only |
 | Login / onboarding | ❌ | Not required — the app works fully without an account |
@@ -38,7 +39,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 34 components |
+| A2UI surface renderer | ✅ | 36 components |
 | Full component catalog | ✅ | Tracked native catalog covered |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ✅ | `A2uiUpdateQueue` coalesces adjacent updates |
@@ -61,6 +62,8 @@ No components from the tracked native list remain. Future native additions may s
 | Hotel / ride / payments / media | ✅ | Mock comparison and review cards |
 | Daily brief | ✅ | Local schedule, metrics and priorities |
 | Shopping list | ✅ | Local checklist with budget; no ordering |
+| Approval / quota | ✅ | Local approval and connection quota cards |
+| Failure states | ✅ | Explicit unavailable state with no side effects |
 | Gmail send / calendar write | ❌ | Not implemented |
 | Firecrawl / shopping / DeepSearch | ❌ | Not implemented |
 | DailyBrief / BIM / multi-task | ❌ | Not implemented |
@@ -76,8 +79,8 @@ No components from the tracked native list remain. Future native additions may s
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, attachments/PDF, artifacts, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 84 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
-| Accessibility audit | ✅ | axe critical checks for home and settings |
+| Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Unit tests | ✅ | 89 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts and profiles |
+| Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills and settings |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | 🟡 | PWA install works; Capacitor planned only for native features |

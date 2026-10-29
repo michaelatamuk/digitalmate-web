@@ -615,6 +615,74 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function approvalSurface(): A2uiSurface {
+  return makeSurface(
+    '审批与连接',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '工具访问审核', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['approval', 'quota', 'note'] },
+      { id: 'approval', component: 'ApprovalCard', dataPath: '/approval', actions: [
+        { id: 'approve-demo', label: '允许一次', prompt: '批准演示工具访问', variant: 'primary' },
+        { id: 'deny-demo', label: '暂不允许', prompt: '取消演示审批', variant: 'ghost' }
+      ] },
+      { id: 'quota', component: 'ConnectionQuotaCard', title: '连接配额', dataPath: '/quota' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: '这是本地审批与配额演示，不会创建账号、OAuth 授权或真实工具连接。'
+      }
+    ],
+    {
+      approval: {
+        title: '连接本地出行工具？',
+        body: '请求只读访问演示用的 12306 与 VariFlight 来源。',
+        risk: '中风险',
+        expires: '10 分钟内有效',
+        scope: '仅当前浏览器'
+      },
+      quota: {
+        service: 'Orbit 桥接',
+        status: '演示',
+        plan: '本地会话',
+        used: '12',
+        limit: '60 次请求',
+        percent: 20,
+        reset: '40 分钟后重置',
+        note: '不使用真实连接或账号。'
+      }
+    },
+    '本地演示 · 不会授予真实权限'
+  );
+}
+
+export function serviceErrorSurface(): A2uiSurface {
+  return makeSurface(
+    '操作未完成',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '无法完成此操作', status: 'error' },
+      { id: 'body', component: 'Column', children: ['error', 'next'] },
+      {
+        id: 'error',
+        component: 'ErrorNotice',
+        title: '没有实时可用结果',
+        body: '演示来源没有返回可预订选项。没有进行预留、扣款或发送。'
+      },
+      {
+        id: 'next',
+        component: 'ConfirmPanel',
+        title: '你可以这样做',
+        body: '换一个日期、查看模拟选项，或手动检查来源。',
+        actions: [
+          { id: 'error-retry', label: '查看模拟选项', prompt: '查明天北京到上海的高铁', variant: 'primary' },
+          { id: 'error-coffee', label: '做点别的', prompt: '附近有什么咖啡店', variant: 'ghost' }
+        ]
+      }
+    ],
+    {},
+    '明确的失败状态 · 无副作用'
+  );
+}
+
 export function shoppingSurface(): A2uiSurface {
   return makeSurface(
     '购物清单',

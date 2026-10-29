@@ -150,7 +150,7 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
     };
   }
 
-  if (/weather|temperature|forecast|rain\b|day after|天气|气温|下雨|后天/.test(lower)) {
+  if (/weather|temperature|forecast|\brain\b|day after|天气|气温|下雨|后天/.test(lower)) {
     return {
       thinking: [
         tr('Parse city and date', '解析城市与日期'),
@@ -279,6 +279,38 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
       ),
       surface: nextStepsSurface(),
       followUps: tr('Risks only|Show the full summary', '只看风险|生成完整摘要').split('|')
+    };
+  }
+
+  if (/sold out|no tickets|payment declined|action unavailable|售罄|无票|支付失败|操作失败/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read the failure state', '读取失败状态'),
+        tr('Confirm no side effects', '确认没有副作用'),
+        tr('Prepare recovery actions', '准备恢复操作')
+      ],
+      text: tr(
+        'The action could not be completed, and nothing was reserved, charged or sent. You can retry with mock options or do something else.',
+        '操作未能完成，没有进行预留、扣款或发送。你可以重试模拟选项或先做别的事。'
+      ),
+      surface: S.serviceErrorSurface(),
+      followUps: tr('Find coffee nearby|Show my daily brief', '附近有什么咖啡店|看看今日简报').split('|')
+    };
+  }
+
+  if (/approval|quota|connection status|审批|配额|连接状态/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read the requested scope', '读取请求范围'),
+        tr('Check the local quota', '检查本地配额'),
+        tr('Stop before granting access', '授予访问前停止')
+      ],
+      text: tr(
+        'This is a local approval and quota review. No real permission, account or live connection is created until you explicitly approve on the provider.',
+        '这是本地审批与配额检查。除非你在服务商处显式批准，否则不会创建真实权限、账号或连接。'
+      ),
+      surface: S.approvalSurface(),
+      followUps: tr('Find coffee nearby|Show my daily brief', '附近有什么咖啡店|看看今日简报').split('|')
     };
   }
 

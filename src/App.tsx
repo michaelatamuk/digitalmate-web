@@ -12,7 +12,8 @@ import type {
   Message,
   Reaction,
   Settings,
-  Skill
+  Skill,
+  TaskRecord
 } from './types';
 import { newId, readStorage, writeStorage, clearDemoStorage, STORAGE_KEYS, usePersistentState } from './lib/storage';
 import { MockChatTransport } from './transport/mock';
@@ -36,10 +37,10 @@ import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
-import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, Toast } from './components/Overlays';
+import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
-type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | null;
+type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | 'tasks' | null;
 
 const defaultSettings: Settings = {
   cloudBackend: 'local',
@@ -97,9 +98,11 @@ export default function App() {
   const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
   const [memory, setMemory] = usePersistentState<MemoryProfile>(STORAGE_KEYS.memoryProfile, seed.memoryProfile);
   const [artifacts, setArtifacts] = usePersistentState<Artifact[]>(STORAGE_KEYS.artifacts, []);
+  const [tasks, setTasks] = usePersistentState<TaskRecord[]>(STORAGE_KEYS.tasks, []);
 
   const generation = useRef(0);
   const activeController = useRef<AbortController | null>(null);
+  const activeTaskId = useRef<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const contentRef = useRef<HTMLElement>(null);
 
@@ -159,6 +162,15 @@ export default function App() {
 
   const patchMessage = (id: string, patch: (message: Message) => Message) => {
     setMessages(previous => previous.map(message => (message.id === id ? patch(message) : message)));
+  };
+
+  const markRunningTasksStopped = () => {
+    setTasks(previous =>
+      previous.map(task =>
+        task.status === 'running' ? { ...task, status: 'stopped', updatedAt: Date.now() } : task
+      )
+    );
+    activeTaskId.current = null;
   };
 
   const notifyCompletion = (body: string) => {
@@ -237,6 +249,30 @@ export default function App() {
       ...(outgoing.length > 0 ? { attachments: outgoing.map(summarizeAttachment) } : {})
     };
     const assistantId = newId('a');
+    const taskId = newId('task');
+    const taskStartedAt = Date.now();
+    activeTaskId.current = taskId;
+    setTasks(previous =>
+      [
+        {
+          id: taskId,
+          title: prompt.length > 72 ? `${prompt.slice(0, 69)}…` : prompt,
+          prompt,
+          status: 'running' as const,
+          createdAt: taskStartedAt,
+          updatedAt: taskStartedAt,
+          roomId: settings.cloudBackend === 'orbit' ? 'orbit' : 'local',
+          skill: 'general'
+        },
+        ...previous
+      ].slice(0, 40)
+    );
+    const patchTask = (status: TaskRecord['status']) =>
+      setTasks(previous =>
+        previous.map(task =>
+          task.id === taskId ? { ...task, status, updatedAt: Date.now() } : task
+        )
+      );
     const assistant: Message = {
       id: assistantId,
       role: 'assistant',
@@ -335,6 +371,7 @@ export default function App() {
       const message = error instanceof Error ? error.message : 'Transport error';
       accumulated = accumulated ? `${accumulated}\n\n${message}` : message;
       patchMessage(assistantId, current => ({ ...current, text: accumulated }));
+      patchTask('error');
     }
 
     if (generation.current !== runId) return;
@@ -348,6 +385,8 @@ export default function App() {
     }));
     activeController.current = null;
     setBusy(false);
+    patchTask('done');
+    activeTaskId.current = null;
     notifyCompletion(accumulated);
   };
 
@@ -355,6 +394,16 @@ export default function App() {
     generation.current += 1;
     activeController.current?.abort();
     activeController.current = null;
+    if (activeTaskId.current) {
+      setTasks(previous =>
+        previous.map(task =>
+          task.id === activeTaskId.current
+            ? { ...task, status: 'stopped', updatedAt: Date.now() }
+            : task
+        )
+      );
+      activeTaskId.current = null;
+    }
     setBusy(false);
     setMessages(previous =>
       previous.map(message =>
@@ -456,6 +505,7 @@ export default function App() {
     generation.current += 1;
     activeController.current?.abort();
     activeController.current = null;
+    markRunningTasksStopped();
     setBusy(false);
     setArchived(previous => [...previous, ...messages]);
     setMessages([]);
@@ -485,6 +535,7 @@ export default function App() {
     setCalendarEvents([]);
     setMemory(seed.memoryProfile);
     setArtifacts([]);
+    setTasks([]);
     setBusy(false);
     setHome(true);
     setTab('chat');
@@ -502,6 +553,7 @@ export default function App() {
     generation.current += 1;
     activeController.current?.abort();
     activeController.current = null;
+    markRunningTasksStopped();
     setBusy(false);
     setMessages([]);
     setArchived([]);
@@ -960,6 +1012,7 @@ export default function App() {
             onDemo={() => void startDemo()}
             onProtocol={openProtocolDemo}
             onArtifacts={() => setSheet('artifacts')}
+            onTasks={() => setSheet('tasks')}
           />
         ) : null}
         {sheet === 'skills' ? (
@@ -1006,6 +1059,7 @@ export default function App() {
             }}
             onForget={forgetMemory}
             onClose={() => setSheet(null)}
+            onNotice={showToast}
           />
         ) : null}
 
@@ -1018,6 +1072,17 @@ export default function App() {
             }}
             onClose={() => setSheet(null)}
             onNotice={showToast}
+          />
+        ) : null}
+
+        {sheet === 'tasks' ? (
+          <TaskShellSheet
+            tasks={tasks}
+            onRetry={prompt => {
+              setSheet(null);
+              void send(prompt);
+            }}
+            onClose={() => setSheet(null)}
           />
         ) : null}
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { artifactDownloadContent, artifactFilename, artifactFromText, findDuplicateArtifact } from '../src/lib/artifacts';
+import { artifactDownloadContent, artifactFilename, artifactFromText, artifactSlides, findDuplicateArtifact } from '../src/lib/artifacts';
 import type { A2uiSurface } from '../src/types';
 
 describe('local artifacts', () => {
@@ -63,5 +63,15 @@ describe('local artifacts', () => {
     const artifact = artifactFromText('', 1, surface)!;
     expect(artifact.title).toBe('Travel options');
     expect(artifact.kind).toBe('surface');
+  });
+
+  it('builds slides from separators or level-2 headings', () => {
+    const fromSeparators = artifactSlides('Slide one\nBody one\n---\nSlide two\nBody two');
+    expect(fromSeparators).toHaveLength(2);
+    expect(fromSeparators[1]).toMatchObject({ title: 'Slide 2', body: 'Slide two\nBody two' });
+
+    const fromHeadings = artifactSlides('# Deck\n\n## First\nBody\n\n## Second\nMore');
+    expect(fromHeadings).toHaveLength(3);
+    expect(fromHeadings.find(slide => slide.title === 'First')).toMatchObject({ body: 'Body' });
   });
 });

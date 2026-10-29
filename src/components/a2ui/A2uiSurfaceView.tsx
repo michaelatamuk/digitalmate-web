@@ -957,6 +957,67 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
       );
     }
 
+    case 'ApprovalCard': {
+      const approval = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      return (
+        <div className="approval-card" key={key}>
+          <div className="approval-head">
+            <span className="approval-mark">
+              <Icon name="shield" size={16} />
+            </span>
+            <div>
+              <strong>{textOf(approval.title) || component.title}</strong>
+              <span>{textOf(approval.body)}</span>
+            </div>
+            {approval.risk ? <span className="approval-risk">{textOf(approval.risk)}</span> : null}
+          </div>
+          <div className="approval-meta">
+            {approval.expires ? (
+              <span>
+                <Icon name="clock" size={11} />
+                {textOf(approval.expires)}
+              </span>
+            ) : null}
+            {approval.scope ? <span>{textOf(approval.scope)}</span> : null}
+          </div>
+          {component.actions?.length ? (
+            <div className="a2ui-actions">
+              {component.actions.map((action, index) => actionButton(action, ctx, `${key}-approval-${index}`))}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    case 'ConnectionQuotaCard': {
+      const quota = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      const percent = Math.max(0, Math.min(100, Number(quota.percent) || 0));
+      return (
+        <div className="quota-card" key={key}>
+          <div className="quota-head">
+            <span className="quota-mark">
+              <Icon name="globe" size={16} />
+            </span>
+            <div>
+              <strong>{textOf(quota.service) || component.title}</strong>
+              <span>{textOf(quota.plan)}</span>
+            </div>
+            <span className="quota-status">{textOf(quota.status)}</span>
+          </div>
+          <div className="quota-bar" role="img" aria-label={`${percent}%`}>
+            <i style={{ width: `${percent}%` }} />
+          </div>
+          <div className="quota-legend">
+            <span>
+              {textOf(quota.used)} / {textOf(quota.limit)}
+            </span>
+            <span>{textOf(quota.reset)}</span>
+          </div>
+          {quota.note ? <p className="quota-note">{textOf(quota.note)}</p> : null}
+        </div>
+      );
+    }
+
     case 'ThinkingStream': {
       const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
       return (

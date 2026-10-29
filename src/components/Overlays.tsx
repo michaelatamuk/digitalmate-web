@@ -1,11 +1,12 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Skill, Artifact } from '../types';
+import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Skill, Artifact, TaskRecord } from '../types';
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
 import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
-import { artifactDownloadContent, artifactFilename } from '../lib/artifacts';
+import { artifactDownloadContent, artifactFilename, artifactSlides } from '../lib/artifacts';
+import { parseMemoryProfile } from '../lib/memoryProfile';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
@@ -218,7 +219,8 @@ export function MoreSheet({
   onNewChat,
   onDemo,
   onProtocol,
-  onArtifacts
+  onArtifacts,
+  onTasks
 }: {
   onClose: () => void;
   onSkills: () => void;
@@ -229,11 +231,13 @@ export function MoreSheet({
   onDemo: () => void;
   onProtocol: () => void;
   onArtifacts: () => void;
+  onTasks: () => void;
 }) {
   const { tr } = useI18n();
   const items = [
     { icon: 'play' as const, title: tr('Guided demo', '引导演示'), subtitle: tr('Run the 2-minute walkthrough automatically', '自动播放两分钟演示流程'), onClick: onDemo },
     { icon: 'grid' as const, title: tr('A2UI protocol demo', 'A2UI 协议演示'), subtitle: tr('Render a surface parsed from JSONL envelopes', '渲染由 JSONL 信封解析出的界面'), onClick: onProtocol },
+    { icon: 'clock' as const, title: tr('Sessions & tasks', '会话与任务'), subtitle: tr('Local task rows with retry and details', '本地任务行，可重试与查看详情'), onClick: onTasks },
     { icon: 'bookmark' as const, title: tr('Artifacts', '成果'), subtitle: tr('Saved replies with local preview and export', '已保存的回复，可本地预览与导出'), onClick: onArtifacts },
     { icon: 'spark' as const, title: tr('Skill center', '技能中心'), subtitle: tr('Install, enable and manage skills', '安装、启用和管理技能'), onClick: onSkills },
     { icon: 'heart' as const, title: tr('About you', '关于你'), subtitle: tr('Long-term memory and public profile', '长期记忆与公开画像'), onClick: onMemory },
@@ -307,7 +311,10 @@ export function SkillsSheet({
     anchor.click();
     URL.revokeObjectURL(url);
     onNotice(
-      tr(`Exported ${bundle.skills.length} skills locally.`, `已在本地导出 ${bundle.skills.length} 个技能。`)
+      tr(
+        `Exported ${bundle.skills.length} skills as a local publish bundle. No OAuth or account was used.`,
+        `已将 ${bundle.skills.length} 个技能导出为本地发布包，不使用 OAuth 或账号。`
+      )
     );
   };
 
@@ -360,7 +367,7 @@ export function SkillsSheet({
       <div className="settings-actions">
         <button type="button" className="secondary-action" onClick={exportSkills}>
           <Icon name="download" size={14} />
-          {tr('Export skills', '导出技能')}
+          {tr('Export / publish bundle', '导出 / 发布包')}
         </button>
         <button type="button" className="secondary-action" onClick={() => importRef.current?.click()}>
           <Icon name="download" size={14} />
@@ -965,17 +972,37 @@ export function MemorySheet({
   profile,
   onSave,
   onForget,
-  onClose
+  onClose,
+  onNotice
 }: {
   profile: MemoryProfile;
   onSave: (profile: MemoryProfile) => void;
   onForget: () => void;
   onClose: () => void;
+  onNotice: (message: string) => void;
 }) {
   const { tr, lang } = useI18n();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<MemoryProfile>(() => cloneProfile(profile));
   const [tagText, setTagText] = useState(profile.tags.join(', '));
+  const importRef = useRef<HTMLInputElement>(null);
+
+  const importProfile = async (file: File) => {
+    try {
+      const imported = parseMemoryProfile(await file.text());
+      onSave(imported);
+      setDraft(cloneProfile(imported));
+      setTagText(imported.tags.join(', '));
+      onNotice(tr('Public profile imported locally.', '公开画像已在本地导入。'));
+    } catch (error) {
+      onNotice(
+        tr(
+          `Could not import profile: ${error instanceof Error ? error.message : 'invalid file'}`,
+          `无法导入画像：${error instanceof Error ? error.message : '文件无效'}`
+        )
+      );
+    }
+  };
 
   const startEdit = () => {
     setDraft(cloneProfile(profile));
@@ -1177,6 +1204,10 @@ export function MemorySheet({
               <Icon name="edit" size={14} />
               {tr('Edit memory', '编辑记忆')}
             </button>
+            <button type="button" className="secondary-action" onClick={() => importRef.current?.click()}>
+              <Icon name="download" size={14} />
+              {tr('Import profile', '导入画像')}
+            </button>
             <button
               type="button"
               className="ghost-action"
@@ -1190,6 +1221,17 @@ export function MemorySheet({
               {tr('Forget everything', '全部忘记')}
             </button>
           </div>
+          <input
+            ref={importRef}
+            type="file"
+            accept="application/json,.json"
+            className="hidden-file-input memory-import-input"
+            onChange={event => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) void importProfile(file);
+            }}
+          />
         </>
       )}
 
@@ -1198,6 +1240,124 @@ export function MemorySheet({
         {tr(
           'Memory stays in this browser and is included in Settings → Export backup. No account is used.',
           '记忆只保存在当前浏览器，并会包含在“设置 → 导出备份”中。无需账号。'
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+function taskStatusLabel(status: TaskRecord['status'], tr: (en: string, zh: string) => string): string {
+  if (status === 'running') return tr('Running', '进行中');
+  if (status === 'done') return tr('Done', '已完成');
+  if (status === 'stopped') return tr('Stopped', '已停止');
+  return tr('Error', '失败');
+}
+
+export function TaskShellSheet({
+  tasks,
+  onRetry,
+  onClose
+}: {
+  tasks: TaskRecord[];
+  onRetry: (prompt: string) => void;
+  onClose: () => void;
+}) {
+  const { tr, locale } = useI18n();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = tasks.find(task => task.id === selectedId);
+
+  return (
+    <Sheet
+      title={tr('Sessions & tasks', '会话与任务')}
+      subtitle={tr(`${tasks.length} local task rows · no account`, `${tasks.length} 条本地任务 · 无需账号`)}
+      onClose={onClose}
+      wide
+    >
+      {selected ? (
+        <>
+          <button type="button" className="ghost-action artifact-back" onClick={() => setSelectedId(null)}>
+            <Icon name="back" size={14} />
+            {tr('All tasks', '全部任务')}
+          </button>
+          <div className="task-detail-head">
+            <span className={`task-status is-${selected.status}`}>{taskStatusLabel(selected.status, tr)}</span>
+            <h3>{selected.title}</h3>
+          </div>
+          <p className="task-prompt">{selected.prompt}</p>
+          <div className="info-rows">
+            <div className="info-row">
+              <span>{tr('Room', '房间')}</span>
+              <strong>{selected.roomId}</strong>
+            </div>
+            <div className="info-row">
+              <span>{tr('Skill', '技能')}</span>
+              <strong>{selected.skill}</strong>
+            </div>
+            <div className="info-row">
+              <span>{tr('Started', '开始时间')}</span>
+              <strong>
+                {new Date(selected.createdAt).toLocaleString(locale, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </strong>
+            </div>
+            <div className="info-row">
+              <span>{tr('Updated', '更新时间')}</span>
+              <strong>
+                {new Date(selected.updatedAt).toLocaleString(locale, {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </strong>
+            </div>
+          </div>
+          {selected.status !== 'running' ? (
+            <div className="detail-actions">
+              <button type="button" className="secondary-action" onClick={() => onRetry(selected.prompt)}>
+                <Icon name="refresh" size={14} />
+                {tr('Retry task', '重试任务')}
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : tasks.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-orb">
+            <Icon name="clock" size={26} />
+          </div>
+          <strong>{tr('No task rows yet', '还没有任务记录')}</strong>
+          <p>{tr('Send a message to create a local task row.', '发送一条消息即可创建本地任务。')}</p>
+        </div>
+      ) : (
+        <div className="task-list">
+          {tasks.map(task => (
+            <button type="button" className="task-row" key={task.id} onClick={() => setSelectedId(task.id)}>
+              <span className={`task-dot is-${task.status}`} />
+              <span className="task-copy">
+                <strong>{task.title}</strong>
+                <em>
+                  {taskStatusLabel(task.status, tr)} · {task.roomId} ·{' '}
+                  {new Date(task.updatedAt).toLocaleTimeString(locale, {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </em>
+              </span>
+              <Icon name="chevronRight" size={15} />
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="sheet-footnote">
+        <Icon name="lock" size={14} />
+        {tr(
+          'Task rows are local records. No account, remote session or background job is created.',
+          '任务记录仅保存在本地，不会创建账号、远程会话或后台任务。'
         )}
       </div>
     </Sheet>
@@ -1217,7 +1377,10 @@ export function ArtifactsSheet({
 }) {
   const { tr, locale } = useI18n();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [slidesMode, setSlidesMode] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
   const selected = artifacts.find(artifact => artifact.id === selectedId);
+  const slides = selected ? artifactSlides(selected.content) : [];
 
   const download = (artifact: Artifact) => {
     const blob = new Blob([artifactDownloadContent(artifact)], {
@@ -1241,7 +1404,15 @@ export function ArtifactsSheet({
     >
       {selected ? (
         <>
-          <button type="button" className="ghost-action artifact-back" onClick={() => setSelectedId(null)}>
+          <button
+            type="button"
+            className="ghost-action artifact-back"
+            onClick={() => {
+              setSelectedId(null);
+              setSlidesMode(false);
+              setSlideIndex(0);
+            }}
+          >
             <Icon name="back" size={14} />
             {tr('All artifacts', '全部成果')}
           </button>
@@ -1256,17 +1427,72 @@ export function ArtifactsSheet({
             {' · '}
             {selected.kind}
           </div>
-          {selected.surface ? (
-            <div className="artifact-surface">
-              <A2uiSurfaceView
-                surface={selected.surface}
-                onAction={() =>
-                  onNotice(tr('Artifact actions are read-only.', '成果中的操作仅供查看。'))
-                }
-              />
+          {slides.length > 1 ? (
+            <div className="artifact-view-toggle" role="group" aria-label={tr('Artifact view', '成果视图')}>
+              <button
+                type="button"
+                aria-pressed={!slidesMode}
+                className={!slidesMode ? 'is-active' : ''}
+                onClick={() => setSlidesMode(false)}
+              >
+                {tr('Document', '文档')}
+              </button>
+              <button
+                type="button"
+                aria-pressed={slidesMode}
+                className={slidesMode ? 'is-active' : ''}
+                onClick={() => {
+                  setSlidesMode(true);
+                  setSlideIndex(0);
+                }}
+              >
+                {tr('Slides', '幻灯片')}
+              </button>
             </div>
           ) : null}
-          {selected.content ? <div className="artifact-preview">{renderMarkdown(selected.content)}</div> : null}
+          {slidesMode && slides.length > 1 ? (
+            <div className="artifact-slide">
+              <span className="artifact-slide-count">
+                {slideIndex + 1} / {slides.length}
+              </span>
+              <h4>{slides[slideIndex].title}</h4>
+              <div className="artifact-slide-body">{renderMarkdown(slides[slideIndex].body)}</div>
+              <div className="artifact-slide-nav">
+                <button
+                  type="button"
+                  className="secondary-action"
+                  disabled={slideIndex === 0}
+                  onClick={() => setSlideIndex(index => Math.max(0, index - 1))}
+                >
+                  <Icon name="back" size={13} />
+                  {tr('Previous', '上一页')}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-action"
+                  disabled={slideIndex >= slides.length - 1}
+                  onClick={() => setSlideIndex(index => Math.min(slides.length - 1, index + 1))}
+                >
+                  {tr('Next', '下一页')}
+                  <Icon name="chevronRight" size={13} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              {selected.surface ? (
+                <div className="artifact-surface">
+                  <A2uiSurfaceView
+                    surface={selected.surface}
+                    onAction={() =>
+                      onNotice(tr('Artifact actions are read-only.', '成果中的操作仅供查看。'))
+                    }
+                  />
+                </div>
+              ) : null}
+              {selected.content ? <div className="artifact-preview">{renderMarkdown(selected.content)}</div> : null}
+            </>
+          )}
           <div className="detail-actions">
             <button type="button" className="secondary-action" onClick={() => download(selected)}>
               <Icon name="download" size={15} />
@@ -1307,7 +1533,11 @@ export function ArtifactsSheet({
               type="button"
               className="artifact-row"
               key={artifact.id}
-              onClick={() => setSelectedId(artifact.id)}
+              onClick={() => {
+                setSelectedId(artifact.id);
+                setSlidesMode(false);
+                setSlideIndex(0);
+              }}
             >
               <span className="artifact-icon">
                 <Icon name="grid" size={16} />

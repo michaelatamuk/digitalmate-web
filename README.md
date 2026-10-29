@@ -24,7 +24,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 84 unit tests plus 21 Playwright UI, mobile and accessibility checks
+- 89 unit tests plus 24 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -37,14 +37,16 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Area | Current behaviour |
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
-| Chat | Transport streaming, execution trace, markdown, follow-ups, copy/share/retry/clear |
-| Artifacts | Save replies with A2UI surfaces, browse, preview, download and delete |
+| Chat | Transport streaming, task rows, execution trace, copy/share/retry/clear |
+| Task shell | Local session/task rows with status, detail and retry |
+| Approvals | Approval cards, quota states and explicit failure surfaces |
+| Artifacts | Save replies with A2UI surfaces, slides view, browse, preview and download |
 | Attachments | Local picker, text/image preview, PDF text extraction; nothing uploaded |
 | Transport | Mock chat + local discovery transports; optional Orbit bridge |
 | Orbit bridge | Delegated token, WSS/SSE stream, A2UI surfaces, retry and snapshots |
 | Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative renderer for 34 components, 15 scenarios and a JSONL protocol demo |
+| A2UI | Declarative renderer for 36 components, 17 scenarios and a JSONL protocol demo |
 | Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
@@ -273,6 +275,7 @@ src/
     attachments.ts        local file validation, reading and preview metadata
     skillBundle.ts        local skill import/export and sanitising
     artifacts.ts          local reply-to-artifact conversion and filenames
+    memoryProfile.ts      validated local public-profile import
   transport/
     types.ts              ChatTransport and turn-event contract
     mock.ts               local mock transport
@@ -311,7 +314,8 @@ tests/
   backup.test.ts          local backup export, validation and restore
   attachments.test.ts     local attachment kinds, validation and reading
   skillBundle.test.ts     skill bundle parsing, sanitising and merging
-  artifacts.test.ts       local artifact titles, filenames and duplicates
+  artifacts.test.ts       local artifact titles, filenames and slides
+  memoryProfile.test.ts   local public-profile import validation
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 scripts/

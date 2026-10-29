@@ -90,7 +90,7 @@ test('inspects, exports and imports local skills', async ({ page }) => {
   await expect(page.locator('.skill-detail')).toContainText('Version');
 
   const downloadPromise = page.waitForEvent('download');
-  await page.getByRole('button', { name: 'Export skills' }).click();
+  await page.getByRole('button', { name: 'Export / publish bundle' }).click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^digitalmate-skills-\d{4}-\d{2}-\d{2}\.json$/);
 
@@ -133,6 +133,25 @@ test('renders an interactive local shopping checklist', async ({ page }) => {
   await expect(first).not.toBeChecked();
   await page.locator('.checklist-row').first().click();
   await expect(first).toBeChecked();
+});
+
+test('shows local task rows with detail and retry', async ({ page }) => {
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Sessions & tasks/ }).click();
+  await expect(page.locator('.task-row')).toHaveCount(1);
+  await page.locator('.task-row').first().click();
+  await expect(page.locator('.task-prompt')).toContainText('Find coffee nearby');
+  await expect(page.getByText('local', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Retry task' })).toBeVisible();
+});
+
+test('renders approval and connection quota cards', async ({ page }) => {
+  await sendMessage(page, 'Show the approval and connection quota');
+  await expect(page.locator('.approval-card')).toBeVisible();
+  await expect(page.locator('.quota-card')).toBeVisible();
+  await expect(page.getByText(/No account, OAuth scope or live tool/)).toBeVisible();
 });
 
 test('saves a reply as a local artifact and previews it', async ({ page }) => {
@@ -178,7 +197,7 @@ test('shares a saved article from the detail view', async ({ page }) => {
   await page.reload();
   await page.getByRole('button', { name: 'Discover' }).click();
   const title = await page.locator('.feed-card h2').first().innerText();
-  await page.locator('.feed-card').first().click();
+  await page.locator('.feed-title-button').first().click();
   await page.locator('.detail-actions').getByRole('button', { name: 'Share' }).click();
   const shared = await page.evaluate(
     () => (window as unknown as { __shared: string | null }).__shared
@@ -350,6 +369,35 @@ test('mobile layout does not overflow horizontally', async ({ page }) => {
   );
   expect(overflow).toBeLessThanOrEqual(1);
   await expect(page.locator('.composer')).toBeVisible();
+});
+
+test('core screens have no serious accessibility violations', async ({ page }) => {
+  test.setTimeout(120_000);
+  const scan = async (label: string) => {
+    const result = await new AxeBuilder({ page }).analyze();
+    const issues = result.violations
+      .filter(violation => violation.impact === 'critical' || violation.impact === 'serious')
+      .map(violation => ({ id: violation.id, targets: violation.nodes.map(node => node.target) }));
+    expect(issues, label).toEqual([]);
+  };
+
+  await scan('home');
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await scan('chat');
+
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await scan('discover');
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await scan('more');
+  await page.getByRole('button', { name: /Skill center/ }).click();
+  await scan('skills');
+  await page.locator('.sheet-head .icon-button').click();
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await scan('settings');
 });
 
 test('home and settings have no critical accessibility violations', async ({ page }) => {

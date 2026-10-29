@@ -153,6 +153,20 @@ describe('extended scenarios', () => {
     expect(reply.surface?.title).toBe('购物清单');
     expect(reply.surface?.components.checklist.title).toBe('待购买');
   });
+
+  it('returns an approval and quota surface', () => {
+    const reply = replyFor('Show the approval and connection quota', 'en');
+    expect(reply.surface?.title).toBe('Approval & connection');
+    expect(reply.surface?.components.approval.component).toBe('ApprovalCard');
+    expect(reply.surface?.components.quota.component).toBe('ConnectionQuotaCard');
+  });
+
+  it('returns an explicit failure state with no side effects', () => {
+    const reply = replyFor('The train is sold out', 'en');
+    expect(reply.surface?.title).toBe('Action unavailable');
+    expect(reply.surface?.components.error.component).toBe('ErrorNotice');
+    expect(reply.text.toLowerCase()).toContain('nothing was reserved');
+  });
 });
 
 describe('localized seed data', () => {

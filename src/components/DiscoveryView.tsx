@@ -140,14 +140,13 @@ export function DiscoveryView({
         </div>
       </div>
 
-      <div className="source-strip" role="tablist" aria-label={tr('Content sources', '内容来源')}>
+      <div className="source-strip" role="group" aria-label={tr('Content sources', '内容来源')}>
         {discoverySources.map(source => {
           const count = source.id === 'all' ? cards.length : sourceCounts.get(source.id) ?? 0;
           return (
             <button
               type="button"
-              role="tab"
-              aria-selected={activeSource === source.id}
+              aria-pressed={activeSource === source.id}
               key={source.id}
               className={`source-pill ${activeSource === source.id ? 'is-active' : ''} ${count === 0 ? 'is-empty' : ''}`}
               onClick={() => setActiveSource(source.id)}
@@ -244,12 +243,6 @@ export function DiscoveryView({
                 className="feed-card"
                 key={card.id}
                 style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
-                onClick={() => onOpen(card)}
-                tabIndex={0}
-                role="button"
-                onKeyDown={event => {
-                  if (event.key === 'Enter' || event.key === ' ') onOpen(card);
-                }}
               >
                 <div className="feed-cover" style={{ background: card.cover }}>
                   <span className="feed-glyph" aria-hidden="true">
@@ -264,7 +257,11 @@ export function DiscoveryView({
                     <span>·</span>
                     <span>{card.readingTime}</span>
                   </div>
-                  <h2>{card.title}</h2>
+                  <h2>
+                    <button type="button" className="feed-title-button" onClick={() => onOpen(card)}>
+                      {card.title}
+                    </button>
+                  </h2>
                   <p>{card.summary}</p>
                   <div className="tag-row">
                     {card.tags.map(tag => (

@@ -67,3 +67,30 @@ export function findDuplicateArtifact(artifacts: Artifact[], content: string): A
   const normalized = content.trim();
   return artifacts.find(artifact => artifact.content === normalized);
 }
+
+export interface ArtifactSlide {
+  title: string;
+  body: string;
+}
+
+/** Split Markdown into simple slides with `---` or level-2 headings. */
+export function artifactSlides(content: string): ArtifactSlide[] {
+  const text = content.trim();
+  if (!text) return [];
+  const sections = text.includes('\n---')
+    ? text.split(/\n-{3,}\n/)
+    : text.split(/\n(?=##\s)/);
+
+  const slides = sections
+    .map((section, index) => {
+      const lines = section.trim().split('\n');
+      const heading = lines[0]?.startsWith('#')
+        ? lines[0].replace(/^#+\s*/, '').trim()
+        : `Slide ${index + 1}`;
+      const body = lines[0]?.startsWith('#') ? lines.slice(1).join('\n').trim() : section.trim();
+      return { title: heading, body };
+    })
+    .filter(slide => slide.title || slide.body);
+
+  return slides.length > 1 ? slides : [];
+}

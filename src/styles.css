@@ -2116,6 +2116,161 @@ a {
   color: var(--accent);
 }
 
+/* ---------- approval and quota cards ---------- */
+
+.approval-card {
+  padding: 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(154, 112, 39, 0.25);
+  background: linear-gradient(150deg, #fffaf0 0%, #fbf1dd 100%);
+}
+
+.approval-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.approval-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--train, #9a7027);
+}
+
+.approval-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.approval-head strong {
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.approval-head div span {
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.approval-risk {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--train, #9a7027);
+  font-size: 7.5px;
+  font-weight: 650;
+}
+
+.approval-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.approval-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.quota-card {
+  padding: 11px;
+  border-radius: 14px;
+  border: 1px solid rgba(74, 95, 150, 0.16);
+  background: linear-gradient(150deg, #f7f9ff 0%, #edf1fb 100%);
+}
+
+.quota-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quota-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--flight, #4a5f96);
+}
+
+.quota-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.quota-head strong {
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.quota-head div span {
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.quota-status {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--muted);
+  font-size: 7.5px;
+  font-weight: 650;
+}
+
+.quota-bar {
+  height: 7px;
+  margin-top: 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
+  overflow: hidden;
+}
+
+.quota-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--flight, #4a5f96);
+}
+
+.quota-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 5px;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.quota-note {
+  margin: 7px 0 0;
+  font-size: 8px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 /* ---------- A2UI thinking and account cards ---------- */
 
 .a2ui-thinking-card {
@@ -3580,6 +3735,28 @@ a {
 .feed-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 16px 34px rgba(72, 52, 38, 0.11);
+}
+
+.feed-cover-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+.feed-title-button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.feed-title-button:hover {
+  color: var(--accent);
 }
 
 .feed-cover {
@@ -5087,6 +5264,122 @@ a {
   font-size: 8.5px !important;
 }
 
+/* ---------- task shell ---------- */
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px;
+  border-radius: 12px;
+  border: 1px solid rgba(33, 27, 23, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  text-align: left;
+}
+
+.task-row:hover {
+  background: #fff;
+}
+
+.task-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--muted);
+}
+
+.task-dot.is-running {
+  background: var(--accent);
+  animation: pulse 1.4s ease-out infinite;
+}
+
+.task-dot.is-done {
+  background: var(--success, #3f7d55);
+}
+
+.task-dot.is-error {
+  background: var(--danger, #a84c42);
+}
+
+.task-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-copy strong {
+  font-size: 10.5px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-copy em {
+  font-size: 8px;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.task-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.task-detail-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.task-status {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(33, 27, 23, 0.06);
+  color: var(--muted);
+  font-size: 7.5px;
+  font-weight: 650;
+}
+
+.task-status.is-running {
+  background: var(--accent-soft, #f6ece7);
+  color: var(--accent);
+}
+
+.task-status.is-done {
+  background: var(--success-soft, #eaf6ee);
+  color: var(--success, #3f7d55);
+}
+
+.task-status.is-error {
+  background: var(--danger-soft, #fbeceb);
+  color: var(--danger, #a84c42);
+}
+
+.task-prompt {
+  margin: 0 0 9px;
+  padding: 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(33, 27, 23, 0.05);
+  font-size: 9.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
 /* ---------- artifacts ---------- */
 
 .artifact-list {
@@ -5177,6 +5470,66 @@ a {
   max-height: 60vh;
   overflow: auto;
   margin-bottom: 9px;
+}
+
+.artifact-view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: rgba(33, 27, 23, 0.05);
+}
+
+.artifact-view-toggle button {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 8.5px;
+  font-weight: 600;
+}
+
+.artifact-view-toggle button.is-active {
+  background: #fff;
+  color: var(--accent);
+  box-shadow: 0 2px 6px rgba(72, 52, 38, 0.08);
+}
+
+.artifact-slide {
+  padding: 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(33, 27, 23, 0.07);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.artifact-slide-count {
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.artifact-slide h4 {
+  margin: 4px 0 8px;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.artifact-slide-body {
+  min-height: 120px;
+  font-size: 10.5px;
+  line-height: 1.7;
+}
+
+.artifact-slide-body p {
+  margin: 0 0 6px;
+}
+
+.artifact-slide-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .artifact-preview h2,

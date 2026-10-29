@@ -15,6 +15,7 @@ export const STORAGE_KEYS = {
   calendarEvents: `${PREFIX}calendarEvents.v1`,
   memoryProfile: `${PREFIX}memoryProfile.v1`,
   artifacts: `${PREFIX}artifacts.v1`,
+  tasks: `${PREFIX}tasks.v1`,
   installed: `${PREFIX}installed.v1`
 };
 

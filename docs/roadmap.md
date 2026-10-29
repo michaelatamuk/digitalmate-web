@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 34 A2UI-style components / 15 mock scenarios
+- [x] 36 A2UI-style components / 17 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -46,21 +46,19 @@
 - [x] Discovery local search and article/reply sharing
 - [x] Daily brief scenario
 - [x] Shopping checklist scenario
-- [ ] Orbit room/session/task shell
+- [x] Local session/task shell (remote room switching remains bridge-dependent)
+- [x] Per-task detail rows with retry
 - [x] Stop, retry, copy, share and clear a message exchange
-- [ ] Long-press and per-task detail rows
 - [x] Local attachments with text/image preview
 - [x] PDF text extraction and richer local previews
-- [x] Local artifacts with text and rendered A2UI surfaces
-- [ ] Slides and generated-chart artifact formats
-- [ ] Approval cards and connection/quota states
-- [x] Skill detail and local JSON import/export
-- [ ] OAuth and marketplace skill publishing *(not required without an account)*
+- [x] Local artifacts with text, slides and rendered A2UI surfaces
+- [x] Approval cards and connection/quota states
+- [x] Local skill publish bundle (no OAuth or account)
 - [x] Local memory editing, evidence notes and forget-all
-- [ ] Public profile import
+- [x] Public profile local JSON import
 - [x] Stripe receiving-account card and A2UI thinking card
-- [ ] Deeper scenario states
-- [ ] Mobile viewport and accessibility audit
+- [x] Deeper scenario states: unavailable, approval, quota
+- [x] Mobile viewport and serious-level accessibility audit
 
 ## Phase 4 — Android
 
