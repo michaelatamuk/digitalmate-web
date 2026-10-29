@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 38 unit tests plus Playwright UI, mobile and accessibility checks
+- 40 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -39,7 +39,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative renderer for 28 components, 12 scenarios and a JSONL protocol demo |
+| A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |
@@ -50,7 +50,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
 
-Scenarios currently include travel, hotel, ride, payment review, media, food/coffee, social,
+Scenarios currently include travel, hotel, ride, payment review, media, weekly insights, food/coffee, social,
 mail, calendar, document summary, weather and generic tool results.
 
 ## Quick start

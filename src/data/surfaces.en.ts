@@ -1,26 +1,7 @@
-import type { A2uiComponent, A2uiSurface, CalendarEvent } from '../types';
+import type { A2uiSurface, CalendarEvent } from '../types';
+import { makeSurface } from './makeSurface';
 
-let surfaceSeq = 0;
-
-export function makeSurface(
-  title: string,
-  components: A2uiComponent[],
-  data: Record<string, unknown> = {},
-  subtitle?: string
-): A2uiSurface {
-  surfaceSeq += 1;
-  const map: Record<string, A2uiComponent> = {};
-  for (const component of components) map[component.id] = component;
-  return {
-    id: `surface_${surfaceSeq}_${Date.now().toString(36)}`,
-    title,
-    subtitle,
-    status: 'ready',
-    root: components[0]?.id ?? 'root',
-    components: map,
-    data
-  };
-}
+export { makeSurface };
 
 export function travelSurface(): A2uiSurface {
   return makeSurface(
@@ -630,6 +611,58 @@ export function mediaSurface(): A2uiSurface {
       ]
     },
     'Local demo · no media streams'
+  );
+}
+
+export function insightsSurface(): A2uiSurface {
+  return makeSurface(
+    'Weekly insights',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Your week · Oct 20–26', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['metrics', 'mix', 'activity', 'focus', 'note'] },
+      { id: 'metrics', component: 'MetricGrid', title: 'Week overview', dataPath: '/metrics' },
+      { id: 'mix', component: 'SegmentedRingChart', title: 'Task mix', dataPath: '/taskMix' },
+      { id: 'activity', component: 'MultiSeriesLineChart', title: 'Active minutes', dataPath: '/activity' },
+      { id: 'focus', component: 'MatrixHeatmap', title: 'Focus by hour', dataPath: '/focus' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: 'These numbers come from demo activity only. The real client would compute them from task receipts and keep the raw events locally.'
+      }
+    ],
+    {
+      metrics: [
+        { label: 'Active days', value: '6', tone: 'accent' },
+        { label: 'Tasks', value: '42', tone: 'train' },
+        { label: 'Focus time', value: '11h 20m', tone: 'success' },
+        { label: 'Completion', value: '86%', tone: 'flight' }
+      ],
+      taskMix: [
+        { label: 'Research', value: 18, percent: 43, tone: 'accent' },
+        { label: 'Travel planning', value: 12, percent: 29, tone: 'train' },
+        { label: 'Calendar', value: 7, percent: 17, tone: 'flight' },
+        { label: 'Other', value: 5, percent: 11, tone: 'muted' }
+      ],
+      activity: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        series: [
+          { name: 'Focus', tone: 'accent', points: [45, 70, 55, 90, 65, 30, 25] },
+          { name: 'Idle', tone: 'muted', points: [20, 25, 15, 30, 20, 40, 50] }
+        ]
+      },
+      focus: {
+        cols: ['9', '11', '13', '15', '17', '19'],
+        rows: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        values: [
+          [1, 2, 3, 2, 1, 0],
+          [2, 3, 4, 3, 2, 1],
+          [1, 2, 4, 3, 2, 0],
+          [3, 4, 3, 4, 2, 1],
+          [2, 3, 2, 3, 4, 2]
+        ]
+      }
+    },
+    'Local demo · activity receipts are simulated'
   );
 }
 

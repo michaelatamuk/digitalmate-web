@@ -5,15 +5,16 @@ It is an application-level UI protocol, not the network transport.
 
 ## Protocol layer
 
-The app still ships hand-built surface fixtures for the built-in scenarios, but it now also
-includes a real A2UI JSONL path:
+Every shipped scenario now goes through the real A2UI JSONL path. `src/data/makeSurface.ts`
+serialises each fixture into `createSurface` → `updateComponents` → `updateDataModel`
+envelopes and parses them with `A2uiSurfaceStore` before the renderer sees anything.
 
 - `parseA2uiJsonl` validates one envelope per line and reports line-numbered errors.
 - `A2uiSurfaceStore` applies `createSurface` / `updateComponents` / `updateDataModel` /
   `deleteSurface` immutably, keyed by `surfaceId`.
-- **More → A2UI protocol demo** builds a surface from JSONL envelopes and renders it with the
-  normal component catalog, including `HeroBanner`, `FlightBoard`, `List`, `ToolConnectCard`,
-  `ExpandableCard` and `SkeletonCard`.
+- **More → A2UI protocol demo** shows the same path with a surface built from JSONL.
+- The built-in travel, hotel, ride, payment, media, food, social, mail, calendar and document
+  fixtures are no longer hand-built objects; they exercise the parser on every render.
 
 ## Components currently rendered
 
@@ -21,21 +22,19 @@ includes a real A2UI JSONL path:
 `ThinkingStream`, `TravelOptions`, `TrainOptions`, `FoodChoices`, `SocialHub`,
 `ConfirmPanel`, `GenericToolResults`, `MetricGrid`, `ScheduleStack`, `HeroBanner`,
 `FlightBoard`, `List`, `ToolConnectCard`, `ExpandableCard`, `SkeletonCard`, `MediaSlider`,
-`SceneTabs`, `MasonryGrid`, `HotelOptions`, `RideOptions`, `PaymentCard`.
+`SceneTabs`, `MasonryGrid`, `HotelOptions`, `RideOptions`, `PaymentCard`,
+`SegmentedRingChart`, `MultiSeriesLineChart`, `MatrixHeatmap`.
 
 ## Components still missing
 
-`StripeReceivingAccountCard`, `SegmentedRingChart`, `MultiSeriesLineChart`,
-`MatrixHeatmap`, `ThinkingCard` (the chat currently uses a custom thinking card).
+`StripeReceivingAccountCard`, `ThinkingCard` (the chat currently uses a custom thinking card).
 
 ## Next implementation steps
 
-1. Move the built-in scenario fixtures onto the JSONL store instead of hand-built objects.
-2. Add partial-update throttling and coalescing.
-3. Add the remaining chart/data components.
-4. Connect the store to a real gateway stream behind `ChatTransport`.
-5. Add parser/store tests before connecting to a real gateway. *(done — see
-   `tests/a2uiProtocol.test.ts`)*
+1. Add partial-update throttling and coalescing.
+2. Add the remaining chart/data components.
+3. Connect the store to a real gateway stream behind `ChatTransport`.
+4. Add component-catalog schema validation before rendering unknown payloads.
 
 ## Target wire format
 

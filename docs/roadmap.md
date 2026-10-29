@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 28 A2UI-style components / 12 mock scenarios
+- [x] 31 A2UI-style components / 13 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -26,7 +26,7 @@
 - [x] Support `deleteSurface` and line-numbered parse errors
 - [ ] Add partial-update and throttling behaviour
 - [x] Add unit tests for parser/store/state reducer
-- [ ] Move built-in scenario fixtures onto the parsed store
+- [x] Move built-in scenario fixtures onto the parsed store
 
 ## Phase 2 — Web bridge
 
@@ -47,7 +47,7 @@
 - [ ] Approval cards and connection/quota states
 - [ ] Skill detail, publish and OAuth setup
 - [ ] Memory editing and public profile import
-- [ ] Remaining chart components and deeper scenario states
+- [ ] Stripe account card and deeper scenario states
 - [ ] Mobile viewport and accessibility audit
 
 ## Phase 4 — Android

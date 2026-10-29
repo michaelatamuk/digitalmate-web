@@ -56,6 +56,25 @@ function toneClass(tone?: string): string {
   }
 }
 
+function chartColor(tone?: string): string {
+  switch (tone) {
+    case 'success':
+      return '#3f7d55';
+    case 'warning':
+      return '#9a7027';
+    case 'danger':
+      return '#a84c42';
+    case 'train':
+      return '#4f8a66';
+    case 'flight':
+      return '#4a5f96';
+    case 'accent':
+      return '#995f4c';
+    default:
+      return '#b9ada3';
+  }
+}
+
 interface RenderContext {
   surface: A2uiSurface;
   onAction: (action: A2uiAction) => void;
@@ -699,6 +718,154 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
               <span>{item.body}</span>
             </div>
           ))}
+        </div>
+      );
+    }
+
+    case 'SegmentedRingChart': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      let cursor = 0;
+      const stops = items
+        .map(item => {
+          const start = cursor;
+          cursor += Number(item.percent) || 0;
+          return `${chartColor(typeof item.tone === 'string' ? item.tone : undefined)} ${start}% ${cursor}%`;
+        })
+        .join(', ');
+      const total = items.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="ring-chart">
+            <div
+              className="ring-figure"
+              style={{ background: `conic-gradient(${stops || '#eee 0% 100%'})` }}
+              role="img"
+              aria-label={component.title ?? tr('Task mix', '任务构成')}
+            >
+              <div className="ring-hole">
+                <strong>{total}</strong>
+                <span>{tr('tasks', '任务')}</span>
+              </div>
+            </div>
+            <div className="ring-legend">
+              {items.map((item, index) => (
+                <div className="ring-legend-row" key={`${key}-ring-${index}`}>
+                  <span
+                    className="ring-dot"
+                    style={{ background: chartColor(typeof item.tone === 'string' ? item.tone : undefined) }}
+                  />
+                  <span>{textOf(item.label)}</span>
+                  <em>{textOf(item.percent)}%</em>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case 'MultiSeriesLineChart': {
+      const chart = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      const labels = (chart.labels as string[]) ?? [];
+      const series = (chart.series as Array<Record<string, unknown>>) ?? [];
+      const allValues = series.flatMap(item => ((item.points as number[]) ?? []).map(Number));
+      const max = Math.max(1, ...allValues);
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="line-legend">
+            {series.map((item, index) => (
+              <span key={`${key}-legend-${index}`}>
+                <i style={{ background: chartColor(typeof item.tone === 'string' ? item.tone : undefined) }} />
+                {textOf(item.name)}
+              </span>
+            ))}
+          </div>
+          <svg
+            className="line-chart"
+            viewBox="0 0 100 42"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label={component.title ?? tr('Activity chart', '活跃度图表')}
+          >
+            <line x1="0" y1="38" x2="100" y2="38" className="chart-axis" vectorEffect="non-scaling-stroke" />
+            {[10, 19, 28].map(y => (
+              <line key={`${key}-grid-${y}`} x1="0" y1={y} x2="100" y2={y} className="chart-grid" vectorEffect="non-scaling-stroke" />
+            ))}
+            {series.map((item, index) => {
+              const points = (item.points as number[]) ?? [];
+              const path = points
+                .map((value, pointIndex) => {
+                  const x = points.length <= 1 ? 0 : (pointIndex / (points.length - 1)) * 100;
+                  const y = 38 - (Number(value) / max) * 34;
+                  return `${x.toFixed(2)},${y.toFixed(2)}`;
+                })
+                .join(' ');
+              return (
+                <polyline
+                  key={`${key}-line-${index}`}
+                  className="chart-line"
+                  points={path}
+                  fill="none"
+                  stroke={chartColor(typeof item.tone === 'string' ? item.tone : undefined)}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
+          </svg>
+          <div className="line-labels">
+            {labels.map((label, index) => (
+              <span key={`${key}-label-${index}`}>{label}</span>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'MatrixHeatmap': {
+      const heat = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      const cols = (heat.cols as string[]) ?? [];
+      const rows = (heat.rows as string[]) ?? [];
+      const values = (heat.values as number[][]) ?? [];
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div
+            className="heatmap"
+            style={{ gridTemplateColumns: `34px repeat(${Math.max(cols.length, 1)}, 1fr)` }}
+            role="img"
+            aria-label={component.title ?? tr('Focus heatmap', '专注热力图')}
+          >
+            <span />
+            {cols.map((col, index) => (
+              <span className="heat-col" key={`${key}-col-${index}`}>
+                {col}
+              </span>
+            ))}
+            {rows.flatMap((row, rowIndex) => [
+              <span className="heat-row" key={`${key}-row-${rowIndex}`}>
+                {row}
+              </span>,
+              ...cols.map((col, colIndex) => {
+                const value = Math.max(0, Math.min(4, Number(values[rowIndex]?.[colIndex]) || 0));
+                return (
+                  <span
+                    className={`heat-cell heat-${value}`}
+                    key={`${key}-cell-${rowIndex}-${colIndex}`}
+                    title={`${row} ${col}: ${value}`}
+                  />
+                );
+              })
+            ])}
+          </div>
+          <div className="heat-scale">
+            <span>{tr('Less', '少')}</span>
+            {[0, 1, 2, 3, 4].map(level => (
+              <i className={`heat-cell heat-${level}`} key={`${key}-scale-${level}`} />
+            ))}
+            <span>{tr('More', '多')}</span>
+          </div>
         </div>
       );
     }

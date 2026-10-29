@@ -1,26 +1,7 @@
-import type { A2uiComponent, A2uiSurface, CalendarEvent } from '../types';
+import type { A2uiSurface, CalendarEvent } from '../types';
+import { makeSurface } from './makeSurface';
 
-let surfaceSeq = 0;
-
-export function makeSurface(
-  title: string,
-  components: A2uiComponent[],
-  data: Record<string, unknown> = {},
-  subtitle?: string
-): A2uiSurface {
-  surfaceSeq += 1;
-  const map: Record<string, A2uiComponent> = {};
-  for (const component of components) map[component.id] = component;
-  return {
-    id: `surface_${surfaceSeq}_${Date.now().toString(36)}`,
-    title,
-    subtitle,
-    status: 'ready',
-    root: components[0]?.id ?? 'root',
-    components: map,
-    data
-  };
-}
+export { makeSurface };
 
 export function travelSurface(): A2uiSurface {
   return makeSurface(
@@ -631,6 +612,58 @@ export function mediaSurface(): A2uiSurface {
       ]
     },
     '本地演示 · 不串流媒体'
+  );
+}
+
+export function insightsSurface(): A2uiSurface {
+  return makeSurface(
+    '每周洞察',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '本周 · 10 月 20–26 日', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['metrics', 'mix', 'activity', 'focus', 'note'] },
+      { id: 'metrics', component: 'MetricGrid', title: '本周概览', dataPath: '/metrics' },
+      { id: 'mix', component: 'SegmentedRingChart', title: '任务构成', dataPath: '/taskMix' },
+      { id: 'activity', component: 'MultiSeriesLineChart', title: '活跃分钟', dataPath: '/activity' },
+      { id: 'focus', component: 'MatrixHeatmap', title: '按小时查看专注度', dataPath: '/focus' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: '这些数字仅来自演示活动。真实客户端会根据任务回执计算，并把原始事件保留在本地。'
+      }
+    ],
+    {
+      metrics: [
+        { label: '活跃天数', value: '6 天', tone: 'accent' },
+        { label: '任务数', value: '42', tone: 'train' },
+        { label: '专注时长', value: '11 小时 20 分', tone: 'success' },
+        { label: '完成率', value: '86%', tone: 'flight' }
+      ],
+      taskMix: [
+        { label: '资料研究', value: 18, percent: 43, tone: 'accent' },
+        { label: '出行规划', value: 12, percent: 29, tone: 'train' },
+        { label: '日程安排', value: 7, percent: 17, tone: 'flight' },
+        { label: '其他', value: 5, percent: 11, tone: 'muted' }
+      ],
+      activity: {
+        labels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+        series: [
+          { name: '专注', tone: 'accent', points: [45, 70, 55, 90, 65, 30, 25] },
+          { name: '空闲', tone: 'muted', points: [20, 25, 15, 30, 20, 40, 50] }
+        ]
+      },
+      focus: {
+        cols: ['9', '11', '13', '15', '17', '19'],
+        rows: ['周一', '周二', '周三', '周四', '周五'],
+        values: [
+          [1, 2, 3, 2, 1, 0],
+          [2, 3, 4, 3, 2, 1],
+          [1, 2, 4, 3, 2, 0],
+          [3, 4, 3, 4, 2, 1],
+          [2, 3, 2, 3, 4, 2]
+        ]
+      }
+    },
+    '本地演示 · 活动回执为模拟数据'
   );
 }
 

@@ -109,6 +109,22 @@ describe('extended scenarios', () => {
     expect(reply.surface?.components.media.component).toBe('MediaSlider');
     expect(reply.surface?.data.media).toHaveLength(4);
   });
+
+  it('returns a weekly insights surface with charts', () => {
+    const reply = replyFor('Show my weekly insights report', 'en');
+    expect(reply.surface?.title).toBe('Weekly insights');
+    expect(reply.surface?.components.mix.component).toBe('SegmentedRingChart');
+    expect(reply.surface?.components.activity.component).toBe('MultiSeriesLineChart');
+    expect(reply.surface?.components.focus.component).toBe('MatrixHeatmap');
+    expect(reply.surface?.data.taskMix).toHaveLength(4);
+    expect((reply.surface?.data.focus as Record<string, unknown>).values).toHaveLength(5);
+  });
+
+  it('localizes the weekly insights scenario', () => {
+    const reply = replyFor('看看每周洞察', 'zh');
+    expect(reply.surface?.title).toBe('每周洞察');
+    expect(reply.surface?.components.mix.title).toBe('任务构成');
+  });
 });
 
 describe('localized seed data', () => {

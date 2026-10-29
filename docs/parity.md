@@ -34,15 +34,15 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 28 components |
+| A2UI surface renderer | ✅ | 31 components |
 | Full component catalog | 🟡 | ~two-thirds of native catalog |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ❌ | Not implemented |
 | Data-model pointer semantics | 🟡 | Basic paths only |
 | Unknown component rejection | ✅ | Renders an error card |
 
-Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
-`MultiSeriesLineChart`, `MatrixHeatmap`, `ThinkingCard` (custom chat card today).
+Missing examples: `StripeReceivingAccountCard`, `ThinkingCard` (the chat currently uses a
+custom thinking card).
 
 ## Scenarios/tools
 
@@ -70,6 +70,6 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
-| Unit tests | ✅ | 38 tests for mock logic, scenarios, A2UI, RSS and transport |
+| Unit tests | ✅ | 40 tests for mock logic, scenarios, A2UI, RSS and transport |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ❌ | Not yet |

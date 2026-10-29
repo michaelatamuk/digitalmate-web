@@ -281,6 +281,23 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
     };
   }
 
+  if (/insight|weekly report|weekly summary|analytics|每周洞察|周报|洞察|数据分析/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read task receipts', '读取任务回执'),
+        tr('Aggregate activity by day', '按天聚合活动'),
+        tr('Compute focus windows', '计算专注时段'),
+        tr('Render charts', '渲染图表')
+      ],
+      text: tr(
+        'Here is a local weekly snapshot: 42 tasks across 6 active days, 11h 20m of focus time and an 86% completion rate. The charts are built from demo receipts only.',
+        '这是本地生成的每周快照：6 个活跃日完成 42 个任务，专注 11 小时 20 分，完成率 86%。图表仅基于演示回执生成。'
+      ),
+      surface: S.insightsSurface(),
+      followUps: tr('Find coffee nearby|Show today’s social messages', '附近有什么咖啡店|看看今天的社交消息').split('|')
+    };
+  }
+
   if (/document|requirements|pdf|summar|文档|需求|总结/.test(lower)) {
     return {
       thinking: [
