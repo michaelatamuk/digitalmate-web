@@ -1,18 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FeedCard, Reaction, RssFeed } from '../types';
 import type { DiscoveryFilters } from '../transport/discovery';
 import { Icon } from './Icons';
 import { seedFor } from '../data/seed';
 import { fetchRssFeed } from '../lib/rss';
-import { coverForCard, fallbackCoverForCard } from '../lib/covers';import { useI18n } from '../i18n/I18nContext';
+import { coverForCard, fallbackCoverForCard } from '../lib/covers';
+import { cardKind, parseTopicIntent, rankCards } from '../lib/discoveryExperience';
+import { isVoiceRecognitionSupported, startVoiceRecognition } from '../lib/voice';
+import type { VoiceSession } from '../lib/voice';
+import { useI18n } from '../i18n/I18nContext';
 
 interface DiscoveryProps {
   cards: FeedCard[];
   reactions: Record<string, Reaction>;
   saved: string[];
   topics: string[];
+  readCards: string[];
+  enabledSources: string[];
   onToggleTopic: (topic: string) => void;
   onClearTopics: () => void;
+  onApplyTopics: (topics: string[]) => void;
+  onToggleSource: (source: string) => void;
   onReact: (id: string, reaction: Reaction) => void;
   onSave: (id: string) => void;
   onOpen: (card: FeedCard) => void;
@@ -27,8 +35,12 @@ export function DiscoveryView({
   reactions,
   saved,
   topics,
+  readCards,
+  enabledSources,
   onToggleTopic,
   onClearTopics,
+  onApplyTopics,
+  onToggleSource,
   onReact,
   onSave,
   onOpen,
@@ -42,19 +54,90 @@ export function DiscoveryView({
   const [activeSource, setActiveSource] = useState('all');
   const [query, setQuery] = useState('');
   const [rssOpen, setRssOpen] = useState(false);
+  const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [listening, setListening] = useState(false);
+  const voiceRef = useRef<VoiceSession | null>(null);
   const [rssName, setRssName] = useState('');
   const [rssUrl, setRssUrl] = useState('');
   const [rssBusy, setRssBusy] = useState(false);
 
-  const visible = useMemo(() => {
-    return filterCards(cards, { source: activeSource, topics, query });
-  }, [activeSource, cards, filterCards, query, topics]);
+  useEffect(
+    () => () => {
+      voiceRef.current?.abort();
+      voiceRef.current = null;
+    },
+    []
+  );
 
+  const enabled = useMemo(
+    () => cards.filter(card => enabledSources.length === 0 || enabledSources.includes(card.source)),
+    [cards, enabledSources]
+  );
+
+  const visible = useMemo(() => {
+    const filtered = filterCards(enabled, { source: activeSource, topics, query });
+    return rankCards(filtered, reactions, saved);
+  }, [activeSource, enabled, filterCards, query, reactions, saved, topics]);
+
+  const shown = visible.slice(0, visibleCount);
   const sourceCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const card of cards) counts.set(card.source, (counts.get(card.source) ?? 0) + 1);
+    for (const card of enabled) counts.set(card.source, (counts.get(card.source) ?? 0) + 1);
     return counts;
-  }, [cards]);
+  }, [enabled]);
+
+  const applyNaturalLanguage = (text: string) => {
+    const matched = parseTopicIntent(text, topicOptions, lang);
+    if (matched) {
+      onApplyTopics(matched);
+      setQuery('');
+      onNotice(
+        tr(
+          `Topics updated to ${matched.join(' · ')}.`,
+          `主题已调整为 ${matched.join(' · ')}。`
+        )
+      );
+      return;
+    }
+    setQuery(text);
+  };
+
+  const toggleListening = () => {
+    if (listening) {
+      voiceRef.current?.stop();
+      voiceRef.current = null;
+      setListening(false);
+      return;
+    }
+    if (!isVoiceRecognitionSupported()) {
+      onNotice(
+        tr('Voice input is not available in this browser.', '当前浏览器不支持语音输入。')
+      );
+      return;
+    }
+    let transcript = '';
+    const session = startVoiceRecognition({
+      lang,
+      onTranscript: (text, final) => {
+        transcript = text;
+        if (final) setQuery(text);
+      },
+      onEnd: () => {
+        setListening(false);
+        voiceRef.current = null;
+        if (transcript.trim()) applyNaturalLanguage(transcript.trim());
+      },
+      onError: () => {
+        setListening(false);
+        voiceRef.current = null;
+      }
+    });
+    if (session) {
+      voiceRef.current = session;
+      setListening(true);
+    }
+  };
 
   const submitRss = async () => {
     const url = rssUrl.trim();
@@ -129,9 +212,27 @@ export function DiscoveryView({
           <input
             value={query}
             onChange={event => setQuery(event.target.value)}
-            placeholder={tr('Search titles, sources and tags', '搜索标题、来源和标签')}
+            onKeyDown={event => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                applyNaturalLanguage(query.trim());
+              }
+            }}
+            placeholder={tr(
+              'Search, or say “more robotics and open source”',
+              '搜索，或说“多点机器人和开源项目”'
+            )}
             aria-label={tr('Search feed', '搜索发现流')}
           />
+          <button
+            type="button"
+            className={`icon-button ${listening ? 'is-listening' : ''}`}
+            aria-label={listening ? tr('Stop voice input', '停止语音输入') : tr('Voice topic edit', '语音调整主题')}
+            aria-pressed={listening}
+            onClick={toggleListening}
+          >
+            <Icon name="mic" size={15} />
+          </button>
           {query ? (
             <button type="button" className="icon-button" aria-label={tr('Clear search', '清除搜索')} onClick={() => setQuery('')}>
               <Icon name="close" size={14} />
@@ -142,13 +243,14 @@ export function DiscoveryView({
 
       <div className="source-strip" role="group" aria-label={tr('Content sources', '内容来源')}>
         {discoverySources.map(source => {
-          const count = source.id === 'all' ? cards.length : sourceCounts.get(source.id) ?? 0;
+          const count = source.id === 'all' ? enabled.length : sourceCounts.get(source.id) ?? 0;
+          const isEnabled = source.id === 'all' || enabledSources.length === 0 || enabledSources.includes(source.id);
           return (
             <button
               type="button"
               aria-pressed={activeSource === source.id}
               key={source.id}
-              className={`source-pill ${activeSource === source.id ? 'is-active' : ''} ${count === 0 ? 'is-empty' : ''}`}
+              className={`source-pill ${activeSource === source.id ? 'is-active' : ''} ${count === 0 ? 'is-empty' : ''} ${isEnabled ? '' : 'is-disabled'}`}
               onClick={() => setActiveSource(source.id)}
             >
               {source.label}
@@ -160,7 +262,46 @@ export function DiscoveryView({
           <Icon name="plus" size={13} />
           RSS
         </button>
+        <button
+          type="button"
+          className="source-pill is-add"
+          aria-expanded={sourcesOpen}
+          onClick={() => setSourcesOpen(open => !open)}
+        >
+          <Icon name="filter" size={13} />
+          {tr('Sources', '来源')}
+        </button>
       </div>
+
+      {sourcesOpen ? (
+        <div className="source-manage">
+          <p className="settings-note">
+            {tr(
+              'Sources enabled for this device. Disabled sources are hidden until you re-enable them.',
+              '此设备启用的来源。关闭后，该来源的内容会被隐藏。'
+            )}
+          </p>
+          <div className="source-manage-grid">
+            {discoverySources
+              .filter(source => source.id !== 'all')
+              .map(source => {
+                const isEnabled = enabledSources.length === 0 || enabledSources.includes(source.id);
+                return (
+                  <button
+                    type="button"
+                    key={source.id}
+                    className={`source-toggle ${isEnabled ? 'is-active' : ''}`}
+                    aria-pressed={isEnabled}
+                    onClick={() => onToggleSource(source.id)}
+                  >
+                    <span className="check-box">{isEnabled ? <Icon name="check" size={12} /> : null}</span>
+                    {source.label}
+                  </button>
+                );
+              })}
+          </div>
+        </div>
+      ) : null}
 
       {rssOpen ? (
         <div className="rss-form">
@@ -235,10 +376,20 @@ export function DiscoveryView({
         </div>
       ) : (
         <div className="feed-grid">
-          {visible.map((card, index) => {
+          {shown.map((card, index) => {
             const reaction = reactions[card.id];
             const isSaved = saved.includes(card.id);
+            const isRead = readCards.includes(card.id);
+            const kind = cardKind(card);
             const cover = coverForCard(card);
+            const kindLabel =
+              kind === 'video'
+                ? tr('Video', '视频')
+                : kind === 'audio'
+                  ? tr('Audio', '音频')
+                  : kind === 'discussion'
+                    ? tr('Discussion', '讨论')
+                    : tr('Article', '文章');
             return (
               <article
                 className="feed-card"
@@ -266,6 +417,11 @@ export function DiscoveryView({
                     </div>
                   </button>
                   <span className="feed-source-badge">{card.sourceLabel}</span>
+                  <span className="feed-kind-badge">
+                    {kind === 'video' || kind === 'audio' ? <Icon name="play" size={10} /> : null}
+                    {kindLabel}
+                  </span>
+                  {isRead ? <span className="feed-read-badge">{tr('Read', '已读')}</span> : null}
                   <span className="feed-metric-badge">{card.metric}</span>
                 </div>
                 <div className="feed-body">
@@ -322,6 +478,17 @@ export function DiscoveryView({
           })}
         </div>
       )}
+
+      {visible.length > shown.length ? (
+        <button
+          type="button"
+          className="secondary-action load-more"
+          onClick={() => setVisibleCount(count => count + 8)}
+        >
+          <Icon name="chevronDown" size={14} />
+          {tr(`Load more (${visible.length - shown.length})`, `加载更多（${visible.length - shown.length}）`)}
+        </button>
+      ) : null}
 
       <div className="feed-end">
         <span className="live-dot" />

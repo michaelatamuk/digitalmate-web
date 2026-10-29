@@ -8,6 +8,7 @@ import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../li
 import { artifactDownloadContent, artifactFilename, artifactSlides } from '../lib/artifacts';
 import { parseMemoryProfile } from '../lib/memoryProfile';
 import { coverForCard, fallbackCoverForCard } from '../lib/covers';
+import { cardKind } from '../lib/discoveryExperience';
 import { requestNativeNotificationPermission } from '../lib/native';
 import {
   clearDiagnostics,
@@ -1756,6 +1757,40 @@ export function DetailView({
           <div className="detail-content">
             {renderMarkdown(card.body.map(paragraph => paragraph).join('\n\n'))}
           </div>
+          {card.audioUrl ? (
+            <div className="detail-media">
+              <span className="detail-media-label">
+                <Icon name="volume" size={14} />
+                {tr('Audio from the feed', '来自订阅的音频')}
+              </span>
+              <audio className="detail-audio" controls preload="metadata" src={card.audioUrl} />
+            </div>
+          ) : null}
+          {cardKind(card) === 'discussion' ? (
+            <div className="detail-thread">
+              <h3>{tr('Community replies', '社区回复')}</h3>
+              <p className="settings-note">
+                {tr(
+                  'Local demo replies. Real discussions stay on the source platform.',
+                  '本地演示回复。真实讨论仍在来源平台。'
+                )}
+              </p>
+              <div className="thread-post">
+                <span className="thread-avatar">A</span>
+                <span>
+                  <strong>Ada</strong>
+                  <em>{tr('The failure-path section is the useful part.', '最有价值的是失败路径那一段。')}</em>
+                </span>
+              </div>
+              <div className="thread-post">
+                <span className="thread-avatar">K</span>
+                <span>
+                  <strong>Kai</strong>
+                  <em>{tr('Saved this to compare with the local build.', '已收藏，准备和本地构建对比。')}</em>
+                </span>
+              </div>
+            </div>
+          ) : null}
           <div className="detail-source-note">
             <Icon name="info" size={15} />
             {tr(`Content from ${card.sourceLabel}. The demo keeps source labels and does not fetch private content behind a login.`, `内容来自 ${card.sourceLabel}。演示版保留来源标签，不抓取登录后的私密内容。`)}

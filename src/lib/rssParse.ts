@@ -112,6 +112,28 @@ function imageOf(record: Record<string, unknown>, rawHtml: string, base: string)
   return match ? normalize(match[1], base) : undefined;
 }
 
+function looksLikeAudio(url: string, type = ''): boolean {
+  if (type.startsWith('audio/')) return true;
+  return /\.(mp3|m4a|aac|ogg|opus|wav)(\?|#|$)/i.test(url);
+}
+
+function audioOf(record: Record<string, unknown>, base: string): string | undefined {
+  for (const value of [record.enclosure, record['media:content'], record['media:group']]) {
+    for (const item of asArray<unknown>(value)) {
+      if (typeof item === 'string') {
+        if (looksLikeAudio(item)) return normalize(item, base);
+        continue;
+      }
+      if (!item || typeof item !== 'object') continue;
+      const media = item as Record<string, unknown>;
+      const url = text(media['@_url']) || text(media['@_href']);
+      const type = text(media['@_type']);
+      if (url && looksLikeAudio(url, type)) return normalize(url, base);
+    }
+  }
+  return undefined;
+}
+
 function itemOf(value: unknown, base: string): RssItem | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
@@ -126,6 +148,7 @@ function itemOf(value: unknown, base: string): RssItem | null {
   );
   const summary = plainSummary(rawSummary);
   const image = imageOf(record, rawSummary, base);
+  const audio = audioOf(record, base);
   const published =
     text(record.pubDate) ||
     text(record.published) ||
@@ -138,7 +161,15 @@ function itemOf(value: unknown, base: string): RssItem | null {
     text(record['dc:creator']) ||
     undefined;
   if (!title || !link) return null;
-  return { title, link, summary, published, author, ...(image ? { image } : {}) };
+  return {
+    title,
+    link,
+    summary,
+    published,
+    author,
+    ...(image ? { image } : {}),
+    ...(audio ? { audio } : {})
+  };
 }
 
 export function parseFeedXml(xml: string, feedUrl?: string): RssFeed {

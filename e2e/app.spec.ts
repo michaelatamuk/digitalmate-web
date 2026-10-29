@@ -192,6 +192,33 @@ test('switches companion, model, project and tools locally', async ({ page }) =>
   await expect(page.locator('.context-chip').nth(3)).toContainText('4 tools');
 });
 
+test('edits discovery topics in natural language and remembers read state', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await expect(page.locator('.feed-kind-badge').first()).toBeVisible();
+  await page.locator('.search-field input').fill('show me more robotics and open source');
+  await page.locator('.search-field input').press('Enter');
+  await expect(page.locator('.topic-chip.is-active')).toHaveText(['Robotics', 'Open Source']);
+  await expect(page.locator('.feed-card')).toHaveCount(3);
+
+  await page.getByRole('button', { name: 'All', exact: true }).click();
+  const firstTitle = await page.locator('.feed-card h2').first().innerText();
+  await page.locator('.feed-cover-button').first().click();
+  await expect(page.locator('.detail-layer')).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  const readCard = page.locator('.feed-card', { hasText: firstTitle }).first();
+  await expect(readCard.locator('.feed-read-badge')).toBeVisible();
+});
+
+test('toggles discovery sources locally', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await page.getByRole('button', { name: 'Sources' }).click();
+  await expect(page.locator('.source-toggle')).toHaveCount(11);
+  const allCards = await page.locator('.feed-card').count();
+  await page.locator('.source-toggle').first().click();
+  await expect(page.locator('.source-pill.is-disabled')).toHaveCount(1);
+  expect(await page.locator('.feed-card').count()).toBeLessThan(allCards);
+});
+
 test('starts with all discovery topics and no skill pre-selected', async ({ page }) => {
   await expect(page.locator('.skill-active')).toHaveText('Default companion');
   await expect(page.locator('.skill-pill.is-active')).toHaveCount(0);

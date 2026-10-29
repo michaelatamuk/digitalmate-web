@@ -103,6 +103,25 @@ describe('RSS / Atom parser', () => {
     expect(feed.items[1].image).toBe('https://example.com/enclosure.png');
     expect(feed.items[2].image).toBe('https://example.com/inline.webp');
   });
+
+  it('extracts podcast audio from enclosures', () => {
+    const feed = parseFeedXml(
+      `<?xml version="1.0"?>
+      <rss version="2.0">
+        <channel>
+          <title>Audio</title>
+          <item>
+            <title>Episode one</title>
+            <link>https://example.com/episode-1</link>
+            <enclosure url="https://example.com/episode.mp3" type="audio/mpeg" length="123"/>
+            <description>An episode</description>
+          </item>
+        </channel>
+      </rss>`,
+      'https://example.com/feed.xml'
+    );
+    expect(feed.items[0].audio).toBe('https://example.com/episode.mp3');
+  });
 });
 
 describe('RSS proxy URL guard', () => {

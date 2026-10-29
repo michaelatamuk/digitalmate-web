@@ -106,6 +106,9 @@ export interface FeedCard {
   glyph: string;
   cover: string;
   image?: string;
+  kind?: 'article' | 'video' | 'discussion' | 'audio';
+  mediaUrl?: string;
+  audioUrl?: string;
   readingTime: string;
   published: string;
   url: string;
@@ -150,6 +153,7 @@ export interface RssItem {
   published?: string;
   author?: string;
   image?: string;
+  audio?: string;
 }
 
 export interface RssFeed {

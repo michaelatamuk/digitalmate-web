@@ -114,6 +114,8 @@ export default function App() {
   const [skills, setSkills] = usePersistentState<Skill[]>(STORAGE_KEYS.skills, seed.seedSkills);
   const [saved, setSaved] = usePersistentState<string[]>(STORAGE_KEYS.savedCards, []);
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
+  const [readCards, setReadCards] = usePersistentState<string[]>(STORAGE_KEYS.readCards, []);
+  const [enabledSources, setEnabledSources] = usePersistentState<string[]>(STORAGE_KEYS.enabledSources, []);
   const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
   const [memory, setMemory] = usePersistentState<MemoryProfile>(STORAGE_KEYS.memoryProfile, seed.memoryProfile);
   const [artifacts, setArtifacts] = usePersistentState<Artifact[]>(STORAGE_KEYS.artifacts, []);
@@ -800,6 +802,25 @@ export default function App() {
     );
   };
 
+  const applyTopics = (next: string[]) => {
+    setTopics(next.length >= seed.topicOptions.length ? [] : Array.from(new Set(next)));
+  };
+
+  const toggleSource = (source: string) => {
+    const allSources = seed.discoverySources.map(item => item.id).filter(id => id !== 'all');
+    setEnabledSources(previous => {
+      const current = previous.length === 0 ? allSources : previous;
+      const next = current.includes(source)
+        ? current.filter(item => item !== source)
+        : [...current, source];
+      if (next.length === 0) {
+        showToast(tr('Keep at least one source enabled.', '请至少保留一个来源。'));
+        return current;
+      }
+      return next;
+    });
+  };
+
   const toggleCapability = (id: string) => {
     setCapabilities(previous =>
       previous.includes(id) ? previous.filter(item => item !== id) : [...previous, id]
@@ -846,6 +867,8 @@ export default function App() {
         glyph: item.title.slice(0, 1).toUpperCase(),
         cover: palette[index % palette.length],
         image: item.image,
+        kind: item.audio ? 'audio' : 'article',
+        ...(item.audio ? { audioUrl: item.audio } : {}),
         readingTime: tr(`${minutes} min read`, `${minutes} 分钟阅读`),
         published: item.published || tr('From feed', '来自订阅'),
         url: item.link || url,
@@ -1027,14 +1050,23 @@ export default function App() {
               reactions={reactions}
               saved={saved}
               topics={topics}
+              readCards={readCards}
+              enabledSources={enabledSources}
               onToggleTopic={toggleTopic}
               onClearTopics={() => setTopics([])}
+              onApplyTopics={applyTopics}
+              onToggleSource={toggleSource}
               onReact={react}
               onSave={id => {
                 toggleSave(id);
                 showToast(saved.includes(id) ? tr('Removed from saved.', '已取消收藏。') : tr('Saved locally.', '已收藏到本地。'));
               }}
-              onOpen={setDetail}
+              onOpen={card => {
+                setDetail(card);
+                setReadCards(previous =>
+                  previous.includes(card.id) ? previous : [...previous, card.id]
+                );
+              }}
               onRefresh={() => {
                 setFeedSeed(seed => seed + 3);
                 showToast(tr('Refreshed the local inventory.', '已从本地库存换一批内容。'));
