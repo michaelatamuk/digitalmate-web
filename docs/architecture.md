@@ -11,11 +11,9 @@ real Jiuwen/Orbit client without rewriting the UI.
 │  App shell · Home · Chat · Discovery · Skills · Settings     │
 │  A2UI renderer · BeeBou                                      │
 ├──────────────────────────────────────────────────────────────┤
-│ Local domain / mock                                          │
-│  mockEngine.ts → thinking + text + A2UI surface objects      │
-│  seed.en.ts / seed.zh.ts                                     │
-│  surfaces.en.ts / surfaces.zh.ts                             │
-│  localStorage persistence                                    │
+│ Transport                                                    │
+│  ChatTransport · MockChatTransport (default)                 │
+│  OrbitChatTransport → POST /api/orbit/turn (SSE)             │
 ├──────────────────────────────────────────────────────────────┤
 │ Local domain / mock                                          │
 │  mockEngine.ts → thinking + text + A2UI surface objects      │
@@ -23,9 +21,10 @@ real Jiuwen/Orbit client without rewriting the UI.
 │  surfaces.en.ts / surfaces.zh.ts                             │
 │  localStorage persistence                                    │
 ├──────────────────────────────────────────────────────────────┤
-│ Local dev proxy (`server/rss.ts`)                            │
-│  GET /api/rss?url=… · SSRF guard · RSS/Atom/RDF parser       │
-│  Read-only feed import; no credentials or write actions      │
+│ Local dev bridge (`server/`)                                 │
+│  GET /api/rss · SSRF guard · RSS/Atom/RDF parser             │
+│  GET /api/orbit/health · POST /api/orbit/turn                │
+│  WSS upstream with server-side Bearer token                  │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -34,20 +33,20 @@ real Jiuwen/Orbit client without rewriting the UI.
 ```text
 UI (React)
   ↓
-Transport interface
-  ├── MockTransport        (today)
-  └── OrbitTransport       (future, via local bridge)
+Transport interface                              (implemented)
+  ├── MockChatTransport                          (default today)
+  └── OrbitChatTransport → bridge SSE            (opt-in)
   ↓
 Protocol
-  ├── A2UI JSONL parser / surface store   (implemented)
-  ├── Orbit request/response/event contracts
-  └── Session/task state reducer
+  ├── A2UI JSONL parser / surface store          (implemented)
+  ├── Orbit request/response/event contracts     (bridge implemented)
+  └── Session/task state reducer                 (not yet)
   ↓
-Local helpers / bridge
-  ├── RSS fetch + parse proxy (dev/preview)
-  ├── Gateway authentication (future)
-  ├── WSS connection (future)
-  └── token and secret isolation (future)
+Local helpers / bridge                           (dev/preview)
+  ├── RSS fetch + parse proxy
+  ├── Orbit WSS proxy + token isolation
+  ├── Account exchange / production auth         (future)
+  └── Snapshot reconciliation / reconnect        (future)
 ```
 
 ### Why a bridge is needed for the browser

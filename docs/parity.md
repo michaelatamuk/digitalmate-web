@@ -8,7 +8,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | --- | --- | --- |
 | Home shell, greeting, suggestions | ✅ | Mock data |
 | BeeBou mascot | ✅ | Home, avatar, thinking, about |
-| Streaming chat | 🟡 | Simulated locally |
+| Streaming chat | 🟡 | Transport-driven; live only with Orbit bridge config |
 | Card detail sheets | ✅ | Travel, train and food |
 | Guided demo | ✅ | Scripted walkthrough |
 | Orbit rooms/sessions/task rows | ❌ | Single mock thread |
@@ -64,11 +64,12 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| Real Orbit/WorkSwarm transport | ❌ | Planned via bridge |
-| Real authentication | ❌ | Native only today |
+| Transport abstraction | ✅ | `ChatTransport` with mock and Orbit implementations |
+| Real Orbit/WorkSwarm transport | 🟡 | Bridge implemented; needs gateway URL + Bearer token |
+| Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
-| Account isolation / secure storage | ❌ | localStorage only |
-| Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, mobile |
-| Unit tests | ✅ | 28 tests for mock logic, scenarios, A2UI protocol and RSS |
+| Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
+| Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
+| Unit tests | ✅ | 38 tests for mock logic, scenarios, A2UI, RSS and transport |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ❌ | Not yet |

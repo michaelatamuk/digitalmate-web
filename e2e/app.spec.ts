@@ -56,6 +56,17 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
   await expect(page.locator('.skeleton-card')).toBeVisible();
 });
 
+test('Orbit mode falls back to the mock when the bridge is not configured', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await page.getByRole('button', { name: 'Orbit cloud' }).click();
+  await expect(page.locator('.orbit-status.is-off')).toContainText(/not configured|未配置/);
+  await page.locator('.sheet-head .icon-button').click();
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await expect(page.locator('.food-card').first()).toBeVisible();
+});
+
 test('RSS form validates URLs before calling the proxy', async ({ page }) => {
   await page.getByRole('button', { name: 'Discover' }).click();
   await page.getByRole('button', { name: 'RSS', exact: true }).first().click();

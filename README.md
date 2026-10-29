@@ -15,17 +15,19 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 
 ## Status
 
-- Mock-first: no real backend or account login yet
+- Mock-first by default: local data, no account login required
 - Full English and Simplified Chinese UI, switchable in **Settings → Language**
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Card detail sheets, local calendar event creation and a guided demo mode
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
-- 28 unit tests plus Playwright UI, mobile and accessibility checks
+- Transport layer with mock and Orbit implementations
+- Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
+- 38 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
-The next milestone is moving from the local mock engine to a protocol layer that can talk to
-a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
+The remaining milestone is production authentication and deployment in front of a real
+Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 [docs/architecture.md](docs/architecture.md).
 
 ## Features
@@ -33,7 +35,9 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Area | Current behaviour |
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
-| Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
+| Chat | Streaming replies through the transport layer, execution trace, markdown, follow-ups |
+| Transport | Mock transport for local demos; Orbit transport through the local bridge |
+| Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 28 components, 12 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
@@ -83,11 +87,68 @@ five usable items become feed cards stored in localStorage.
 This is a development helper, not a production-hardened fetcher: DNS rebinding and egress
 filtering belong in the future bridge deployment.
 
+## Orbit bridge
+
+The app can talk to a Jiuwen/Orbit gateway through `server/orbit.ts`. The browser never sees the
+Bearer token; it sends a turn to the local bridge and receives normalized events over SSE.
+
+```bash
+export ORBIT_GATEWAY_URL="wss://gateway.example.com/orbit/ws?binding_id=default"
+export ORBIT_TOKEN_FILE="$HOME/.config/digitalmate/orbit-token"
+# or, for temporary local testing only:
+export ORBIT_TOKEN="<bearer-token>"
+npm run dev
+```
+
+You can also copy `.env.example` to `.env.local`; the Vite config loads it into the bridge
+process without exposing it through `import.meta.env`.
+
+To test the bridge without real credentials, run the fake gateway in one terminal:
+
+```bash
+npm run bridge:fake
+```
+
+Then start the app with an insecure local gateway and a test token:
+
+```powershell
+$env:ORBIT_GATEWAY_URL='ws://127.0.0.1:8899/orbit/ws'
+$env:ORBIT_TOKEN='test-token'
+$env:ORBIT_ALLOW_INSECURE_WS='1'
+npm run dev
+```
+
+The fake gateway only implements `room.home`, `room.message` and `orbit.task.text`; it echoes
+the prompt and is intended for smoke tests, not as a protocol reference.
+
+Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
+bridge is configured. If it is not, turns fall back to the local mock and say so.
+
+Endpoints:
+
+```text
+GET  /api/orbit/health   → { configured, mode, gatewayHost, bindingId }
+POST /api/orbit/turn     → text/event-stream of ChatTurnEvent JSON
+```
+
+Flow per turn:
+
+1. open a WSS connection with `Authorization: Bearer …`,
+2. call `room.home` to authorise the room,
+3. send `room.message` with a `submission_id`,
+4. forward `orbit.task.text` / task error events as SSE,
+5. close the socket when the task reports `final`.
+
+The bridge is intentionally conservative: `wss://` only unless `ORBIT_ALLOW_INSECURE_WS=1`,
+12-second request timeouts, 120-second turn timeout, 32 KB request body, and no token logging.
+It currently uses a fresh upstream socket per turn; reconnect reconciliation and snapshot
+recovery are still roadmap items.
+
 ## Repository layout
 
 ```text
 src/
-  App.tsx                 app shell, state, mock streaming
+  App.tsx                 app shell, state, transport selection
   components/
     a2ui/                 A2UI surface renderer
     BeeBou.tsx            mascot component
@@ -115,7 +176,11 @@ src/
     storage.ts            localStorage helpers
     rss.ts                browser client for the local RSS proxy
     rssParse.ts           RSS 2.0 / Atom / RDF parser and HTML cleanup
-  types.ts                shared UI, A2UI and RSS types
+  transport/
+    types.ts              ChatTransport and turn-event contract
+    mock.ts               local mock transport
+    orbit.ts              bridge client, SSE parsing and health check
+  types.ts                shared UI, A2UI, RSS and transport types
 public/
   bee/                    BeeBou assets
 docs/
@@ -125,34 +190,34 @@ docs/
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
 services/
-  bridge/                 future auth + WebSocket proxy for the web client
+  bridge/                 deployment notes for a future production bridge
 server/
   rss.ts                  dev/preview /api/rss proxy, size/redirect/SSRF guards
+  orbit.ts                /api/orbit health + SSE turn bridge, WSS upstream
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
   a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo
   rssParse.test.ts        RSS/Atom parsing and proxy URL guards
+  orbitTransport.test.ts  bridge config, SSE parsing and transport events
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 ```
 
 ## Path to Jiuwen/Orbit and Android
 
-The current `mockEngine.ts` should eventually be replaced by a transport abstraction:
+The UI now talks to a `ChatTransport`:
 
 ```text
 React UI
-  → Chat/Discovery transport interface
-      → MockTransport (today)
-      → OrbitTransport (future, through a local bridge)
+  → ChatTransport
+      → MockChatTransport   (default)
+      → OrbitChatTransport  → /api/orbit/turn (SSE)
+                               → Node bridge → Jiuwen/Orbit Gateway (WSS)
 ```
 
 A browser cannot safely perform the native Huawei/AGC login exchange or hold provider
-secrets. The planned web path is therefore:
-
-```text
-Chrome → local Node bridge → Jiuwen/Orbit Gateway (WSS)
-```
+secrets, so the bridge owns the Bearer token and the upstream socket. What remains is the
+production authentication exchange, snapshot reconciliation, and deployment hardening.
 
 Android can connect directly to the gateway with its own native authentication. Possible
 Android paths are documented in [docs/architecture.md](docs/architecture.md); the decision is

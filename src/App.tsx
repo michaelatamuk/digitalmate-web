@@ -11,8 +11,10 @@ import type {
   Settings,
   Skill
 } from './types';
-import { replyFor } from './lib/mockEngine';
 import { newId, readStorage, writeStorage, clearDemoStorage, STORAGE_KEYS, usePersistentState } from './lib/storage';
+import { MockChatTransport } from './transport/mock';
+import { OrbitChatTransport, orbitHealth } from './transport/orbit';
+import type { ChatTransport } from './transport/types';
 import { seedFor } from './data/seed';
 import { surfacesFor } from './data/surfaces';
 import { I18nContext } from './i18n/I18nContext';
@@ -31,7 +33,7 @@ type Tab = 'chat' | 'discover';
 type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | null;
 
 const defaultSettings: Settings = {
-  cloudBackend: 'orbit',
+  cloudBackend: 'local',
   notifications: true,
   reducedMotion: false,
   showThinking: true
@@ -84,6 +86,7 @@ export default function App() {
   const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
 
   const generation = useRef(0);
+  const activeController = useRef<AbortController | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const contentRef = useRef<HTMLElement>(null);
 
@@ -157,7 +160,6 @@ export default function App() {
       createdAt: Date.now()
     };
     const assistantId = newId('a');
-    const reply = replyFor(prompt, lang, calendarEvents);
     const assistant: Message = {
       id: assistantId,
       role: 'assistant',
@@ -166,7 +168,7 @@ export default function App() {
       streaming: true,
       thinking: {
         title: tr('Working', '处理中'),
-        steps: reply.thinking.map((label, index) => ({ label, status: index === 0 ? 'active' : 'pending' })),
+        steps: [],
         done: false
       }
     };
@@ -174,58 +176,104 @@ export default function App() {
     setMessages(previous => [...previous, userMessage, assistant]);
     setActiveSkill('general');
 
-    await sleep(280);
+    activeController.current?.abort();
+    const controller = new AbortController();
+    activeController.current = controller;
+
+    let transport: ChatTransport = new MockChatTransport(calendarEvents);
+    if (settings.cloudBackend === 'orbit') {
+      try {
+        const health = await orbitHealth(controller.signal);
+        if (health.configured) {
+          transport = new OrbitChatTransport();
+        } else {
+          showToast(
+            tr(
+              'Orbit bridge is not configured; this turn uses the local mock.',
+              'Orbit 桥接未配置，本轮使用本地模拟。'
+            )
+          );
+        }
+      } catch {
+        showToast(
+          tr(
+            'Orbit bridge is unreachable; this turn uses the local mock.',
+            '无法连接 Orbit 桥接，本轮使用本地模拟。'
+          )
+        );
+      }
+    }
+
     if (generation.current !== runId) return;
 
-    for (let index = 0; index < reply.thinking.length; index += 1) {
-      if (generation.current !== runId) return;
-      patchMessage(assistantId, message => ({
-        ...message,
-        thinking: message.thinking
-          ? {
-              ...message.thinking,
-              steps: message.thinking.steps.map((step, stepIndex) => ({
-                ...step,
-                status: stepIndex < index ? 'done' : stepIndex === index ? 'active' : 'pending'
-              }))
+    let accumulated = '';
+
+    try {
+      await transport.send(
+        { text: prompt, lang, submissionId: newId('sub') },
+        event => {
+          if (generation.current !== runId) return;
+          switch (event.type) {
+            case 'thinking': {
+              const steps = event.steps.length > 0 ? event.steps : [event.step];
+              patchMessage(assistantId, message => ({
+                ...message,
+                thinking: {
+                  title: message.thinking?.title ?? tr('Working', '处理中'),
+                  steps: steps.map((label, index) => ({
+                    label,
+                    status: index < event.index ? 'done' : index === event.index ? 'active' : 'pending'
+                  })),
+                  done: false
+                }
+              }));
+              break;
             }
-          : undefined
-      }));
-      await sleep(340 + Math.random() * 220);
+            case 'text':
+              accumulated += event.text;
+              patchMessage(assistantId, message => ({ ...message, text: accumulated }));
+              break;
+            case 'surface':
+              patchMessage(assistantId, message => ({ ...message, surface: event.surface }));
+              break;
+            case 'followUps':
+              patchMessage(assistantId, message => ({ ...message, followUps: event.followUps }));
+              break;
+            case 'error':
+              accumulated = accumulated ? `${accumulated}\n\n${event.message}` : event.message;
+              patchMessage(assistantId, message => ({ ...message, text: accumulated }));
+              break;
+            case 'done':
+              break;
+          }
+        },
+        controller.signal
+      );
+    } catch (error) {
+      if (controller.signal.aborted || generation.current !== runId) return;
+      const message = error instanceof Error ? error.message : 'Transport error';
+      accumulated = accumulated ? `${accumulated}\n\n${message}` : message;
+      patchMessage(assistantId, current => ({ ...current, text: accumulated }));
     }
 
     if (generation.current !== runId) return;
     patchMessage(assistantId, message => ({
       ...message,
+      text: message.text || accumulated,
+      streaming: false,
       thinking: message.thinking
         ? { ...message.thinking, done: true, steps: message.thinking.steps.map(step => ({ ...step, status: 'done' })) }
         : undefined
     }));
-    await sleep(160);
-
-    const characters = Array.from(reply.text);
-    let visible = '';
-    for (let index = 0; index < characters.length; index += 2) {
-      if (generation.current !== runId) return;
-      visible += characters.slice(index, index + 2).join('');
-      patchMessage(assistantId, message => ({ ...message, text: visible }));
-      await sleep(12);
-    }
-
-    if (generation.current !== runId) return;
-    patchMessage(assistantId, message => ({
-      ...message,
-      text: reply.text,
-      surface: reply.surface,
-      followUps: reply.followUps,
-      streaming: false
-    }));
+    activeController.current = null;
     setBusy(false);
-    notifyCompletion(reply.text);
+    notifyCompletion(accumulated);
   };
 
   const stop = () => {
     generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
     setBusy(false);
     setMessages(previous =>
       previous.map(message =>
@@ -245,6 +293,8 @@ export default function App() {
 
   const newChat = () => {
     generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
     setBusy(false);
     setArchived(previous => [...previous, ...messages]);
     setMessages([]);
@@ -260,6 +310,8 @@ export default function App() {
 
   const resetDemo = () => {
     generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
     clearDemoStorage();
     setMessages([]);
     setArchived([]);
@@ -285,6 +337,8 @@ export default function App() {
     const nextSeed = seedFor(next);
     setLang(next);
     generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
     setBusy(false);
     setMessages([]);
     setArchived([]);
@@ -332,6 +386,8 @@ export default function App() {
   const stopDemo = () => {
     demoRun.current += 1;
     generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
     setDemoRunning(false);
     setBusy(false);
     setSheet(null);

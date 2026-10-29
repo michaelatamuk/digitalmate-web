@@ -17,8 +17,10 @@
 ## Phase 1 — Protocol extraction
 
 - [x] Move A2UI and transport contracts into `src/protocol`
-- [ ] Define `ChatTransport` and `DiscoveryTransport` interfaces
-- [ ] Keep `MockTransport` behind the same interface
+- [x] Define `ChatTransport`
+- [ ] Define `DiscoveryTransport`
+- [x] Keep `MockChatTransport` behind the same interface
+- [x] Add an `OrbitChatTransport` behind the same interface
 - [x] Add an A2UI JSONL parser and surface store
 - [x] Support `createSurface` / `updateComponents` / `updateDataModel`
 - [x] Support `deleteSurface` and line-numbered parse errors
@@ -29,12 +31,13 @@
 ## Phase 2 — Web bridge
 
 - [x] Local RSS fetch/parse dev proxy with SSRF, redirect, timeout and size guards
-- [ ] Add `services/bridge` (Node or edge runtime)
+- [x] Node bridge endpoints in `server/orbit.ts` (health + SSE turns)
+- [ ] Package the bridge for production (`services/bridge`)
 - [ ] Gateway auth exchange or delegated session
-- [ ] WSS `/orbit/ws` proxy
-- [ ] Token isolation and redaction
+- [x] WSS `/orbit/ws` proxy with `room.home` / `room.message`
+- [x] Token isolation and redaction
 - [ ] Reconnect, snapshot recovery and submission-id handling
-- [ ] Document the bridge security model
+- [x] Document the bridge security model
 
 ## Phase 3 — Feature parity
 

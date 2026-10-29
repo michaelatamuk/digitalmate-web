@@ -3871,6 +3871,32 @@ a {
   color: var(--muted);
 }
 
+.orbit-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 7px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  font-size: 8.5px;
+  line-height: 1.45;
+}
+
+.orbit-status svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.orbit-status.is-live {
+  background: var(--success-soft, #eaf6ee);
+  color: var(--success, #3f7d55);
+}
+
+.orbit-status.is-off {
+  background: rgba(33, 27, 23, 0.04);
+  color: var(--muted);
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

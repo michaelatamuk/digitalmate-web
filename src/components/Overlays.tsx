@@ -3,6 +3,8 @@ import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Sk
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
+import { orbitHealth } from '../transport/orbit';
+import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
 
 export function Sheet({
@@ -346,6 +348,20 @@ export function SettingsSheet({
   messageCount: number;
 }) {
   const { tr, lang } = useI18n();
+  const [orbitStatus, setOrbitStatus] = useState<OrbitHealth | null>(null);
+  useEffect(() => {
+    let active = true;
+    orbitHealth()
+      .then(status => {
+        if (active) setOrbitStatus(status);
+      })
+      .catch(() => {
+        if (active) setOrbitStatus(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   return (
     <Sheet title={tr('Settings', '设置')} subtitle={tr('Local demo · nothing is uploaded', '本地演示 · 不会上传任何数据')} onClose={onClose} wide>
       <div className="account-card">
@@ -391,7 +407,17 @@ export function SettingsSheet({
             className={settings.cloudBackend === 'orbit' ? 'is-active' : ''}
             onClick={() => {
               onChange({ ...settings, cloudBackend: 'orbit' });
-              onNotice(tr('The demo does not open a real Orbit connection.', '演示版不会发起真实 Orbit 连接。'));
+              onNotice(
+                orbitStatus?.configured
+                  ? tr(
+                      `Orbit bridge selected · ${orbitStatus.gatewayHost}`,
+                      `已选择 Orbit 桥接 · ${orbitStatus.gatewayHost}`
+                    )
+                  : tr(
+                      'Orbit bridge is not configured; turns will fall back to the local mock.',
+                      'Orbit 桥接未配置，对话会回退到本地模拟。'
+                    )
+              );
             }}
           >
             {tr('Orbit cloud', 'Orbit 云端')}
@@ -405,8 +431,29 @@ export function SettingsSheet({
           </button>
         </div>
         <p className="settings-note">
-          {tr('The real client uses an Orbit WebSocket by default; this demo stays local so it can run on any computer.', '真实客户端默认使用 Orbit WebSocket；这里保持本地数据，方便在任何电脑上运行。')}
+          {tr(
+            'Orbit mode streams through the local bridge; the Bearer token stays on the server. Without bridge configuration, turns use the mock.',
+            'Orbit 模式通过本地桥接串流，Bearer 令牌只保留在服务端。未配置桥接时，对话使用本地模拟。'
+          )}
         </p>
+        {settings.cloudBackend === 'orbit' ? (
+          <div className={`orbit-status ${orbitStatus?.configured ? 'is-live' : 'is-off'}`}>
+            <Icon name={orbitStatus?.configured ? 'wifi' : 'info'} size={14} />
+            <span>
+              {orbitStatus === null
+                ? tr('Checking the bridge…', '正在检查桥接…')
+                : orbitStatus.configured
+                  ? tr(
+                      `Bridge ready · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}`,
+                      `桥接就绪 · ${orbitStatus.gatewayHost} · binding ${orbitStatus.bindingId}`
+                    )
+                  : tr(
+                      'Bridge not configured — set ORBIT_GATEWAY_URL and ORBIT_TOKEN on the server.',
+                      '桥接未配置 — 请在服务端设置 ORBIT_GATEWAY_URL 和 ORBIT_TOKEN。'
+                    )}
+            </span>
+          </div>
+        ) : null}
       </div>
 
       <div className="settings-group">

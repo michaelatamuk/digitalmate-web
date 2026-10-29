@@ -1,8 +1,12 @@
 # Orbit / Jiuwen connection notes
 
-These are working notes for the future real transport. They describe the behaviour observed
-in the native DigitalMate client and its public documentation. The mock web app does not use
-this connection yet.
+These are working notes for the real transport. They describe the behaviour observed in the
+native DigitalMate client and its public documentation.
+
+The web app now implements an optional bridge in `server/orbit.ts` plus
+`src/transport/orbit.ts`. It does **not** perform the Huawei/AGC account exchange yet; it
+accepts a pre-issued Bearer token on the server. Without configuration the app stays on the
+local mock transport.
 
 ## Topology
 
@@ -92,6 +96,61 @@ Operational rules:
 - Request acceptance is not task completion; completion arrives through events/snapshots.
 - `submission_id` is a UUID; ambiguous submissions are not automatically replayed.
 - On reconnect, the client should reconcile with a snapshot.
+
+## Implemented web bridge
+
+Configuration:
+
+```text
+ORBIT_GATEWAY_URL      wss://host/orbit/ws?binding_id=default
+ORBIT_TOKEN            Bearer token (temporary local testing only)
+ORBIT_TOKEN_FILE       path to a token file (preferred)
+ORBIT_BINDING_ID       optional binding override
+ORBIT_ALLOW_INSECURE_WS=1   allow ws:// for a local gateway only
+```
+
+Browser endpoints:
+
+```text
+GET  /api/orbit/health   { configured, mode, gatewayHost, bindingId }
+POST /api/orbit/turn     { text, roomId?, submissionId? } → text/event-stream
+```
+
+One turn:
+
+1. the browser posts to `/api/orbit/turn`;
+2. the bridge opens a WSS connection with `Authorization: Bearer …`;
+3. sends `room.home` and resolves the room id from the result/snapshot;
+4. sends `room.message` with the text and `submission_id`;
+5. maps `orbit.task.text` to SSE text events and `final: true` to `done`;
+6. maps task errors to an SSE error and closes the socket.
+
+Limits and safety:
+
+- `wss://` only unless explicitly overridden;
+- 12-second request timeout, 120-second turn timeout;
+- 32 KB request body limit;
+- token never sent to the browser and never included in health output;
+- a fresh socket per turn, with no task replay.
+
+Remaining work: account exchange, persistent session/room state, snapshot reconciliation,
+and reconnect/backoff. A browser cannot safely hold the Gateway token, so those pieces belong
+in the bridge.
+
+## Local fake gateway
+
+`npm run bridge:fake` starts `scripts/fake-orbit.mjs` on `ws://127.0.0.1:8899/orbit/ws`.
+It accepts any Bearer token, answers `room.home` with `room_demo`, and streams one echoed
+`orbit.task.text` event followed by `final: true`. Use it with:
+
+```powershell
+$env:ORBIT_GATEWAY_URL='ws://127.0.0.1:8899/orbit/ws'
+$env:ORBIT_TOKEN='test-token'
+$env:ORBIT_ALLOW_INSECURE_WS='1'
+npm run dev
+```
+
+This is a smoke-test harness for the bridge path, not a replacement for the real gateway.
 
 ## Legacy WorkSwarm protocol
 
