@@ -1,7 +1,7 @@
 {
   "name": "digitalmate-web",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Mock-first web companion for the DigitalMate HarmonyOS app.",
   "scripts": {

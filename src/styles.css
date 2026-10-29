@@ -304,6 +304,10 @@ a {
   color: var(--muted);
 }
 
+.topbar.is-simple {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -5570,7 +5574,42 @@ a {
   border-radius: 0;
   box-shadow: none;
   padding-top: max(env(safe-area-inset-top), 32px);
-  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+  padding-bottom: 0;
+}
+
+.stage.is-native .bottom-nav {
+  height: calc(58px + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.stage.is-native .composer-hint {
+  padding-bottom: 4px;
+}
+
+.stage.is-native .sheet-layer {
+  padding-top: env(safe-area-inset-top);
+}
+
+.stage.is-native .sheet-panel {
+  max-height: calc(100% - 10px);
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+
+.stage.is-native .detail-layer {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.stage.is-native .offline-banner {
+  top: calc(env(safe-area-inset-top) + 60px);
+}
+
+.stage.is-native .demo-pill {
+  top: calc(env(safe-area-inset-top) + 66px);
+}
+
+.stage.is-native .toast {
+  bottom: calc(116px + env(safe-area-inset-bottom));
 }
 
 .stage.is-native .screen-content {

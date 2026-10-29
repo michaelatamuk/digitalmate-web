@@ -64,7 +64,7 @@ interface TopBarProps {
 
 export function TopBar({ left, title, subtitle, right, subtle }: TopBarProps) {
   return (
-    <header className={`topbar ${subtle ? 'is-subtle' : ''}`}>
+    <header className={`topbar ${subtle ? 'is-subtle' : ''} ${title ? '' : 'is-simple'}`}>
       <div className="topbar-left">{left}</div>
       {title ? (
         <div className="topbar-center">
