@@ -13,8 +13,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Guided demo | ✅ | Scripted walkthrough |
 | Orbit rooms/sessions/task rows | ❌ | Single mock thread |
 | Stop / retry / task clear | ✅ | Stop, retry, copy and clear per exchange |
-| Attachments and upload | 🟡 | Fake PDF chip only |
-| Artifacts and preview | ❌ | Not implemented |
+| Attachments and upload | ✅ | Local picker, text/image preview, PDF metadata; no upload |
+| Artifacts and preview | 🟡 | Local text/image preview; PDF text and rich artifacts absent |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ❌ | Interest feed only |
 | Saved cards / share | 🟡 | Save works; share absent |
@@ -72,7 +72,7 @@ custom thinking card).
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, retry/clear, memory, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 48 tests for mock logic, scenarios, A2UI, RSS, transport, sessions and backup |
+| Automated UI tests | ✅ | Playwright: chat, attachments, retry/clear, memory, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Unit tests | ✅ | 52 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup and attachments |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

@@ -65,6 +65,24 @@ test('is installable and advertises account-free offline access', async ({ page 
   await expect(page.getByText(/Offline ·|Online ·/)).toBeVisible();
 });
 
+test('previews and sends a local attachment without uploading', async ({ page }) => {
+  await page.locator('.composer-wrap input[type="file"]').setInputFiles({
+    name: 'notes.txt',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Local attachment preview works.')
+  });
+  await expect(page.getByRole('button', { name: 'Preview notes.txt' })).toBeVisible();
+  await page.getByRole('button', { name: 'Preview notes.txt' }).click();
+  await expect(page.locator('.attachment-preview-text')).toContainText('Local attachment preview works.');
+  await expect(page.getByText(/Previewed locally/)).toBeVisible();
+  await page.locator('.sheet-head .icon-button').click();
+
+  await page.locator('.composer-send').click();
+  await expect(page.locator('.user-bubble')).toHaveText('Summarize the attachment');
+  await expect(page.locator('.message-attachment')).toContainText('notes.txt');
+  await expect(page.locator('.message-assistant')).toBeVisible();
+});
+
 test('retries and clears a local message exchange', async ({ page }) => {
   await sendMessage(page, 'Find coffee nearby');
   await expect(page.locator('.a2ui-surface')).toBeVisible();
@@ -114,7 +132,7 @@ test('exports and restores a local backup without an account', async ({ page }) 
       'digitalmate.web.v2.messages.v1': '[{"id":"restored"}]'
     }
   };
-  await page.locator('.hidden-file-input').setInputFiles({
+  await page.locator('.sheet-layer .hidden-file-input').setInputFiles({
     name: 'backup.json',
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(backup))

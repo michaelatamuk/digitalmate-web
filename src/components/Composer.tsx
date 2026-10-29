@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import type { Attachment } from '../types';
+import { formatFileSize } from '../lib/attachments';
 import { Icon } from './Icons';
 import { useI18n } from '../i18n/I18nContext';
 
@@ -9,8 +11,9 @@ interface ComposerProps {
   onStop?: () => void;
   busy?: boolean;
   placeholder?: string;
-  attachments?: string[];
-  onAttach?: () => void;
+  attachments?: Attachment[];
+  onAddFiles?: (files: File[]) => void;
+  onPreviewAttachment?: (attachment: Attachment) => void;
   onRemoveAttachment?: (index: number) => void;
   onNotice?: (message: string) => void;
 }
@@ -23,13 +26,15 @@ export function Composer({
   busy,
   placeholder = 'Ask DigitalMate anything',
   attachments = [],
-  onAttach,
+  onAddFiles,
+  onPreviewAttachment,
   onRemoveAttachment,
   onNotice
 }: ComposerProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const { tr } = useI18n();
-  const canSend = value.trim().length > 0 && !busy;
+  const canSend = (value.trim().length > 0 || attachments.length > 0) && !busy;
 
   useEffect(() => {
     const input = inputRef.current;
@@ -43,12 +48,21 @@ export function Composer({
       {attachments.length > 0 ? (
         <div className="attachment-row">
           {attachments.map((file, index) => (
-            <span className="attachment-chip" key={`${file}-${index}`}>
-              <Icon name="grid" size={14} />
-              {file}
+            <span className="attachment-chip" key={file.id}>
               <button
                 type="button"
-                aria-label={tr(`Remove ${file}`, `移除 ${file}`)}
+                className="attachment-open"
+                onClick={() => onPreviewAttachment?.(file)}
+                aria-label={tr(`Preview ${file.name}`, `预览 ${file.name}`)}
+              >
+                <Icon name={file.kind === 'image' ? 'eye' : file.kind === 'pdf' ? 'download' : 'grid'} size={13} />
+                <span>{file.name}</span>
+                <em>{formatFileSize(file.size)}</em>
+              </button>
+              <button
+                type="button"
+                className="attachment-remove"
+                aria-label={tr(`Remove ${file.name}`, `移除 ${file.name}`)}
                 onClick={() => onRemoveAttachment?.(index)}
               >
                 <Icon name="close" size={12} />
@@ -58,8 +72,26 @@ export function Composer({
         </div>
       ) : null}
 
+      <input
+        ref={fileRef}
+        type="file"
+        multiple
+        className="hidden-file-input"
+        accept=".txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml,.html,.htm,.css,.js,.ts,.tsx,image/*,.pdf"
+        onChange={event => {
+          const files = event.target.files ? Array.from(event.target.files) : [];
+          event.target.value = '';
+          if (files.length > 0) onAddFiles?.(files);
+        }}
+      />
+
       <div className={`composer ${busy ? 'is-busy' : ''}`}>
-        <button type="button" className="composer-plus" onClick={onAttach} aria-label={tr('Add attachment', '添加附件')}>
+        <button
+          type="button"
+          className="composer-plus"
+          onClick={() => fileRef.current?.click()}
+          aria-label={tr('Add attachment', '添加附件')}
+        >
           <Icon name="plus" size={22} />
         </button>
         <textarea

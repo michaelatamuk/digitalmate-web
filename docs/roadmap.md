@@ -45,7 +45,8 @@
 - [ ] Orbit room/session/task shell
 - [x] Stop, retry, copy and clear a message exchange
 - [ ] Long-press and per-task detail rows
-- [ ] Attachments and artifact preview
+- [x] Local attachments with text/image preview
+- [ ] PDF text extraction and richer artifact preview
 - [ ] Approval cards and connection/quota states
 - [ ] Skill detail, publish and OAuth setup
 - [x] Local memory editing and forget-all

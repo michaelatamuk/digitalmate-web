@@ -46,12 +46,26 @@ export interface A2uiSurface {
   data: Record<string, unknown>;
 }
 
+export interface AttachmentMeta {
+  name: string;
+  size: number;
+  type: string;
+  kind: 'text' | 'image' | 'pdf' | 'other';
+}
+
+export interface Attachment extends AttachmentMeta {
+  id: string;
+  url?: string;
+  text?: string;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   text: string;
   createdAt: number;
   surface?: A2uiSurface;
+  attachments?: AttachmentMeta[];
   thinking?: {
     title: string;
     steps: ThinkingStep[];

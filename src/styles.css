@@ -828,8 +828,8 @@ a {
 .attachment-chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
+  gap: 1px;
+  padding: 3px 4px 3px 3px;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(33, 27, 23, 0.07);
@@ -837,12 +837,120 @@ a {
   color: #5c4f45;
 }
 
-.attachment-chip button {
+.attachment-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 190px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 2px 3px;
+  font: inherit;
+  text-align: left;
+}
+
+.attachment-open span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-open em {
+  flex-shrink: 0;
+  font-style: normal;
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.attachment-remove {
   border: none;
   background: transparent;
   color: var(--muted);
-  padding: 0;
+  padding: 2px;
   display: inline-flex;
+  border-radius: 5px;
+}
+
+.attachment-remove:hover {
+  background: rgba(33, 27, 23, 0.06);
+  color: var(--ink);
+}
+
+.message-attachment-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 82%;
+  margin-top: 4px;
+}
+
+.message-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 7px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(33, 27, 23, 0.06);
+  font-size: 8px;
+  color: var(--muted);
+}
+
+.message-attachment em {
+  font-style: normal;
+  font-size: 7.5px;
+}
+
+.attachment-preview-image {
+  display: block;
+  width: 100%;
+  max-height: 46vh;
+  object-fit: contain;
+  border-radius: 13px;
+  background: rgba(33, 27, 23, 0.04);
+}
+
+.attachment-preview-text {
+  max-height: 46vh;
+  overflow: auto;
+  margin: 0;
+  padding: 11px;
+  border-radius: 12px;
+  border: 1px solid rgba(33, 27, 23, 0.06);
+  background: #fff;
+  font-size: 9.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.attachment-preview-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 11px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(33, 27, 23, 0.06);
+}
+
+.attachment-preview-note svg {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.attachment-preview-note strong {
+  display: block;
+  font-size: 10.5px;
+}
+
+.attachment-preview-note p {
+  margin: 3px 0 0;
+  font-size: 9px;
+  line-height: 1.55;
+  color: var(--muted);
 }
 
 /* ---------- bottom nav ---------- */

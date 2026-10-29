@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   A2uiAction,
+  Attachment,
   CalendarEvent,
   FeedCard,
   ItemDetail,
@@ -24,6 +25,8 @@ import { ChatView } from './components/ChatView';
 import { DiscoveryView } from './components/DiscoveryView';
 import { Composer } from './components/Composer';
 import { DetailsSheet } from './components/DetailsSheet';
+import { AttachmentSheet } from './components/AttachmentSheet';
+import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
@@ -64,7 +67,8 @@ export default function App() {
   const [archived, setArchived] = usePersistentState<Message[]>(STORAGE_KEYS.archived, []);
   const [busy, setBusy] = useState(false);
   const [composer, setComposer] = useState('');
-  const [attachments, setAttachments] = useState<string[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [activeSkill, setActiveSkill] = useState('general');
   const [sheet, setSheet] = useState<SheetName>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
@@ -140,8 +144,46 @@ export default function App() {
     }
   };
 
+  const addFiles = async (fileList: File[] | FileList) => {
+    const incoming = Array.from(fileList);
+    const room = MAX_ATTACHMENTS - attachments.length;
+    if (room <= 0) {
+      showToast(tr(`You can attach up to ${MAX_ATTACHMENTS} files.`, `最多可添加 ${MAX_ATTACHMENTS} 个附件。`));
+      return;
+    }
+    const valid: File[] = [];
+    for (const file of incoming.slice(0, room)) {
+      const error = validateAttachment(file);
+      if (error) {
+        showToast(tr(`Skipped ${error}.`, `已跳过 ${error}。`));
+      } else {
+        valid.push(file);
+      }
+    }
+    if (valid.length === 0) return;
+    const loaded = await Promise.all(valid.map(readAttachment));
+    setAttachments(previous => [...previous, ...loaded].slice(0, MAX_ATTACHMENTS));
+    showToast(
+      tr(
+        `Attached ${loaded.length} file${loaded.length === 1 ? '' : 's'} locally.`,
+        `已在本地添加 ${loaded.length} 个附件。`
+      )
+    );
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(previous => {
+      const next = [...previous];
+      const [removed] = next.splice(index, 1);
+      if (removed) releaseAttachment(removed);
+      return next;
+    });
+  };
+
   const send = async (raw: string, options: { appendUser?: boolean } = {}) => {
-    const prompt = raw.trim();
+    const outgoing = attachments;
+    const prompt =
+      raw.trim() || (outgoing.length > 0 ? tr('Summarize the attachment', '总结附件') : '');
     if (!prompt) return;
     if (busy) {
       showToast(tr('Still generating — please wait.', '正在生成，请稍候。'));
@@ -152,14 +194,18 @@ export default function App() {
     setHome(false);
     setTab('chat');
     setComposer('');
-    setAttachments([]);
+    setAttachments(current => {
+      current.forEach(releaseAttachment);
+      return [];
+    });
     setBusy(true);
 
     const userMessage: Message = {
       id: newId('u'),
       role: 'user',
       text: prompt,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      ...(outgoing.length > 0 ? { attachments: outgoing.map(summarizeAttachment) } : {})
     };
     const assistantId = newId('a');
     const assistant: Message = {
@@ -789,13 +835,9 @@ export default function App() {
               onStop={stop}
               busy={busy}
               attachments={attachments}
-              onAttach={() => {
-                setAttachments(previous =>
-                  previous.includes('requirements-v3.pdf') ? previous : [...previous, 'requirements-v3.pdf']
-                );
-                showToast(tr('Attached requirements-v3.pdf (demo file)', '已附加 requirements-v3.pdf（演示文件）'));
-              }}
-              onRemoveAttachment={index => setAttachments(previous => previous.filter((_, itemIndex) => itemIndex !== index))}
+              onAddFiles={files => void addFiles(files)}
+              onPreviewAttachment={setPreviewAttachment}
+              onRemoveAttachment={removeAttachment}
               onNotice={showToast}
             />
           </div>
@@ -912,6 +954,14 @@ export default function App() {
 
         {detailItem ? (
           <DetailsSheet detail={detailItem} onClose={() => setDetailItem(null)} onNotice={showToast} />
+        ) : null}
+
+        {previewAttachment ? (
+          <AttachmentSheet
+            attachment={previewAttachment}
+            onClose={() => setPreviewAttachment(null)}
+            onNotice={showToast}
+          />
         ) : null}
 
         {calendarOpen ? (

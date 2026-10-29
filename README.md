@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 48 unit tests plus Playwright UI, mobile and accessibility checks
+- 52 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -36,6 +36,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Transport streaming, execution trace, markdown, follow-ups, copy/retry/clear |
+| Attachments | Local file picker, text/image preview, PDF metadata; nothing uploaded |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Memory | Editable local profile with tags and sections; forget everything |
@@ -151,6 +152,13 @@ key to a JSON file and import it again. Export includes chats, calendar events, 
 RSS subscriptions, skills and settings. Import validates the app marker, version and keys,
 replaces only DigitalMate keys, then reloads the app. Unrelated browser storage is untouched.
 
+## Local attachments
+
+The composer can attach up to five local files (5 MB each). Text-like files are read in the
+browser and previewed as text; images are previewed with an object URL; PDFs show metadata only.
+Nothing is uploaded. Sent messages keep the file name, size and kind, while the file contents
+stay in memory for the current session only.
+
 Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
 bridge is configured. If it is not, turns fall back to the local mock and say so.
 
@@ -188,6 +196,7 @@ src/
     BeeBou.tsx            mascot component
     HomeView, ChatView, DiscoveryView
     DetailsSheet.tsx      travel/train/food detail sheet
+    AttachmentSheet.tsx   local text/image/PDF metadata preview
     CalendarEventSheet.tsx local calendar event form
     Overlays.tsx          history, skills, settings, memory, detail
     Chrome.tsx            status bar, top bar, brand mark
@@ -211,6 +220,7 @@ src/
     rss.ts                browser client for the local RSS proxy
     rssParse.ts           RSS 2.0 / Atom / RDF parser and HTML cleanup
     backup.ts             local JSON export/import and validation
+    attachments.ts        local file validation, reading and preview metadata
   transport/
     types.ts              ChatTransport and turn-event contract
     mock.ts               local mock transport
@@ -239,6 +249,7 @@ tests/
   rssParse.test.ts        RSS/Atom parsing and proxy URL guards
   orbitTransport.test.ts  bridge config, SSE parsing and transport events
   backup.test.ts          local backup export, validation and restore
+  attachments.test.ts     local attachment kinds, validation and reading
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 scripts/

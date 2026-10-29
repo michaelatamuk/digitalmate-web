@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ItemDetail, Message, ThinkingStep } from '../types';
+import { formatFileSize } from '../lib/attachments';
 import { renderMarkdown } from '../lib/markdown';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { Icon } from './Icons';
@@ -113,6 +114,17 @@ export function MessageBubble({
     return (
       <div className="message message-user">
         <div className="user-bubble">{message.text}</div>
+        {message.attachments?.length ? (
+          <div className="message-attachment-row">
+            {message.attachments.map((attachment, index) => (
+              <span className="message-attachment" key={`${attachment.name}-${index}`}>
+                <Icon name={attachment.kind === 'image' ? 'eye' : attachment.kind === 'pdf' ? 'download' : 'grid'} size={11} />
+                {attachment.name}
+                <em>{formatFileSize(attachment.size)}</em>
+              </span>
+            ))}
+          </div>
+        ) : null}
         <time>{new Date(message.createdAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</time>
       </div>
     );
