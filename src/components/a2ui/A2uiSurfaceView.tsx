@@ -1,0 +1,450 @@
+import type { ReactNode } from 'react';
+import type { A2uiAction, A2uiComponent, A2uiSurface } from '../../types';
+import { renderMarkdown } from '../../lib/markdown';
+import { Icon } from '../Icons';
+import { useI18n } from '../../i18n/I18nContext';
+
+interface SurfaceProps {
+  surface: A2uiSurface;
+  onAction: (action: A2uiAction) => void;
+}
+
+function resolvePath(data: unknown, path?: string): unknown {
+  if (!path || path === '/') return data;
+  return path
+    .split('/')
+    .filter(Boolean)
+    .reduce<unknown>((current, segment) => {
+      if (current === null || current === undefined) return undefined;
+      if (Array.isArray(current)) return current[Number(segment)];
+      if (typeof current === 'object') return (current as Record<string, unknown>)[segment];
+      return undefined;
+    }, data);
+}
+
+function textOf(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return '';
+}
+
+function statusLabel(status: string, tr: (en: string, zh: string) => string): string {
+  if (status === 'ready') return tr('Ready', '已就绪');
+  if (status === 'error') return tr('Error', '失败');
+  if (status === 'thinking') return tr('Working', '处理中');
+  return status;
+}
+
+function toneClass(tone?: string): string {
+  switch (tone) {
+    case 'success':
+      return 'tone-success';
+    case 'warning':
+      return 'tone-warning';
+    case 'danger':
+      return 'tone-danger';
+    case 'accent':
+      return 'tone-accent';
+    case 'train':
+      return 'tone-train';
+    case 'flight':
+      return 'tone-flight';
+    default:
+      return 'tone-muted';
+  }
+}
+
+interface RenderContext {
+  surface: A2uiSurface;
+  onAction: (action: A2uiAction) => void;
+  tr: (en: string, zh: string) => string;
+}
+
+function actionButton(action: A2uiAction, ctx: RenderContext, key: string): ReactNode {
+  return (
+    <button
+      key={key}
+      type="button"
+      className={`a2ui-button ${action.variant === 'primary' ? 'is-primary' : action.variant === 'ghost' ? 'is-ghost' : 'is-secondary'}`}
+      onClick={() => ctx.onAction(action)}
+    >
+      {action.label}
+      {action.variant === 'primary' ? <Icon name="chevronRight" size={14} /> : null}
+    </button>
+  );
+}
+
+function renderComponent(component: A2uiComponent, ctx: RenderContext, key: string): ReactNode {
+  const { surface, tr } = ctx;
+  const children = component.children ?? (component.child ? [component.child] : []);
+
+  switch (component.component) {
+    case 'SurfaceRoot':
+      return (
+        <section className="a2ui-surface" key={key} aria-label={component.title ?? surface.title}>
+          <header className="surface-head">
+            <div>
+              <div className="surface-kicker">
+                <span className="surface-dot" />
+                A2UI · {surface.status === 'error' ? tr('Error', '错误') : tr('Ready', '已就绪')}
+              </div>
+              <h3>{component.title ?? surface.title}</h3>
+              {surface.subtitle ? <p>{surface.subtitle}</p> : null}
+            </div>
+            {component.status ? <span className="surface-status">{statusLabel(component.status, tr)}</span> : null}
+          </header>
+          <div className="surface-body">
+            {children.map((childId, index) => {
+              const child = surface.components[childId];
+              return child ? renderComponent(child, ctx, `${key}-${childId}-${index}`) : null;
+            })}
+          </div>
+        </section>
+      );
+
+    case 'Column':
+      return (
+        <div className="a2ui-col" key={key}>
+          {children.map((childId, index) => {
+            const child = surface.components[childId];
+            return child ? renderComponent(child, ctx, `${key}-${childId}-${index}`) : null;
+          })}
+        </div>
+      );
+
+    case 'Row':
+      return (
+        <div className="a2ui-row" key={key}>
+          {children.map((childId, index) => {
+            const child = surface.components[childId];
+            return child ? renderComponent(child, ctx, `${key}-${childId}-${index}`) : null;
+          })}
+        </div>
+      );
+
+    case 'Text': {
+      const value = component.text ?? component.body ?? textOf(resolvePath(surface.data, component.dataPath));
+      return (
+        <div className="a2ui-text" key={key}>
+          {renderMarkdown(value)}
+        </div>
+      );
+    }
+
+    case 'InfoRows': {
+      const rows = (resolvePath(surface.data, component.dataPath) ?? component.children ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="info-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="info-rows">
+            {rows.map((row, index) => (
+              <div className="info-row" key={`${key}-row-${index}`}>
+                <span>{row.label}</span>
+                <strong className={toneClass(row.tone)}>{row.value}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'ActionBar':
+      return (
+        <div className="a2ui-actions" key={key}>
+          {(component.actions ?? []).map((action, index) => actionButton(action, ctx, `${key}-action-${index}`))}
+        </div>
+      );
+
+    case 'ErrorNotice':
+      return (
+        <div className="a2ui-error" key={key}>
+          <Icon name="info" size={18} />
+          <div>
+            <strong>{component.title ?? tr('Unable to complete', '暂时无法完成')}</strong>
+            <p>{component.body ?? component.text ?? tr('The source did not return a usable result.', '来源没有返回可用结果。')}</p>
+          </div>
+        </div>
+      );
+
+    case 'TravelOptions': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="travel-list">
+            {items.map((item, index) => {
+              const isTrain = item.kind === 'train';
+              return (
+                <article className={`travel-card ${isTrain ? 'is-train' : 'is-flight'}`} key={`${key}-travel-${index}`}>
+                  <div className="travel-top">
+                    <span className={`kind-pill ${isTrain ? 'is-train' : 'is-flight'}`}>
+                      <Icon name={isTrain ? 'train' : 'plane'} size={15} />
+                      {isTrain ? tr('Train', '高铁') : tr('Flight', '飞机')}
+                    </span>
+                    <span className="travel-code">{item.code}</span>
+                    <span className="travel-price">{item.price}</span>
+                  </div>
+                  <div className="travel-route">
+                    <div>
+                      <strong>{item.depart}</strong>
+                      <span>{item.from}</span>
+                    </div>
+                    <div className="travel-line">
+                      <span>{item.duration}</span>
+                      <i />
+                    </div>
+                    <div>
+                      <strong>{item.arrive}</strong>
+                      <span>{item.to}</span>
+                    </div>
+                  </div>
+                  <div className="travel-bottom">
+                    <span className="travel-seats">{item.seats}</span>
+                    <span className="source-tag">{item.sourceTag}</span>
+                    <button
+                      type="button"
+                      className="link-button"
+                      onClick={() =>
+                        ctx.onAction({
+                          id: `view-${item.code ?? index}`,
+                          label: tr('Details', '查看详情')
+                        })
+                      }
+                    >
+                      {tr('View', '查看')}
+                      <Icon name="chevronRight" size={13} />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    case 'TrainOptions': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="travel-list">
+            {items.map((item, index) => (
+              <article className="travel-card is-train" key={`${key}-train-${index}`}>
+                <div className="travel-top">
+                  <span className="kind-pill is-train">
+                    <Icon name="train" size={15} />
+                    {tr('Train', '高铁')}
+                  </span>
+                  <span className="travel-code">{item.trainCode}</span>
+                  <span className="travel-price">{item.price}</span>
+                </div>
+                <div className="travel-route">
+                  <div>
+                    <strong>{item.depart}</strong>
+                    <span>{item.from}</span>
+                  </div>
+                  <div className="travel-line">
+                    <span>{item.duration}</span>
+                    <i />
+                  </div>
+                  <div>
+                    <strong>{item.arrive}</strong>
+                    <span>{item.to}</span>
+                  </div>
+                </div>
+                <div className="travel-bottom">
+                  <span className="travel-seats">{item.seats}</span>
+                  <span className="source-tag">{item.sourceTag}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'FoodChoices': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="food-list">
+            {items.map((item, index) => {
+              const tags = (item.sourceTags as string[]) ?? [];
+              return (
+                <article className="food-card" key={`${key}-food-${index}`}>
+                  <div className="food-mark">
+                    <Icon name="coffee" size={20} />
+                  </div>
+                  <div className="food-main">
+                    <div className="food-title-line">
+                      <h4>{textOf(item.name)}</h4>
+                      <span className="food-price">{textOf(item.price)}</span>
+                    </div>
+                    <div className="food-meta">
+                      <span>{textOf(item.category)}</span>
+                      <span>·</span>
+                      <span>{textOf(item.distance)}</span>
+                      <span>·</span>
+                      <span>{textOf(item.rating)} ★</span>
+                      <span className="open-pill">{textOf(item.open)}</span>
+                    </div>
+                    <div className="food-address">{textOf(item.address)}</div>
+                    <div className="tag-row">
+                      {tags.map(tag => (
+                        <span className="mini-tag" key={`${key}-${index}-${tag}`}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    case 'SocialHub': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="social-list">
+            {items.map((item, index) => (
+              <article className={`social-card ${item.unread ? 'is-unread' : ''}`} key={`${key}-social-${index}`}>
+                <div className="social-avatar">{textOf(item.author).slice(0, 1)}</div>
+                <div className="social-body">
+                  <div className="social-head">
+                    <strong>{textOf(item.author)}</strong>
+                    <span>{textOf(item.handle)}</span>
+                    <span className="social-channel">{textOf(item.channel)}</span>
+                    <time>{textOf(item.time)}</time>
+                  </div>
+                  <p>{textOf(item.text)}</p>
+                </div>
+                {item.unread ? <span className="unread-dot" /> : null}
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'ConfirmPanel':
+      return (
+        <div className="confirm-panel" key={key}>
+          <div className="confirm-icon">
+            <Icon name="shield" size={18} />
+          </div>
+          <div className="confirm-main">
+            <strong>{component.title ?? tr('Needs confirmation', '需要确认')}</strong>
+            <p>{component.body ?? component.text}</p>
+            {component.actions?.length ? (
+              <div className="a2ui-actions">
+                {component.actions.map((action, index) => actionButton(action, ctx, `${key}-confirm-${index}`))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      );
+
+    case 'GenericToolResults': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="generic-list">
+            {items.map((item, index) => (
+              <article className="generic-row" key={`${key}-generic-${index}`}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{item.subtitle}</span>
+                </div>
+                <div className="generic-meta">
+                  <span>{item.meta}</span>
+                  {item.status ? <em>{item.status}</em> : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'MetricGrid': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? component.metrics ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="metric-grid">
+            {items.map((item, index) => (
+              <div className="metric-card" key={`${key}-metric-${index}`}>
+                <span>{item.label}</span>
+                <strong className={toneClass(item.tone)}>{item.value}</strong>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'ScheduleStack': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="schedule-list">
+            {items.map((item, index) => (
+              <div className="schedule-row" key={`${key}-schedule-${index}`}>
+                <time>{item.time}</time>
+                <span className={`schedule-line ${toneClass(item.tone)}`} />
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{item.meta}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'ThinkingStream': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          <div className="thinking-inline">
+            {items.map((item, index) => (
+              <div className="thinking-step" key={`${key}-think-${index}`}>
+                <span className={`step-dot ${item.status ?? 'pending'}`} />
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    default:
+      return (
+        <div className="a2ui-error" key={key}>
+          <Icon name="info" size={16} />
+          <div>
+            <strong>{tr('Unknown component', '未知组件')}</strong>
+            <p>{component.component}</p>
+          </div>
+        </div>
+      );
+  }
+}
+
+export function A2uiSurfaceView({ surface, onAction }: SurfaceProps) {
+  const { tr } = useI18n();
+  const root = surface.components[surface.root];
+  if (!root) return null;
+  return <div className="a2ui-root">{renderComponent(root, { surface, onAction, tr }, 'root')}</div>;
+}

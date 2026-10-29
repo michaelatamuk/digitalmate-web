@@ -1,0 +1,20 @@
+DigitalMate Web
+Copyright 2026 Michael Atamuk
+
+This project is an independent, unofficial web companion inspired by the
+DigitalMate HarmonyOS client:
+
+    https://github.com/openJiuwen-ai/DigitalMate
+
+The DigitalMate project is licensed under the Apache License, Version 2.0.
+This repository contains a new web implementation. It does not vendor the
+native ArkTS application, its build system, or its test suites.
+
+The BeeBou mascot images under public/bee/ are copied from the DigitalMate
+project. They remain subject to the original project's terms and to any
+applicable copyright, trademark, or brand rights. Obtain permission from the
+rights holder or replace these assets before commercial use or redistribution
+in a context that implies official endorsement.
+
+This project is not affiliated with or endorsed by the DigitalMate
+maintainers, openJiuwen, or Huawei.
