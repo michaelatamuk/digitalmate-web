@@ -29,6 +29,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Settings / app update | 🟡 | Demo settings; browser notifications only |
 | Notifications / background tasks | 🟡 | Browser notification when hidden and permitted |
 | Offline use | ✅ | Production PWA shell cached; local data persists |
+| Local backup | ✅ | Export/import JSON in Settings; validated and scoped to app keys |
 | Home-screen widgets / atomic services | ❌ | Native only |
 
 ## A2UI and protocol
@@ -72,6 +73,6 @@ custom thinking card).
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
-| Unit tests | ✅ | 43 tests for mock logic, scenarios, A2UI, RSS, transport and sessions |
+| Unit tests | ✅ | 48 tests for mock logic, scenarios, A2UI, RSS, transport, sessions and backup |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

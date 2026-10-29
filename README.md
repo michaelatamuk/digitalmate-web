@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 43 unit tests plus Playwright UI, mobile and accessibility checks
+- 48 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -47,6 +47,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
 | Offline / PWA | Installable production build; shell and assets cached, no API caching |
+| Your data | Export/import a local JSON backup of chats, calendar, saved cards and settings |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
@@ -143,6 +144,13 @@ service worker is registered only in production builds to avoid stale caches dur
 In a supported browser, use the install button in **Settings → Account-free access** or the
 browser’s own “Install app” action.
 
+## Local backup
+
+Because there is no account, **Settings → Your data** can export every `digitalmate.web.v2.*`
+key to a JSON file and import it again. Export includes chats, calendar events, saved cards,
+RSS subscriptions, skills and settings. Import validates the app marker, version and keys,
+replaces only DigitalMate keys, then reloads the app. Unrelated browser storage is untouched.
+
 Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
 bridge is configured. If it is not, turns fall back to the local mock and say so.
 
@@ -202,6 +210,7 @@ src/
     storage.ts            localStorage helpers
     rss.ts                browser client for the local RSS proxy
     rssParse.ts           RSS 2.0 / Atom / RDF parser and HTML cleanup
+    backup.ts             local JSON export/import and validation
   transport/
     types.ts              ChatTransport and turn-event contract
     mock.ts               local mock transport
@@ -229,6 +238,7 @@ tests/
   a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo
   rssParse.test.ts        RSS/Atom parsing and proxy URL guards
   orbitTransport.test.ts  bridge config, SSE parsing and transport events
+  backup.test.ts          local backup export, validation and restore
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 scripts/

@@ -3,6 +3,7 @@ import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Sk
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
+import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
@@ -357,6 +358,7 @@ export function SettingsSheet({
   const [online, setOnline] = useState(() => navigator.onLine);
   const [offlineReady, setOfflineReady] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
     orbitHealth()
@@ -395,6 +397,45 @@ export function SettingsSheet({
       window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
+
+  const downloadBackup = () => {
+    const backup = collectBackup(window.localStorage);
+    const summary = summarizeBackup(backup);
+    const blob = new Blob([serializeBackup(backup)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `digitalmate-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    onNotice(
+      tr(
+        `Exported ${summary.keys} keys (${formatBytes(summary.bytes)}).`,
+        `已导出 ${summary.keys} 项数据（${formatBytes(summary.bytes)}）。`
+      )
+    );
+  };
+
+  const importBackup = async (file: File) => {
+    try {
+      const summary = restoreBackup(window.localStorage, await file.text());
+      onNotice(
+        tr(
+          `Imported ${summary.keys} keys (${formatBytes(summary.bytes)}). Reloading…`,
+          `已导入 ${summary.keys} 项数据（${formatBytes(summary.bytes)}），即将刷新…`
+        )
+      );
+      window.setTimeout(() => window.location.reload(), 700);
+    } catch (error) {
+      onNotice(
+        tr(
+          `Could not import backup: ${error instanceof Error ? error.message : 'invalid file'}`,
+          `无法导入备份：${error instanceof Error ? error.message : '文件无效'}`
+        )
+      );
+    }
+  };
+
   return (
     <Sheet title={tr('Settings', '设置')} subtitle={tr('Local demo · nothing is uploaded', '本地演示 · 不会上传任何数据')} onClose={onClose} wide>
       <div className="account-card">
@@ -554,6 +595,43 @@ export function SettingsSheet({
             {tr('Install app', '安装应用')}
           </button>
         ) : null}
+      </div>
+
+      <div className="settings-group">
+        <span className="settings-label">{tr('Your data', '你的数据')}</span>
+        <p className="settings-note">
+          {tr(
+            'Back up chats, calendar events, saved cards, RSS subscriptions and settings to a local JSON file. Nothing leaves this device.',
+            '把对话、日程、收藏卡片、RSS 订阅和设置备份为本地 JSON 文件。数据不会离开这台设备。'
+          )}
+        </p>
+        <div className="settings-actions">
+          <button type="button" className="secondary-action" onClick={downloadBackup}>
+            <Icon name="download" size={14} />
+            {tr('Export backup', '导出备份')}
+          </button>
+          <button type="button" className="secondary-action" onClick={() => backupInput.current?.click()}>
+            <Icon name="download" size={14} />
+            {tr('Import backup', '导入备份')}
+          </button>
+        </div>
+        <input
+          ref={backupInput}
+          type="file"
+          accept="application/json,.json"
+          className="hidden-file-input"
+          onChange={event => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (file) void importBackup(file);
+          }}
+        />
+        <p className="settings-note">
+          {tr(
+            'Import replaces the local DigitalMate data in this browser after a reload.',
+            '导入后会替换当前浏览器中的 DigitalMate 本地数据，并自动刷新。'
+          )}
+        </p>
       </div>
 
       <div className="settings-group">

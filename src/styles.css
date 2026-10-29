@@ -4113,6 +4113,17 @@ a {
   flex-shrink: 0;
 }
 
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

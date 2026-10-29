@@ -63,6 +63,7 @@
 
 - [x] Automated UI tests and critical accessibility checks
 - [x] Installable PWA with offline shell
+- [x] Local JSON backup and restore
 - [ ] Wider accessibility audit and manual screen-reader pass
 - [ ] Deployment pipeline and environment configuration
 - [ ] Telemetry/crash reporting (privacy-reviewed)

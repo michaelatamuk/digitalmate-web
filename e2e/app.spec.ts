@@ -65,6 +65,36 @@ test('is installable and advertises account-free offline access', async ({ page 
   await expect(page.getByText(/Offline ·|Online ·/)).toBeVisible();
 });
 
+test('exports and restores a local backup without an account', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export backup' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^digitalmate-backup-\d{4}-\d{2}-\d{2}\.json$/);
+
+  const backup = {
+    app: 'digitalmate-web',
+    version: 1,
+    exportedAt: '2026-10-29T10:00:00.000Z',
+    data: {
+      'digitalmate.web.v2.messages.v1': '[{"id":"restored"}]'
+    }
+  };
+  await page.locator('.hidden-file-input').setInputFiles({
+    name: 'backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(backup))
+  });
+
+  await page.waitForFunction(
+    () => window.localStorage.getItem('digitalmate.web.v2.messages.v1') === '[{"id":"restored"}]',
+    null,
+    { timeout: 10_000 }
+  );
+});
+
 test('Orbit mode falls back to the mock when the bridge is not configured', async ({ page }) => {
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
