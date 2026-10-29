@@ -423,16 +423,18 @@ export default function App() {
 
   const saveArtifact = (messageId: string) => {
     const message = messages.find(item => item.id === messageId);
-    if (!message?.text.trim()) {
-      showToast(tr('This message has no text to save.', '这条消息没有可保存的文本。'));
+    if (!message || (!message.text.trim() && !message.surface)) {
+      showToast(tr('This message has no content to save.', '这条消息没有可保存的内容。'));
       return;
     }
-    const duplicate = findDuplicateArtifact(artifacts, message.text);
+    const duplicate = message.text.trim()
+      ? findDuplicateArtifact(artifacts, message.text)
+      : artifacts.find(artifact => artifact.surface?.id === message.surface?.id);
     if (duplicate) {
       showToast(tr('This reply is already saved as an artifact.', '这条回复已保存为成果。'));
       return;
     }
-    const artifact = artifactFromText(message.text);
+    const artifact = artifactFromText(message.text, Date.now(), message.surface);
     if (!artifact) return;
     setArtifacts(previous => [artifact, ...previous]);
     showToast(tr('Saved as a local artifact.', '已保存为本地成果。'));

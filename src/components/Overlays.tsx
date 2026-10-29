@@ -5,7 +5,8 @@ import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
 import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
-import { artifactFilename } from '../lib/artifacts';
+import { artifactDownloadContent, artifactFilename } from '../lib/artifacts';
+import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
@@ -1219,7 +1220,9 @@ export function ArtifactsSheet({
   const selected = artifacts.find(artifact => artifact.id === selectedId);
 
   const download = (artifact: Artifact) => {
-    const blob = new Blob([artifact.content], { type: 'text/markdown;charset=utf-8' });
+    const blob = new Blob([artifactDownloadContent(artifact)], {
+      type: artifact.surface ? 'application/json;charset=utf-8' : 'text/markdown;charset=utf-8'
+    });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -1253,7 +1256,17 @@ export function ArtifactsSheet({
             {' · '}
             {selected.kind}
           </div>
-          <div className="artifact-preview">{renderMarkdown(selected.content)}</div>
+          {selected.surface ? (
+            <div className="artifact-surface">
+              <A2uiSurfaceView
+                surface={selected.surface}
+                onAction={() =>
+                  onNotice(tr('Artifact actions are read-only.', '成果中的操作仅供查看。'))
+                }
+              />
+            </div>
+          ) : null}
+          {selected.content ? <div className="artifact-preview">{renderMarkdown(selected.content)}</div> : null}
           <div className="detail-actions">
             <button type="button" className="secondary-action" onClick={() => download(selected)}>
               <Icon name="download" size={15} />

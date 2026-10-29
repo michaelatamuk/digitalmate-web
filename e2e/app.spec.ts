@@ -147,6 +147,7 @@ test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await page.locator('.artifact-row').first().click();
   await expect(page.locator('.artifact-preview')).toContainText('coffee');
   await expect(page.locator('.artifact-preview')).toContainText('sources');
+  await expect(page.locator('.artifact-surface .a2ui-surface')).toBeVisible();
 });
 
 test('searches the local discovery feed', async ({ page }) => {

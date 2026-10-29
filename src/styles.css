@@ -5173,6 +5173,12 @@ a {
   color: var(--text);
 }
 
+.artifact-surface {
+  max-height: 60vh;
+  overflow: auto;
+  margin-bottom: 9px;
+}
+
 .artifact-preview h2,
 .artifact-preview h3,
 .artifact-preview h4 {

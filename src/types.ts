@@ -60,8 +60,9 @@ export interface AttachmentMeta {
 export interface Artifact {
   id: string;
   title: string;
-  kind: 'markdown' | 'text' | 'json';
+  kind: 'markdown' | 'text' | 'json' | 'surface';
   content: string;
+  surface?: A2uiSurface;
   createdAt: number;
 }
 

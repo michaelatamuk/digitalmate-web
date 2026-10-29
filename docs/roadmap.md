@@ -51,8 +51,8 @@
 - [ ] Long-press and per-task detail rows
 - [x] Local attachments with text/image preview
 - [x] PDF text extraction and richer local previews
-- [x] Local Markdown/text artifacts with preview and download
-- [ ] Rich rendered artifacts (slides, generated charts, app previews)
+- [x] Local artifacts with text and rendered A2UI surfaces
+- [ ] Slides and generated-chart artifact formats
 - [ ] Approval cards and connection/quota states
 - [x] Skill detail and local JSON import/export
 - [ ] OAuth and marketplace skill publishing *(not required without an account)*

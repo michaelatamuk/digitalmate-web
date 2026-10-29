@@ -24,7 +24,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 73 unit tests plus 20 Playwright UI, mobile and accessibility checks
+- 75 unit tests plus 21 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -38,7 +38,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Transport streaming, execution trace, markdown, follow-ups, copy/share/retry/clear |
-| Artifacts | Save replies locally, browse, preview, download and delete |
+| Artifacts | Save replies with A2UI surfaces, browse, preview, download and delete |
 | Attachments | Local picker, text/image preview, PDF text extraction; nothing uploaded |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |

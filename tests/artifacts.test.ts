@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { artifactFilename, artifactFromText, findDuplicateArtifact } from '../src/lib/artifacts';
+import { artifactDownloadContent, artifactFilename, artifactFromText, findDuplicateArtifact } from '../src/lib/artifacts';
+import type { A2uiSurface } from '../src/types';
 
 describe('local artifacts', () => {
   it('creates a markdown artifact with a readable title', () => {
@@ -29,5 +30,38 @@ describe('local artifacts', () => {
     const artifact = artifactFromText('Same reply')!;
     expect(findDuplicateArtifact([artifact], 'Same reply\n')).toBe(artifact);
     expect(findDuplicateArtifact([artifact], 'Different reply')).toBeUndefined();
+  });
+
+  it('stores an A2UI surface as a rich artifact', () => {
+    const surface: A2uiSurface = {
+      id: 'surface_artifact',
+      root: 'root',
+      title: 'Coffee nearby',
+      status: 'ready',
+      components: {
+        root: { id: 'root', component: 'Text', text: 'Hello' }
+      },
+      data: {}
+    };
+    const artifact = artifactFromText('Here are coffee shops', 1000, surface)!;
+    expect(artifact.kind).toBe('surface');
+    expect(artifact.surface).toBe(surface);
+    expect(artifactFilename(artifact)).toBe('here-are-coffee-shops.json');
+    const download = JSON.parse(artifactDownloadContent(artifact)) as Record<string, unknown>;
+    expect(download.title).toBe('Here are coffee shops');
+    expect((download.surface as A2uiSurface).id).toBe('surface_artifact');
+  });
+
+  it('can create a surface-only artifact', () => {
+    const surface: A2uiSurface = {
+      id: 'surface_only',
+      root: 'root',
+      title: 'Travel options',
+      components: { root: { id: 'root', component: 'Text', text: 'Hi' } },
+      data: {}
+    };
+    const artifact = artifactFromText('', 1, surface)!;
+    expect(artifact.title).toBe('Travel options');
+    expect(artifact.kind).toBe('surface');
   });
 });
