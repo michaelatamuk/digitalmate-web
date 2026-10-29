@@ -4,8 +4,7 @@ import type { DiscoveryFilters } from '../transport/discovery';
 import { Icon } from './Icons';
 import { seedFor } from '../data/seed';
 import { fetchRssFeed } from '../lib/rss';
-import { coverForCard } from '../lib/covers';
-import { useI18n } from '../i18n/I18nContext';
+import { coverForCard, fallbackCoverForCard } from '../lib/covers';import { useI18n } from '../i18n/I18nContext';
 
 interface DiscoveryProps {
   cards: FeedCard[];
@@ -254,7 +253,16 @@ export function DiscoveryView({
                     aria-label={tr(`Open ${card.title}`, `打开 ${card.title}`)}
                   >
                     <div className="feed-cover" style={{ background: card.cover }}>
-                      <img className="feed-cover-image" src={cover} alt="" loading="lazy" />
+                      <img
+                        className="feed-cover-image"
+                        src={cover}
+                        alt=""
+                        loading="lazy"
+                        onError={event => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = fallbackCoverForCard(card);
+                        }}
+                      />
                     </div>
                   </button>
                   <span className="feed-source-badge">{card.sourceLabel}</span>

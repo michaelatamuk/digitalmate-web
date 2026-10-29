@@ -7,7 +7,7 @@ import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBa
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
 import { artifactDownloadContent, artifactFilename, artifactSlides } from '../lib/artifacts';
 import { parseMemoryProfile } from '../lib/memoryProfile';
-import { coverForCard } from '../lib/covers';
+import { coverForCard, fallbackCoverForCard } from '../lib/covers';
 import { requestNativeNotificationPermission } from '../lib/native';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
@@ -1629,7 +1629,15 @@ export function DetailView({
       </header>
       <div className="detail-scroll" ref={scrollRef}>
         <div className="detail-cover" style={{ background: card.cover }}>
-          <img className="detail-cover-image" src={coverForCard(card)} alt="" />
+          <img
+            className="detail-cover-image"
+            src={coverForCard(card)}
+            alt=""
+            onError={event => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = fallbackCoverForCard(card);
+            }}
+          />
           <span className="feed-source-badge">{card.sourceLabel}</span>
         </div>
         <div className="detail-body">

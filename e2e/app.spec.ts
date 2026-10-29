@@ -173,7 +173,7 @@ test('discover covers show images and open the story', async ({ page }) => {
   await page.getByRole('button', { name: 'Discover' }).click();
   const cover = page.locator('.feed-cover-image').first();
   await expect(cover).toBeVisible();
-  await expect(cover).toHaveAttribute('src', /\/covers\/.+\.svg$/);
+  await expect(cover).toHaveAttribute('src', /\/covers\/.+\.(svg|jpg)$/);
   await page.locator('.feed-cover-button').first().click();
   await expect(page.locator('.detail-layer')).toBeVisible();
   await expect(page.locator('.detail-cover-image')).toBeVisible();
