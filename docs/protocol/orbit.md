@@ -112,7 +112,8 @@ ORBIT_ALLOW_INSECURE_WS=1   allow ws:// for a local gateway only
 Browser endpoints:
 
 ```text
-GET  /api/orbit/health   { configured, mode, gatewayHost, bindingId }
+GET  /api/orbit/health   { configured, mode, gatewayHost, bindingId, authMode, tokenSource }
+GET  /api/orbit/snapshot { roomId, snapshot }
 POST /api/orbit/turn     { text, roomId?, submissionId? } → text/event-stream
 POST /api/orbit/reset    clear the session cookie and cached room/submissions
 ```
@@ -124,19 +125,25 @@ One turn:
 3. sends `room.home` and resolves the room id from the result/snapshot;
 4. sends `room.message` with the text and `submission_id`;
 5. maps `orbit.task.text` to SSE text events and `final: true` to `done`;
-6. maps task errors to an SSE error and closes the socket.
+6. parses `orbit.task.a2ui` (`envelopes` or `jsonl`) through the A2UI store and update
+   queue, emitting `surface` SSE events;
+7. maps task errors to an SSE error and closes the socket.
 
 Session continuity:
 
 - the bridge sets an HttpOnly `dm_orbit_session` cookie with a 30-minute TTL;
-- the room id is remembered per session and reused when `roomId` is omitted;
+- the room id and last `room.home` snapshot are remembered per session;
 - completed `submission_id` values are cached in memory; a repeat replays the cached text
   with a `Reuse cached result` thinking step instead of re-sending the action;
 - errors are cached as completed results so retries do not loop;
+- `GET /api/orbit/snapshot` returns the remembered room/snapshot;
+- the browser retries `502`/`504`/network failures up to three times with the same
+  `submission_id`, so the cache makes recovery safe;
 - `POST /api/orbit/reset` clears the cookie and cache; **Settings → Reset bridge session**
   exposes the same action.
 
-`/api/orbit/health` includes the remembered `roomId` when a session cookie is present.
+`/api/orbit/health` includes the remembered `roomId` plus `authMode: delegated-token` and the
+token source (`env` or `file`). There is no interactive login.
 
 Limits and safety:
 
@@ -144,17 +151,17 @@ Limits and safety:
 - 12-second request timeout, 120-second turn timeout;
 - 32 KB request body limit;
 - token never sent to the browser and never included in health output;
+- cross-origin POST requests with a mismatched `Origin` are rejected;
 - a fresh socket per turn, with no task replay.
 
-Remaining work: account exchange, persistent session storage (the current cache is per-process),
-snapshot reconciliation, and reconnect/backoff. A browser cannot safely hold the Gateway token,
-so those pieces belong in the bridge.
+Remaining work: persistent session storage (the current cache is per-process) and a real
+gateway credential source. Account exchange is not required for this account-free build.
 
 ## Local fake gateway
 
 `npm run bridge:fake` starts `scripts/fake-orbit.mjs` on `ws://127.0.0.1:8899/orbit/ws`.
-It accepts any Bearer token, answers `room.home` with `room_demo`, and streams one echoed
-`orbit.task.text` event followed by `final: true`. Use it with:
+It accepts any Bearer token, answers `room.home` with `room_demo`, streams one echoed
+`orbit.task.text` event and one A2UI surface, then sends `final: true`. Use it with:
 
 ```powershell
 $env:ORBIT_GATEWAY_URL='ws://127.0.0.1:8899/orbit/ws'

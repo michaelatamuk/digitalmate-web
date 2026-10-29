@@ -7,6 +7,8 @@ export interface OrbitHealth {
   gatewayHost?: string;
   bindingId?: string;
   roomId?: string;
+  authMode?: 'delegated-token';
+  tokenSource?: 'env' | 'file';
 }
 
 export async function orbitHealth(signal?: AbortSignal): Promise<OrbitHealth> {
@@ -25,6 +27,45 @@ export async function resetOrbitSession(): Promise<void> {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function wait(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function openStream(request: ChatTurnRequest, signal: AbortSignal): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch('/api/orbit/turn', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'text/event-stream'
+        },
+        body: JSON.stringify(request),
+        signal
+      });
+      if (response.status !== 502 && response.status !== 504) return response;
+      lastError = new Error(`Orbit bridge returned HTTP ${response.status}`);
+    } catch (error) {
+      if (signal.aborted) throw error;
+      lastError = error;
+    }
+    if (attempt < 2) await wait(400 * (attempt + 1), signal);
+  }
+  throw lastError instanceof Error ? lastError : new Error('Orbit bridge is unreachable');
 }
 
 function isSurface(value: unknown): value is A2uiSurface {
@@ -89,15 +130,7 @@ export class OrbitChatTransport implements ChatTransport {
     onEvent: (event: ChatTurnEvent) => void,
     signal: AbortSignal
   ): Promise<void> {
-    const response = await fetch('/api/orbit/turn', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        accept: 'text/event-stream'
-      },
-      body: JSON.stringify(request),
-      signal
-    });
+    const response = await openStream(request, signal);
 
     if (!response.ok) {
       let message = `Orbit bridge returned HTTP ${response.status}`;

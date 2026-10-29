@@ -17,6 +17,7 @@ import type {
 import { newId, readStorage, writeStorage, clearDemoStorage, STORAGE_KEYS, usePersistentState } from './lib/storage';
 import { MockChatTransport } from './transport/mock';
 import { OrbitChatTransport, orbitHealth } from './transport/orbit';
+import { LocalDiscoveryTransport, rotateCards } from './transport/discovery';
 import type { ChatTransport } from './transport/types';
 import { seedFor } from './data/seed';
 import { surfacesFor } from './data/surfaces';
@@ -138,12 +139,23 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [messages]);
 
-  const allCards = useMemo(() => {
-    const base = [...rssCards, ...seed.seedCards];
-    if (feedSeed === 0 || base.length === 0) return base;
-    const offset = feedSeed % base.length;
-    return [...base.slice(offset), ...base.slice(0, offset)];
-  }, [feedSeed, rssCards, seed.seedCards]);
+  const discoveryTransport = useMemo(
+    () => new LocalDiscoveryTransport(seed.seedCards, rssCards, feedSeed),
+    [feedSeed, rssCards, seed.seedCards]
+  );
+  const [allCards, setAllCards] = useState<FeedCard[]>(() =>
+    rotateCards([...rssCards, ...seed.seedCards], feedSeed)
+  );
+
+  useEffect(() => {
+    let active = true;
+    void discoveryTransport.load().then(cards => {
+      if (active) setAllCards(cards);
+    });
+    return () => {
+      active = false;
+    };
+  }, [discoveryTransport]);
 
   const patchMessage = (id: string, patch: (message: Message) => Message) => {
     setMessages(previous => previous.map(message => (message.id === id ? patch(message) : message)));
@@ -851,6 +863,7 @@ export default function App() {
               }}
               onAddRss={addRss}
               onNotice={showToast}
+              filterCards={(cards, filters) => discoveryTransport.filter(cards, filters)}
             />
           )}
         </main>

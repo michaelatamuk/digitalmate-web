@@ -54,6 +54,34 @@ server.on('connection', socket => {
       socket.send(JSON.stringify({ id: message.id, ok: true, result: { task_id: 'task_demo' } }));
       const text = `Fake Orbit received: ${message.params?.text ?? ''}`;
       socket.send(JSON.stringify({ event: 'orbit.task.text', task_id: 'task_demo', text, final: false }));
+      socket.send(
+        JSON.stringify({
+          event: 'orbit.task.a2ui',
+          task_id: 'task_demo',
+          envelopes: [
+            {
+              version: 'v0.9.1',
+              createSurface: {
+                surfaceId: 'surface_fake',
+                root: 'root',
+                title: 'Orbit surface',
+                subtitle: 'Streamed from the fake gateway'
+              }
+            },
+            {
+              version: 'v0.9.1',
+              updateComponents: {
+                surfaceId: 'surface_fake',
+                components: [
+                  { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Orbit surface' },
+                  { id: 'body', component: 'Text', text: 'A2UI surface received through the bridge.' }
+                ]
+              }
+            },
+            { version: 'v0.9.1', updateDataModel: { surfaceId: 'surface_fake', path: '/', value: {} } }
+          ]
+        })
+      );
       setTimeout(() => {
         if (socket.readyState === socket.OPEN) {
           socket.send(

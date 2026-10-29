@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  isSameOrigin,
   normalizeOrbitEvent,
   orbitHealth,
   readOrbitConfig,
@@ -20,7 +21,7 @@ describe('Orbit bridge config', () => {
         ORBIT_GATEWAY_URL: 'wss://gateway.example.com/orbit/ws',
         ORBIT_TOKEN: 'secret'
       })
-    ).toMatchObject({ bindingId: 'default' });
+    ).toMatchObject({ bindingId: 'default', tokenSource: 'env' });
   });
 
   it('rejects plain ws unless explicitly allowed', () => {
@@ -49,7 +50,9 @@ describe('Orbit bridge config', () => {
       configured: true,
       mode: 'live',
       gatewayHost: 'gateway.example.com',
-      bindingId: 'demo'
+      bindingId: 'demo',
+      authMode: 'delegated-token',
+      tokenSource: 'env'
     });
     expect(JSON.stringify(health)).not.toContain('secret');
     expect(orbitHealth(null)).toEqual({ configured: false, mode: 'unconfigured' });
@@ -73,6 +76,18 @@ describe('Orbit bridge config', () => {
       submission_id: 'sub-1',
       agent_id: 'orbit'
     });
+  });
+
+  it('rejects cross-origin bridge requests but allows same-origin or no origin', () => {
+    const request = (headers: Record<string, string>) => ({ headers }) as never;
+    expect(isSameOrigin(request({ origin: 'https://app.example.com', host: 'app.example.com' }))).toBe(
+      true
+    );
+    expect(isSameOrigin(request({ origin: 'https://evil.example.com', host: 'app.example.com' }))).toBe(
+      false
+    );
+    expect(isSameOrigin(request({ host: 'app.example.com' }))).toBe(true);
+    expect(isSameOrigin(request({ origin: 'not a url' }))).toBe(false);
   });
 });
 
@@ -168,6 +183,9 @@ describe('Orbit bridge sessions', () => {
 
     store.rememberSubmission(session, 'sub_1', { done: true });
     expect(store.getSubmission(session, 'sub_1')).toMatchObject({ done: true, text: 'Hello' });
+
+    store.setSnapshot(session, { rooms: [{ id: 'room_1' }] });
+    expect(store.getSnapshot(session)).toEqual({ rooms: [{ id: 'room_1' }] });
 
     store.delete('s1');
     expect(store.get('s1')).toBeUndefined();

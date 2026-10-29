@@ -69,14 +69,15 @@ No components from the tracked native list remain. Future native additions may s
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| Transport abstraction | ✅ | `ChatTransport` with mock and Orbit implementations |
+| Transport abstraction | ✅ | `ChatTransport` + `DiscoveryTransport` with local implementations |
 | Real Orbit/WorkSwarm transport | 🟡 | Bridge implemented; needs gateway URL + Bearer token |
-| Bridge sessions | ✅ | HttpOnly cookie, room continuity, submission-id cache |
+| Bridge sessions | ✅ | HttpOnly cookie, room/snapshot continuity, submission-id cache |
+| Bridge streaming | ✅ | SSE text + A2UI surfaces; client retries and snapshot endpoint |
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: chat, attachments/PDF, artifacts, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 75 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
+| Unit tests | ✅ | 84 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | 🟡 | PWA install works; Capacitor planned only for native features |

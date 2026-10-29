@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { FeedCard, Reaction, RssFeed } from '../types';
+import type { DiscoveryFilters } from '../transport/discovery';
 import { Icon } from './Icons';
 import { seedFor } from '../data/seed';
 import { fetchRssFeed } from '../lib/rss';
@@ -18,6 +19,7 @@ interface DiscoveryProps {
   onRefresh: () => void;
   onAddRss: (name: string, url: string, feed: RssFeed) => void;
   onNotice: (message: string) => void;
+  filterCards: (cards: FeedCard[], filters: DiscoveryFilters) => FeedCard[];
 }
 
 export function DiscoveryView({
@@ -32,7 +34,8 @@ export function DiscoveryView({
   onOpen,
   onRefresh,
   onAddRss,
-  onNotice
+  onNotice,
+  filterCards
 }: DiscoveryProps) {
   const { lang, tr } = useI18n();
   const { discoverySources, topicOptions } = seedFor(lang);
@@ -44,17 +47,8 @@ export function DiscoveryView({
   const [rssBusy, setRssBusy] = useState(false);
 
   const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return cards.filter(card => {
-      if (activeSource !== 'all' && card.source !== activeSource) return false;
-      if (topics.length > 0 && !topics.includes(card.topic)) return false;
-      if (!needle) return true;
-      const haystack = [card.title, card.summary, card.sourceLabel, card.topic, ...card.tags]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(needle);
-    });
-  }, [activeSource, cards, query, topics]);
+    return filterCards(cards, { source: activeSource, topics, query });
+  }, [activeSource, cards, filterCards, query, topics]);
 
   const sourceCounts = useMemo(() => {
     const counts = new Map<string, number>();

@@ -80,7 +80,7 @@ export async function fetchFeed(rawUrl: string): Promise<RssFeed> {
   throw new Error('Too many redirects');
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+export async function handleRssRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
   const url = new URL(request.url ?? '/', 'http://localhost');
 
   if (url.pathname !== '/api/rss') return;
@@ -119,14 +119,14 @@ export function rssProxyPlugin(): Plugin {
     name: 'digitalmate-rss-proxy',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        void handleRequest(request, response).then(() => {
+        void handleRssRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });
       });
     },
     configurePreviewServer(server) {
       server.middlewares.use((request, response, next) => {
-        void handleRequest(request, response).then(() => {
+        void handleRssRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });
       });

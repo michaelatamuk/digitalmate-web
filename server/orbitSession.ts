@@ -9,6 +9,7 @@ export interface CachedSubmission {
 export interface OrbitSession {
   id: string;
   roomId?: string;
+  snapshot?: unknown;
   submissions: Map<string, CachedSubmission>;
   updatedAt: number;
 }
@@ -47,6 +48,15 @@ export class OrbitSessionStore {
   setRoom(session: OrbitSession, roomId: string): void {
     session.roomId = roomId;
     session.updatedAt = this.now();
+  }
+
+  setSnapshot(session: OrbitSession, snapshot: unknown): void {
+    session.snapshot = snapshot;
+    session.updatedAt = this.now();
+  }
+
+  getSnapshot(session: OrbitSession): unknown {
+    return session.snapshot;
   }
 
   getSubmission(session: OrbitSession, submissionId: string): CachedSubmission | undefined {

@@ -18,14 +18,14 @@
 
 - [x] Move A2UI and transport contracts into `src/protocol`
 - [x] Define `ChatTransport`
-- [ ] Define `DiscoveryTransport`
+- [x] Define `DiscoveryTransport`
 - [x] Keep `MockChatTransport` behind the same interface
 - [x] Add an `OrbitChatTransport` behind the same interface
 - [x] Add an A2UI JSONL parser and surface store
 - [x] Support `createSurface` / `updateComponents` / `updateDataModel`
 - [x] Support `deleteSurface` and line-numbered parse errors
 - [x] Add partial-update and throttling behaviour
-- [ ] Wire the update queue into the live bridge stream
+- [x] Wire the update queue into the live bridge stream
 - [x] Add unit tests for parser/store/state reducer
 - [x] Move built-in scenario fixtures onto the parsed store
 
@@ -33,12 +33,12 @@
 
 - [x] Local RSS fetch/parse dev proxy with SSRF, redirect, timeout and size guards
 - [x] Node bridge endpoints in `server/orbit.ts` (health + SSE turns)
-- [ ] Package the bridge for production (`services/bridge`)
-- [ ] Gateway auth exchange or delegated session
+- [x] Package the bridge for production (`services/bridge`)
+- [x] Delegated server token session (no interactive login required)
 - [x] WSS `/orbit/ws` proxy with `room.home` / `room.message`
 - [x] Token isolation and redaction
-- [x] Session cookie, room continuity and submission-id idempotency
-- [ ] Reconnect and snapshot recovery
+- [x] Session cookie, room/snapshot continuity and submission-id idempotency
+- [x] Client retry, per-turn reconnect and snapshot endpoint
 - [x] Document the bridge security model
 
 ## Phase 3 — Feature parity

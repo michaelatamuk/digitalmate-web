@@ -1,25 +1,39 @@
-# Web bridge (planned)
+# Web bridge
 
-The browser cannot safely perform the native Huawei/AGC account exchange or keep provider
-credentials. This service will be the trusted boundary between the web UI and a
-Jiuwen/Orbit gateway.
+Standalone production server for the built PWA and the optional bridge APIs.
 
-## Planned responsibilities
+```bash
+npm run build
+npm run start
+```
 
-- Serve the built web app in production if desired
-- Handle the account/Gateway authentication exchange
-- Keep Gateway tokens server-side or in an HttpOnly session
-- Open the WSS connection to `/orbit/ws`
-- Forward JSON protocol frames between the browser and gateway
-- Enforce origin checks, rate limits and request size limits
-- Redact credentials and sensitive payloads from logs
+Environment:
 
-## Non-goals
+```text
+PORT=4173
+HOST=0.0.0.0
+ORBIT_GATEWAY_URL=wss://gateway.example.com/orbit/ws?binding_id=default
+ORBIT_TOKEN_FILE=/run/secrets/orbit-token   # preferred
+# ORBIT_TOKEN=...                          # temporary local testing only
+```
 
-- Replacing the Orbit/Jiuwen agent runtime
-- Storing long-lived user credentials in the browser
-- Implementing business tools or provider adapters
+Endpoints:
 
-## Status
+```text
+GET  /api/rss?url=…       RSS/Atom/RDF proxy with SSRF, timeout and size guards
+GET  /api/orbit/health    bridge status, room id and delegated token source
+POST /api/orbit/turn      SSE chat turn through the Orbit WSS gateway
+GET  /api/orbit/snapshot  last room snapshot stored for this session
+POST /api/orbit/reset     clear the bridge session
+```
 
-Not implemented. The current web app runs entirely on local mock data.
+Security model:
+
+- no interactive login; the bridge uses a **delegated bearer token** supplied on the server
+- tokens are never returned to the browser or logged
+- cross-origin POST requests with a mismatched `Origin` are rejected
+- session cookie is HttpOnly and SameSite=Lax
+- request bodies are size-limited; upstream requests have timeouts
+
+The server is implemented in `services/bridge/index.ts`, reusing the same
+`server/rss.ts` and `server/orbit.ts` handlers as the Vite dev/preview middleware.

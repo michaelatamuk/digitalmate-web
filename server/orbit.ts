@@ -4,6 +4,7 @@ import type { Plugin } from 'vite';
 import WebSocket from 'ws';
 import { orbitSessions, readCookie, sessionCookie } from './orbitSession';
 import type { OrbitSession } from './orbitSession';
+import { a2uiPayloadFromEvent, BridgeSurfaceStream } from './a2uiStream';
 
 const MAX_BODY_BYTES = 32_000;
 const REQUEST_TIMEOUT_MS = 12_000;
@@ -13,6 +14,7 @@ export interface OrbitConfig {
   url: URL;
   token: string;
   bindingId: string;
+  tokenSource: 'env' | 'file';
 }
 
 export interface OrbitHealth {
@@ -21,11 +23,14 @@ export interface OrbitHealth {
   gatewayHost?: string;
   bindingId?: string;
   roomId?: string;
+  authMode?: 'delegated-token';
+  tokenSource?: 'env' | 'file';
 }
 
 type BridgeEvent =
   | { type: 'thinking'; step: string; steps: string[]; index: number; total: number }
   | { type: 'text'; text: string }
+  | { type: 'surface'; surface: import('../src/types').A2uiSurface }
   | { type: 'error'; message: string }
   | { type: 'done' };
 
@@ -44,9 +49,11 @@ export function readOrbitConfig(env: NodeJS.ProcessEnv = process.env): OrbitConf
   if (url.protocol !== 'wss:' && !(allowInsecure && url.protocol === 'ws:')) return null;
 
   let token = env.ORBIT_TOKEN?.trim() ?? '';
+  let tokenSource: 'env' | 'file' = 'env';
   if (!token && env.ORBIT_TOKEN_FILE) {
     try {
       token = readFileSync(env.ORBIT_TOKEN_FILE, 'utf8').trim();
+      tokenSource = 'file';
     } catch {
       token = '';
     }
@@ -54,7 +61,7 @@ export function readOrbitConfig(env: NodeJS.ProcessEnv = process.env): OrbitConf
   if (!token) return null;
 
   const bindingId = env.ORBIT_BINDING_ID?.trim() || url.searchParams.get('binding_id') || 'default';
-  return { url, token, bindingId };
+  return { url, token, bindingId, tokenSource };
 }
 
 export function orbitHealth(config: OrbitConfig | null): OrbitHealth {
@@ -63,7 +70,9 @@ export function orbitHealth(config: OrbitConfig | null): OrbitHealth {
     configured: true,
     mode: 'live',
     gatewayHost: config.url.host,
-    bindingId: config.bindingId
+    bindingId: config.bindingId,
+    authMode: 'delegated-token',
+    tokenSource: config.tokenSource
   };
 }
 
@@ -206,6 +215,7 @@ async function streamTurn(
   let ended = false;
   let taskId: string | undefined;
   let accumulated = cachedText;
+  const surfaceStream = new BridgeSurfaceStream();
   let resolveClosed: () => void = () => undefined;
   const closed = new Promise<void>(resolve => {
     resolveClosed = resolve;
@@ -299,6 +309,13 @@ async function streamTurn(
       return;
     }
 
+    const a2uiPayload = a2uiPayloadFromEvent(message);
+    if (a2uiPayload !== undefined) {
+      for (const surface of surfaceStream.apply(a2uiPayload)) {
+        sendEvent(response, { type: 'surface', surface });
+      }
+    }
+
     for (const event of normalizeOrbitEvent(payload)) {
       if (event.type === 'text') {
         accumulated += event.text;
@@ -362,6 +379,7 @@ async function streamTurn(
       (typeof record(home.snapshot)?.room_id === 'string' ? record(home.snapshot)?.room_id : undefined);
     if (!roomId) throw new Error('Orbit did not return a room id');
     orbitSessions.setRoom(session, roomId);
+    if (home.snapshot !== undefined) orbitSessions.setSnapshot(session, home.snapshot);
 
     sendEvent(response, {
       type: 'thinking',
@@ -399,7 +417,19 @@ async function streamTurn(
   await closed;
 }
 
-async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+export function isSameOrigin(request: IncomingMessage): boolean {
+  const origin = request.headers.origin;
+  if (!origin) return true;
+  try {
+    const parsed = new URL(origin);
+    const host = request.headers['x-forwarded-host'] ?? request.headers.host;
+    return Boolean(host) && parsed.host === host;
+  } catch {
+    return false;
+  }
+}
+
+export async function handleOrbitRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
   const url = new URL(request.url ?? '/', 'http://localhost');
   if (!url.pathname.startsWith('/api/orbit/')) return;
 
@@ -412,6 +442,40 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
     response.setHeader('content-type', 'application/json; charset=utf-8');
     response.setHeader('cache-control', 'no-store');
     response.end(JSON.stringify({ ...orbitHealth(config), roomId: session?.roomId }));
+    return;
+  }
+
+  if (!isSameOrigin(request)) {
+    response.statusCode = 403;
+    response.setHeader('content-type', 'application/json; charset=utf-8');
+    response.end(JSON.stringify({ error: 'Cross-origin bridge request rejected' }));
+    return;
+  }
+
+  if (url.pathname === '/api/orbit/snapshot') {
+    if (request.method !== 'GET') {
+      response.statusCode = 405;
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({ error: 'Use GET' }));
+      return;
+    }
+    const sessionId = readCookie(request.headers.cookie, 'dm_orbit_session');
+    const session = sessionId ? orbitSessions.get(sessionId) : undefined;
+    if (!session) {
+      response.statusCode = 404;
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({ error: 'No bridge session' }));
+      return;
+    }
+    response.statusCode = 200;
+    response.setHeader('content-type', 'application/json; charset=utf-8');
+    response.setHeader('cache-control', 'no-store');
+    response.end(
+      JSON.stringify({
+        roomId: session.roomId ?? null,
+        snapshot: orbitSessions.getSnapshot(session) ?? null
+      })
+    );
     return;
   }
 
@@ -513,14 +577,14 @@ export function orbitBridgePlugin(): Plugin {
     name: 'digitalmate-orbit-bridge',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
-        void handleRequest(request, response).then(() => {
+        void handleOrbitRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });
       });
     },
     configurePreviewServer(server) {
       server.middlewares.use((request, response, next) => {
-        void handleRequest(request, response).then(() => {
+        void handleOrbitRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });
       });
