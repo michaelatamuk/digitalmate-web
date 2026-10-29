@@ -7,6 +7,8 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 > **This repository contains only the new web implementation.** The original DigitalMate
 > native app, its ArkTS modules, build system and test suites are not included.
 
+**Live app (no account needed):** <https://michaelatamuk.github.io/digitalmate-web/>
+
 ![DigitalMate Web home](docs/assets/home.png)
 
 | Chat | Chinese settings |
