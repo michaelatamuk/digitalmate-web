@@ -615,6 +615,52 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function dailyBriefSurface(): A2uiSurface {
+  return makeSurface(
+    '每日简报',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '周二 · 今日概览', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['hero', 'metrics', 'schedule', 'priorities', 'actions'] },
+      {
+        id: 'hero',
+        component: 'HeroBanner',
+        title: '早上好，林未',
+        body: '今天有 3 场会议、4 小时专注时间和 09:30 的设计评审。今天没有需要预订或支付的事项。'
+      },
+      { id: 'metrics', component: 'MetricGrid', title: '今天', dataPath: '/metrics' },
+      { id: 'schedule', component: 'ScheduleStack', title: '接下来', dataPath: '/schedule' },
+      { id: 'priorities', component: 'List', title: '优先事项', dataPath: '/priorities' },
+      {
+        id: 'actions',
+        component: 'ActionBar',
+        actions: [
+          { id: 'brief-calendar', label: '查看日历', prompt: '帮我查看明天的日程', variant: 'primary' },
+          { id: 'brief-coffee', label: '附近咖啡', prompt: '附近有什么咖啡店', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      metrics: [
+        { label: '会议', value: '3 场', tone: 'flight' },
+        { label: '专注时间', value: '4 小时', tone: 'success' },
+        { label: '待办', value: '6 项', tone: 'accent' },
+        { label: '天气', value: '26–31°C', tone: 'train' }
+      ],
+      schedule: [
+        { time: '09:30', title: '设计评审 · A2UI 卡片', meta: '会议室 3A · 45 分钟', tone: 'accent' },
+        { time: '14:00', title: '真机回归 · 登录与通知', meta: '线上 · 60 分钟', tone: 'train' },
+        { time: '16:30', title: '发现流排序实验复盘', meta: '与 Data 组 · 30 分钟', tone: 'flight' }
+      ],
+      priorities: [
+        { title: '完成 A2UI 协议演示', subtitle: '解析器、存储与组件目录', meta: '高' },
+        { title: '复核记忆文案', subtitle: '保留证据与限制说明', meta: '中' },
+        { title: '测试离线刷新', subtitle: '生产构建、断网加载', meta: '中' }
+      ]
+    },
+    '本地演示 · 无需账号'
+  );
+}
+
 export function insightsSurface(): A2uiSurface {
   return makeSurface(
     '每周洞察',

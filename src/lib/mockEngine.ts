@@ -281,6 +281,23 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
     };
   }
 
+  if (/daily brief|morning brief|today brief|每日简报|今日简报|今天简报/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read today’s calendar', '读取今天的日历'),
+        tr('Collect open tasks', '汇总未完成任务'),
+        tr('Check local weather', '检查本地天气'),
+        tr('Assemble the brief', '生成每日简报')
+      ],
+      text: tr(
+        'Here is your local daily brief: three meetings, a four-hour focus block and six open tasks. Everything is assembled from demo data and stays in this browser.',
+        '这是你的本地每日简报：3 场会议、4 小时专注时间、6 项待办。所有内容来自演示数据，并保存在当前浏览器。'
+      ),
+      surface: S.dailyBriefSurface(),
+      followUps: tr('What’s on my calendar tomorrow?|Find coffee nearby', '帮我查看明天的日程|附近有什么咖啡店').split('|')
+    };
+  }
+
   if (/insight|weekly report|weekly summary|analytics|每周洞察|周报|洞察|数据分析/.test(lower)) {
     return {
       thinking: [

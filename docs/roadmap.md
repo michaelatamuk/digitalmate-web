@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 33 A2UI-style components / 13 mock scenarios
+- [x] 33 A2UI-style components / 14 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -24,7 +24,8 @@
 - [x] Add an A2UI JSONL parser and surface store
 - [x] Support `createSurface` / `updateComponents` / `updateDataModel`
 - [x] Support `deleteSurface` and line-numbered parse errors
-- [ ] Add partial-update and throttling behaviour
+- [x] Add partial-update and throttling behaviour
+- [ ] Wire the update queue into the live bridge stream
 - [x] Add unit tests for parser/store/state reducer
 - [x] Move built-in scenario fixtures onto the parsed store
 
@@ -43,6 +44,7 @@
 ## Phase 3 — Feature parity
 
 - [x] Discovery local search and article/reply sharing
+- [x] Daily brief scenario
 - [ ] Orbit room/session/task shell
 - [x] Stop, retry, copy, share and clear a message exchange
 - [ ] Long-press and per-task detail rows

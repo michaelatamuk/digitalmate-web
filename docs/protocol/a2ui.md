@@ -32,7 +32,7 @@ None from the tracked native catalog. Future native additions may still appear.
 
 ## Next implementation steps
 
-1. Add partial-update throttling and coalescing.
+1. Wire `A2uiUpdateQueue` into the live bridge stream.
 2. Connect the store to a real gateway stream behind `ChatTransport`.
 3. Add component-catalog schema validation before rendering unknown payloads.
 4. Add any new components introduced by future native builds.

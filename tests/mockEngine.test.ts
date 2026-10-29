@@ -125,6 +125,21 @@ describe('extended scenarios', () => {
     expect(reply.surface?.title).toBe('每周洞察');
     expect(reply.surface?.components.mix.title).toBe('任务构成');
   });
+
+  it('returns a daily brief with schedule and priorities', () => {
+    const reply = replyFor('Show my daily brief', 'en');
+    expect(reply.surface?.title).toBe('Daily brief');
+    expect(reply.surface?.components.hero.component).toBe('HeroBanner');
+    expect(reply.surface?.components.priorities.component).toBe('List');
+    expect(reply.surface?.data.priorities).toHaveLength(3);
+    expect(reply.surface?.data.schedule).toHaveLength(3);
+  });
+
+  it('localizes the daily brief', () => {
+    const reply = replyFor('看看今日简报', 'zh');
+    expect(reply.surface?.title).toBe('每日简报');
+    expect(reply.surface?.components.priorities.title).toBe('优先事项');
+  });
 });
 
 describe('localized seed data', () => {

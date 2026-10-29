@@ -614,6 +614,52 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function dailyBriefSurface(): A2uiSurface {
+  return makeSurface(
+    'Daily brief',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Tuesday · your day at a glance', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['hero', 'metrics', 'schedule', 'priorities', 'actions'] },
+      {
+        id: 'hero',
+        component: 'HeroBanner',
+        title: 'Good morning, Lin',
+        body: 'Three meetings, a four-hour focus block and a design review at 09:30. Nothing needs a booking or payment today.'
+      },
+      { id: 'metrics', component: 'MetricGrid', title: 'Today', dataPath: '/metrics' },
+      { id: 'schedule', component: 'ScheduleStack', title: 'Next up', dataPath: '/schedule' },
+      { id: 'priorities', component: 'List', title: 'Top priorities', dataPath: '/priorities' },
+      {
+        id: 'actions',
+        component: 'ActionBar',
+        actions: [
+          { id: 'brief-calendar', label: 'Open calendar', prompt: 'What’s on my calendar tomorrow?', variant: 'primary' },
+          { id: 'brief-coffee', label: 'Find coffee nearby', prompt: 'Find coffee nearby', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      metrics: [
+        { label: 'Meetings', value: '3', tone: 'flight' },
+        { label: 'Focus time', value: '4h', tone: 'success' },
+        { label: 'Open tasks', value: '6', tone: 'accent' },
+        { label: 'Weather', value: '26–31°C', tone: 'train' }
+      ],
+      schedule: [
+        { time: '09:30', title: 'Design review · A2UI cards', meta: 'Meeting room 3A · 45 min', tone: 'accent' },
+        { time: '14:00', title: 'Device regression · login and notifications', meta: 'Online · 60 min', tone: 'train' },
+        { time: '16:30', title: 'Discovery ranking experiment review', meta: 'With Data · 30 min', tone: 'flight' }
+      ],
+      priorities: [
+        { title: 'Finish the A2UI protocol demo', subtitle: 'Parser, store and component catalog', meta: 'High' },
+        { title: 'Review memory wording', subtitle: 'Keep evidence and limits visible', meta: 'Medium' },
+        { title: 'Test the offline reload', subtitle: 'Production build, no network', meta: 'Medium' }
+      ]
+    },
+    'Local demo · no account required'
+  );
+}
+
 export function insightsSurface(): A2uiSurface {
   return makeSurface(
     'Weekly insights',

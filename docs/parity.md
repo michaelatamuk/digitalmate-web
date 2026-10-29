@@ -39,8 +39,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | A2UI surface renderer | ✅ | 33 components |
 | Full component catalog | ✅ | Tracked native catalog covered |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
-| Layout merger / throttle | ❌ | Not implemented |
-| Data-model pointer semantics | 🟡 | Basic paths only |
+| Layout merger / throttle | ✅ | `A2uiUpdateQueue` coalesces adjacent updates |
+| Data-model pointer semantics | ✅ | JSON Pointer escapes, numeric arrays, `-` append and removal |
 | Unknown component rejection | ✅ | Renders an error card |
 
 No components from the tracked native list remain. Future native additions may still appear.
@@ -57,6 +57,7 @@ No components from the tracked native list remain. Future native additions may s
 | Document summary | ✅ | Local text mock |
 | Weather | ✅ | Mock |
 | Hotel / ride / payments / media | ✅ | Mock comparison and review cards |
+| Daily brief | ✅ | Local schedule, metrics and priorities |
 | Gmail send / calendar write | ❌ | Not implemented |
 | Firecrawl / shopping / DeepSearch | ❌ | Not implemented |
 | DailyBrief / BIM / multi-task | ❌ | Not implemented |
@@ -72,6 +73,6 @@ No components from the tracked native list remain. Future native additions may s
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: chat, attachments/PDF, sharing, retry/clear, memory, skills, discovery search, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 56 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
+| Unit tests | ✅ | 67 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

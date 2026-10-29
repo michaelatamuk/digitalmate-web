@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 56 unit tests plus 18 Playwright UI, mobile and accessibility checks
+- 67 unit tests plus 18 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -41,7 +41,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative renderer for 33 components, 13 scenarios and a JSONL protocol demo |
+| A2UI | Declarative renderer for 33 components, 14 scenarios and a JSONL protocol demo |
 | Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
@@ -53,7 +53,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
 
-Scenarios currently include travel, hotel, ride, payment review, media, weekly insights, food/coffee, social,
+Scenarios currently include travel, hotel, ride, payment review, media, daily brief, weekly insights, food/coffee, social,
 mail, calendar, document summary, weather and generic tool results.
 
 ## Quick start
@@ -218,8 +218,9 @@ src/
     surfaces.zh.ts        Chinese surface fixtures
   protocol/a2ui/
     types.ts              JSONL envelope types
-    parser.ts             line parser, component map and data-path updates
+    parser.ts             line parser, JSON Pointer updates and removal
     store.ts              surface store keyed by surfaceId
+    queue.ts              throttling and coalescing for fast update streams
     demo.ts               protocol-driven demo surface
   lib/
     mockEngine.ts         prompt → thinking / text / surface (both languages)

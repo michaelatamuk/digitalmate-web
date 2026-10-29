@@ -79,33 +79,93 @@ export function componentMap(components: A2uiComponent[]): Record<string, A2uiCo
   return map;
 }
 
+export function decodePointerSegment(segment: string): string {
+  return segment.replace(/~1/g, '/').replace(/~0/g, '~');
+}
+
+export function encodePointerSegment(segment: string): string {
+  return segment.replace(/~/g, '~0').replace(/\//g, '~1');
+}
+
+/** Parse a JSON Pointer. Our convention treats '' and '/' as the document root. */
+export function parsePointer(path: string): string[] | null {
+  if (path === '' || path === '/') return [];
+  if (!path.startsWith('/')) return null;
+  return path.slice(1).split('/').map(decodePointerSegment);
+}
+
+function assign(container: Record<string, unknown> | unknown[], key: string, value: unknown): void {
+  if (Array.isArray(container)) {
+    const index = Number(key);
+    if (!Number.isInteger(index) || index < 0) throw new Error(`Invalid array index: ${key}`);
+    container[index] = value;
+  } else {
+    container[key] = value;
+  }
+}
+
 export function setDataPath(data: Record<string, unknown>, path: string, value: unknown): Record<string, unknown> {
-  if (!path || path === '/') return { ...(value as Record<string, unknown>) };
-  const segments = path.split('/').filter(Boolean);
-  if (segments.length === 0) return { ...(value as Record<string, unknown>) };
+  const segments = parsePointer(path);
+  if (segments === null) throw new Error('JSON Pointer must start with /');
+  if (segments.length === 0) {
+    return { ...((value && typeof value === 'object' ? value : {}) as Record<string, unknown>) };
+  }
 
   const root: Record<string, unknown> = { ...data };
   let current: Record<string, unknown> | unknown[] = root;
+
   for (let index = 0; index < segments.length - 1; index += 1) {
     const segment = segments[index];
-    const next: unknown = Array.isArray(current) ? current[Number(segment)] : current[segment];
-    if (next === undefined || next === null || typeof next !== 'object') {
-      const created: Record<string, unknown> = {};
-      if (Array.isArray(current)) current[Number(segment)] = created;
-      else current[segment] = created;
-      current = created;
+    const next: unknown = Array.isArray(current)
+      ? current[Number(segment)]
+      : current[segment];
+    let copy: Record<string, unknown> | unknown[];
+    if (next !== null && typeof next === 'object') {
+      copy = Array.isArray(next) ? [...next] : { ...(next as Record<string, unknown>) };
     } else {
-      const copy: Record<string, unknown> | unknown[] = Array.isArray(next)
-        ? [...next]
-        : { ...(next as Record<string, unknown>) };
-      if (Array.isArray(current)) current[Number(segment)] = copy;
-      else current[segment] = copy;
-      current = copy;
+      copy = /^\d+$/.test(segments[index + 1]) ? [] : {};
     }
+    assign(current, segment, copy);
+    current = copy;
   }
 
   const finalKey = segments[segments.length - 1];
-  if (Array.isArray(current)) current[Number(finalKey)] = value;
-  else current[finalKey] = value;
+  if (Array.isArray(current) && finalKey === '-') {
+    current.push(value);
+  } else {
+    assign(current, finalKey, value);
+  }
+  return root;
+}
+
+export function removeDataPath(data: Record<string, unknown>, path: string): Record<string, unknown> {
+  const segments = parsePointer(path);
+  if (segments === null) throw new Error('JSON Pointer must start with /');
+  if (segments.length === 0) return {};
+
+  const root: Record<string, unknown> = { ...data };
+  let current: Record<string, unknown> | unknown[] = root;
+
+  for (let index = 0; index < segments.length - 1; index += 1) {
+    const next: unknown = Array.isArray(current)
+      ? current[Number(segments[index])]
+      : current[segments[index]];
+    if (next === null || typeof next !== 'object') return root;
+    const copy: Record<string, unknown> | unknown[] = Array.isArray(next)
+      ? [...next]
+      : { ...(next as Record<string, unknown>) };
+    assign(current, segments[index], copy);
+    current = copy;
+  }
+
+  const finalKey = segments[segments.length - 1];
+  if (Array.isArray(current)) {
+    if (finalKey === '-') return root;
+    const index = Number(finalKey);
+    if (!Number.isInteger(index) || index < 0) throw new Error(`Invalid array index: ${finalKey}`);
+    current.splice(index, 1);
+  } else {
+    delete current[finalKey];
+  }
   return root;
 }
