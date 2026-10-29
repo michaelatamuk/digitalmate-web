@@ -31,7 +31,7 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
-| A2UI | Declarative surface renderer for 15 components and 8 scenarios |
+| A2UI | Declarative surface renderer for 16 components and 8 scenarios |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, local RSS add |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |

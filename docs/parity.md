@@ -30,7 +30,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 15 components |
+| A2UI surface renderer | ✅ | 16 components |
 | Full component catalog | 🟡 | ~half of native catalog |
 | JSONL parsing / partial updates | ❌ | Surfaces are built as objects |
 | Layout merger / throttle | ❌ | Not implemented |

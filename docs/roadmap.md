@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 15 A2UI-style components / 8 mock scenarios
+- [x] 16 A2UI-style components / 8 mock scenarios
 - [x] Discovery feed, skills, memory, settings, history
 - [x] Production build
 - [x] Public GitHub repository with CI build
