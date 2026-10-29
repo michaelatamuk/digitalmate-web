@@ -316,6 +316,7 @@ function Toggle({
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-label={label}
         className={`switch ${checked ? 'is-on' : ''}`}
         onClick={() => onChange(!checked)}
       >

@@ -68,7 +68,7 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 | Real authentication | ❌ | Native only today |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | ❌ | localStorage only |
-| Automated UI tests | ❌ | Build only |
+| Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, mobile |
 | Unit tests | ✅ | 28 tests for mock logic, scenarios, A2UI protocol and RSS |
-| Accessibility audit | ❌ | Not yet |
+| Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ❌ | Not yet |

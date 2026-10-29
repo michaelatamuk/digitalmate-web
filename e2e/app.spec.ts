@@ -1,0 +1,87 @@
+import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+
+const composer = (page: Page) => page.locator('.composer textarea');
+
+async function sendMessage(page: Page, text: string) {
+  await composer(page).fill(text);
+  await expect(page.locator('.composer-send')).toBeEnabled();
+  await page.locator('.composer-send').click();
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.clear());
+  await page.goto('/');
+});
+
+test('home renders the shell and composer', async ({ page }) => {
+  await expect(page).toHaveTitle(/DigitalMate/);
+  await expect(
+    page.getByText(/Good (morning|afternoon|evening)|早上好|下午好|晚上好/).first()
+  ).toBeVisible();
+  await expect(composer(page)).toBeVisible();
+  await expect(page.locator('.composer-send')).toBeDisabled();
+  await composer(page).fill('Hello');
+  await expect(page.locator('.composer-send')).toBeEnabled();
+});
+
+test('travel query renders A2UI cards and opens a detail sheet', async ({ page }) => {
+  await sendMessage(page, 'Find trains from Beijing to Shanghai tomorrow evening');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Beijing → Shanghai' })).toBeVisible();
+  await expect(page.locator('.travel-card')).toHaveCount(4);
+  await page.locator('.travel-card').first().click();
+  await expect(page.getByRole('heading', { name: 'G21' })).toBeVisible();
+  await expect(page.getByText('12306').first()).toBeVisible();
+  await page.locator('.sheet-head .icon-button').click();
+  await expect(page.locator('.sheet-layer')).toHaveCount(0);
+});
+
+test('language switch resets to Simplified Chinese', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings|设置/ }).click();
+  await page.getByRole('button', { name: '中文' }).click();
+  await expect(page.getByText(/今天想聊点什么|早上好|下午好|晚上好/).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '更多' })).toBeVisible();
+});
+
+test('protocol demo renders JSONL-driven components', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /A2UI protocol demo/ }).click();
+  await expect(page.locator('.hero-banner')).toBeVisible();
+  await expect(page.locator('.flight-board')).toBeVisible();
+  await expect(page.locator('.flight-row')).toHaveCount(2);
+  await expect(page.locator('.tool-connect-card')).toBeVisible();
+  await expect(page.locator('.skeleton-card')).toBeVisible();
+});
+
+test('RSS form validates URLs before calling the proxy', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await page.getByRole('button', { name: 'RSS', exact: true }).first().click();
+  await page.getByRole('textbox', { name: 'RSS URL' }).fill('not-a-url');
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(page.getByText(/Enter a valid RSS \/ Atom URL/)).toBeVisible();
+});
+
+test('mobile layout does not overflow horizontally', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+  await expect(page.locator('.composer')).toBeVisible();
+});
+
+test('home and settings have no critical accessibility violations', async ({ page }) => {
+  test.setTimeout(90_000);
+  const home = await new AxeBuilder({ page }).include('main').analyze();
+  expect(home.violations.filter(violation => violation.impact === 'critical')).toEqual([]);
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await expect(page.locator('.sheet-layer')).toBeVisible();
+  const settings = await new AxeBuilder({ page }).include('.sheet-layer').analyze();
+  expect(settings.violations.filter(violation => violation.impact === 'critical')).toEqual([]);
+});

@@ -57,7 +57,8 @@
 
 ## Phase 5 — Production hardening
 
-- [ ] Automated UI tests and accessibility checks
+- [x] Automated UI tests and critical accessibility checks
+- [ ] Wider accessibility audit and manual screen-reader pass
 - [ ] Deployment pipeline and environment configuration
 - [ ] Telemetry/crash reporting (privacy-reviewed)
 - [ ] Branding and asset licensing finalised

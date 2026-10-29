@@ -637,7 +637,13 @@ export default function App() {
                     {skill.name}
                   </button>
                 ))}
-                <button type="button" className="skill-pill is-add" onClick={() => setSheet('skills')}>
+                <button
+                  type="button"
+                  className="skill-pill is-add"
+                  onClick={() => setSheet('skills')}
+                  aria-label={tr('Add skill', '添加技能')}
+                  title={tr('Add skill', '添加技能')}
+                >
                   <Icon name="plus" size={12} />
                 </button>
               </div>

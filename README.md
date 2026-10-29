@@ -20,7 +20,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Card detail sheets, local calendar event creation and a guided demo mode
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
-- 28 unit tests for the mock engine, protocol parser/store, scenarios and RSS handling
+- 28 unit tests plus Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -68,7 +68,8 @@ npm run preview
 Tests:
 
 ```bash
-npm test
+npm test        # unit tests
+npm run test:e2e   # Playwright UI, mobile and axe checks
 ```
 
 ## Local RSS proxy
@@ -131,6 +132,8 @@ tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
   a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo
   rssParse.test.ts        RSS/Atom parsing and proxy URL guards
+e2e/
+  app.spec.ts             Playwright UI, mobile, language and axe checks
 ```
 
 ## Path to Jiuwen/Orbit and Android
