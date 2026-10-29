@@ -269,6 +269,27 @@ export const seedCards: FeedCard[] = [
     ],
     tags: ['RSS', '周刊', '工具'],
     metric: 'RSS 订阅'
+  },
+  {
+    id: 'fc-13',
+    source: 'youtube',
+    sourceLabel: 'YouTube',
+    topic: '机器人',
+    title: '人形机器人从演示走向工厂班次',
+    summary:
+      '一篇现场观察：安全围栏、遥操作，以及决定人形机器人能否撑完一个班次的中间件工作。',
+    glyph: '◈',
+    cover: 'linear-gradient(135deg, #d7e8dd 0%, #9bc7b4 45%, #3f7d6c 100%)',
+    readingTime: '14:06',
+    published: '3 小时前',
+    url: 'https://www.youtube.com/',
+    body: [
+      '视频里的工厂地面刻意做得很无聊：划好的通道、缓慢的传送带，以及重复四个抓取动作的机器人。重点不是高光集锦，而是持续运行时间。',
+      '工程师介绍了台面下的工作：标定、跌倒恢复、远程协助，以及把机器人状态与工厂排程对齐的中间件层。',
+      '最后比较了遥操作与受控自主。两种方式都保留人类在环，差别在于机器人能多快发出求助。'
+    ],
+    tags: ['机器人', '具身智能', '安全'],
+    metric: '2.1 万次观看'
   }
 ];
 

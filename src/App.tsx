@@ -78,7 +78,7 @@ export default function App() {
   const [composer, setComposer] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
-  const [activeSkill, setActiveSkill] = useState('general');
+  const [activeSkill, setActiveSkill] = useState('');
   const [sheet, setSheet] = useState<SheetName>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
   const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
@@ -94,7 +94,7 @@ export default function App() {
   const tr = useCallback((english: string, chinese: string): string => (lang === 'zh' ? chinese : english), [lang]);
   const seed = seedFor(lang);
   const [reactions, setReactions] = usePersistentState<Record<string, Reaction>>(STORAGE_KEYS.reactions, {});
-  const [topics, setTopics] = usePersistentState<string[]>(STORAGE_KEYS.topics, [seed.topicOptions[0], seed.topicOptions[3]]);
+  const [topics, setTopics] = usePersistentState<string[]>(STORAGE_KEYS.topics, []);
   const [skills, setSkills] = usePersistentState<Skill[]>(STORAGE_KEYS.skills, seed.seedSkills);
   const [saved, setSaved] = usePersistentState<string[]>(STORAGE_KEYS.savedCards, []);
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
@@ -284,7 +284,7 @@ export default function App() {
           createdAt: taskStartedAt,
           updatedAt: taskStartedAt,
           roomId: settings.cloudBackend === 'orbit' ? 'orbit' : 'local',
-          skill: 'general'
+          skill: activeSkill || 'general'
         },
         ...previous
       ].slice(0, 40)
@@ -313,7 +313,6 @@ export default function App() {
         ? [...previous, assistant]
         : [...previous, userMessage, assistant]
     );
-    setActiveSkill('general');
 
     activeController.current?.abort();
     const controller = new AbortController();
@@ -555,7 +554,7 @@ export default function App() {
     setArchived([]);
     setSettings(defaultSettings);
     setReactions({});
-    setTopics([seed.topicOptions[0], seed.topicOptions[3]]);
+    setTopics([]);
     setSkills(seed.seedSkills);
     setSaved([]);
     setRssCards([]);
@@ -589,14 +588,14 @@ export default function App() {
     setMemory(current =>
       JSON.stringify(current) === JSON.stringify(seed.memoryProfile) ? nextSeed.memoryProfile : current
     );
-    setTopics([nextSeed.topicOptions[0], nextSeed.topicOptions[3]]);
+    setTopics([]);
     setSkills(previous =>
       previous.map(skill => {
         const localized = nextSeed.seedSkills.find(item => item.id === skill.id);
         return localized ? { ...localized, installed: skill.installed, enabled: skill.enabled } : skill;
       })
     );
-    setActiveSkill('general');
+    setActiveSkill('');
     setHome(true);
     setTab('chat');
     setSheet(null);

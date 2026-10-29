@@ -40,8 +40,7 @@ function basePath(): string {
 }
 
 function coverName(card: Pick<FeedCard, 'topic' | 'source'>): string {
-  const source = card.source.toLowerCase();
-  return SOURCE_COVERS[source] ?? TOPIC_COVERS[card.topic] ?? 'ai';
+  return TOPIC_COVERS[card.topic] ?? SOURCE_COVERS[card.source.toLowerCase()] ?? 'ai';
 }
 
 /** Article image when the feed provides one, otherwise a local stock photo. */

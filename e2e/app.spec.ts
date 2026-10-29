@@ -63,7 +63,7 @@ test('travel query renders A2UI cards and opens a detail sheet', async ({ page }
 });
 
 test('language switch resets to Simplified Chinese', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings|设置/ }).click();
   await page.getByRole('button', { name: '中文' }).click();
   await expect(page.getByText(/今天想聊点什么|早上好|下午好|晚上好/).first()).toBeVisible();
@@ -71,7 +71,7 @@ test('language switch resets to Simplified Chinese', async ({ page }) => {
 });
 
 test('protocol demo renders JSONL-driven components', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /A2UI protocol demo/ }).click();
   await expect(page.locator('.hero-banner')).toBeVisible();
   await expect(page.locator('.flight-board')).toBeVisible();
@@ -83,7 +83,7 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
 });
 
 test('inspects, exports and imports local skills', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Skill center/ }).click();
   await page.locator('.skill-detail-link').first().click();
   await expect(page.locator('.skill-detail')).toBeVisible();
@@ -121,7 +121,7 @@ test('inspects, exports and imports local skills', async ({ page }) => {
 
   await expect(page.getByText('Local test skill')).toBeVisible();
   await page.locator('.sheet-head .icon-button').click();
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Skill center/ }).click();
   await expect(page.getByText('Local test skill')).toBeVisible();
 });
@@ -138,7 +138,7 @@ test('renders an interactive local shopping checklist', async ({ page }) => {
 test('shows local task rows with detail and retry', async ({ page }) => {
   await sendMessage(page, 'Find coffee nearby');
   await expect(page.locator('.a2ui-surface')).toBeVisible();
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Sessions & tasks/ }).click();
   await expect(page.locator('.task-row')).toHaveCount(1);
   await page.locator('.task-row').first().click();
@@ -160,13 +160,32 @@ test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await page.locator('.message-actions').last().getByRole('button', { name: 'Artifact' }).click();
   await expect(page.locator('.artifact-row')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Artifacts/ }).click();
   await expect(page.locator('.artifact-row')).toHaveCount(1);
   await page.locator('.artifact-row').first().click();
   await expect(page.locator('.artifact-preview')).toContainText('coffee');
   await expect(page.locator('.artifact-preview')).toContainText('sources');
   await expect(page.locator('.artifact-surface .a2ui-surface')).toBeVisible();
+});
+
+test('starts with all discovery topics and no skill pre-selected', async ({ page }) => {
+  await expect(page.locator('.skill-active')).toHaveText('General assistant');
+  await expect(page.locator('.skill-pill.is-active')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await expect(page.locator('.topic-chip.is-active')).toHaveText('All');
+  const allCount = await page.locator('.feed-card').count();
+  expect(allCount).toBeGreaterThan(7);
+
+  await page.locator('.topic-chip', { hasText: 'Robotics' }).click();
+  await expect(page.locator('.topic-chip.is-active')).toHaveText('Robotics');
+  const filteredCount = await page.locator('.feed-card').count();
+  expect(filteredCount).toBeLessThan(allCount);
+  expect(filteredCount).toBeGreaterThan(0);
+
+  await page.locator('.topic-chip', { hasText: /^All$/ }).click();
+  await expect(page.locator('.feed-card')).toHaveCount(allCount);
 });
 
 test('discover covers show images and open the story', async ({ page }) => {
@@ -225,7 +244,7 @@ test('shows an offline banner while local mode stays usable', async ({ page }) =
 
 test('is installable and advertises account-free offline access', async ({ page }) => {
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await expect(page.getByText('Account-free access')).toBeVisible();
   await expect(page.getByText(/No account is required/)).toBeVisible();
@@ -323,7 +342,7 @@ test('edits and forgets local memory without an account', async ({ page }) => {
 });
 
 test('exports and restores a local backup without an account', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
 
   const downloadPromise = page.waitForEvent('download');
@@ -353,7 +372,7 @@ test('exports and restores a local backup without an account', async ({ page }) 
 });
 
 test('keeps a local-only diagnostic log that can be exported and cleared', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await expect(page.getByText('Diagnostics', { exact: true })).toBeVisible();
   await expect(page.getByText('No errors recorded.')).toBeVisible();
@@ -367,7 +386,7 @@ test('keeps a local-only diagnostic log that can be exported and cleared', async
     );
   });
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await expect(page.getByText('1 local entry stored.')).toBeVisible();
 
@@ -381,7 +400,7 @@ test('keeps a local-only diagnostic log that can be exported and cleared', async
 });
 
 test('Orbit mode falls back to the mock when the bridge is not configured', async ({ page }) => {
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await page.getByRole('button', { name: 'Orbit cloud' }).click();
   await expect(page.locator('.orbit-status.is-off')).toContainText(/not configured|未配置/);
@@ -432,13 +451,13 @@ test('core screens have no serious accessibility violations', async ({ page }) =
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.locator('.detail-layer')).toHaveCount(0);
 
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await scan('more');
   await page.getByRole('button', { name: /Skill center/ }).click();
   await scan('skills');
   await page.locator('.sheet-head .icon-button').click();
 
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await scan('settings');
 });
@@ -448,7 +467,7 @@ test('home and settings have no critical accessibility violations', async ({ pag
   const home = await new AxeBuilder({ page }).include('main').analyze();
   expect(home.violations.filter(violation => violation.impact === 'critical')).toEqual([]);
 
-  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
   await expect(page.locator('.sheet-panel')).toBeFocused();
   await expect(page.locator('.sheet-layer')).toBeVisible();

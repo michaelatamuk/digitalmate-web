@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { coverForCard, fallbackCoverForCard } from '../src/lib/covers';
 
 describe('discovery covers', () => {
-  it('maps topics and sources to local stock photos', () => {
+  it('prefers the topic photo over the source photo', () => {
     expect(coverForCard({ topic: 'AI & Tech', source: 'hackernews' })).toContain(
-      '/covers/photos/open-source.jpg'
+      '/covers/photos/ai.jpg'
+    );
+    expect(coverForCard({ topic: 'Robotics', source: 'youtube' })).toContain(
+      '/covers/photos/robotics.jpg'
     );
     expect(coverForCard({ topic: 'AI 科技', source: 'seed' })).toContain('/covers/photos/ai.jpg');
     expect(coverForCard({ topic: '城市生活', source: 'seed' })).toContain('/covers/photos/city.jpg');
+  });
+
+  it('falls back to a source photo when the topic is unknown', () => {
     expect(coverForCard({ topic: 'Anything', source: 'youtube' })).toContain(
       '/covers/photos/video.jpg'
     );
@@ -21,7 +27,9 @@ describe('discovery covers', () => {
   });
 
   it('provides an illustrated fallback for failed images', () => {
-    expect(fallbackCoverForCard({ topic: 'AI 科技', source: 'seed' })).toContain('/covers/ai.svg');
+    expect(fallbackCoverForCard({ topic: '机器人', source: 'youtube' })).toContain(
+      '/covers/robotics.svg'
+    );
     expect(fallbackCoverForCard({ topic: 'Anything', source: 'youtube' })).toContain(
       '/covers/video.svg'
     );

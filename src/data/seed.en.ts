@@ -269,6 +269,27 @@ export const seedCards: FeedCard[] = [
     ],
     tags: ['RSS', 'Weekly', 'Tools'],
     metric: 'RSS feed'
+  },
+  {
+    id: 'fc-13',
+    source: 'youtube',
+    sourceLabel: 'YouTube',
+    topic: 'Robotics',
+    title: 'Humanoid robots move from demos to factory shifts',
+    summary:
+      'A field report on safety cages, teleoperation and the middleware work that decides whether a humanoid can keep a shift.',
+    glyph: '◈',
+    cover: 'linear-gradient(135deg, #d7e8dd 0%, #9bc7b4 45%, #3f7d6c 100%)',
+    readingTime: '14:06',
+    published: '3h ago',
+    url: 'https://www.youtube.com/',
+    body: [
+      'The factory floor in the video is deliberately boring: marked lanes, a slow conveyor and a robot that repeats four pick-and-place motions. The point is uptime, not a highlight reel.',
+      'Engineers describe the hidden work — calibration, fall recovery, remote assistance and a middleware layer that reconciles robot state with the factory schedule.',
+      'The closing segment compares teleoperation with guarded autonomy. Both keep a human in the loop; the difference is how quickly the robot can ask for help.'
+    ],
+    tags: ['Robotics', 'Embodied AI', 'Safety'],
+    metric: '21k views'
   }
 ];
 
