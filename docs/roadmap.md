@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 33 A2UI-style components / 14 mock scenarios
+- [x] 34 A2UI-style components / 15 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -45,6 +45,7 @@
 
 - [x] Discovery local search and article/reply sharing
 - [x] Daily brief scenario
+- [x] Shopping checklist scenario
 - [ ] Orbit room/session/task shell
 - [x] Stop, retry, copy, share and clear a message exchange
 - [ ] Long-press and per-task detail rows

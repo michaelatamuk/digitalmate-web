@@ -140,6 +140,19 @@ describe('extended scenarios', () => {
     expect(reply.surface?.title).toBe('每日简报');
     expect(reply.surface?.components.priorities.title).toBe('优先事项');
   });
+
+  it('returns a local shopping checklist', () => {
+    const reply = replyFor('Make a grocery shopping list', 'en');
+    expect(reply.surface?.title).toBe('Shopping list');
+    expect(reply.surface?.components.checklist.component).toBe('Checklist');
+    expect(reply.surface?.data.items).toHaveLength(5);
+  });
+
+  it('localizes the shopping list', () => {
+    const reply = replyFor('帮我做个购物清单', 'zh');
+    expect(reply.surface?.title).toBe('购物清单');
+    expect(reply.surface?.components.checklist.title).toBe('待购买');
+  });
 });
 
 describe('localized seed data', () => {

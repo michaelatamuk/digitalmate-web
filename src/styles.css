@@ -2021,6 +2021,101 @@ a {
   }
 }
 
+/* ---------- checklist ---------- */
+
+.a2ui-checklist {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(33, 27, 23, 0.05);
+  background: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+}
+
+.checklist-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(33, 27, 23, 0.05);
+  cursor: pointer;
+  position: relative;
+}
+
+.checklist-row:last-child {
+  border-bottom: none;
+}
+
+.checklist-row input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.checklist-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  border-radius: 5px;
+  border: 1.5px solid rgba(153, 95, 76, 0.4);
+  background: #fff;
+  color: #fff;
+}
+
+.checklist-box svg {
+  opacity: 0;
+}
+
+.checklist-row input:checked + .checklist-box {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.checklist-row input:checked + .checklist-box svg {
+  opacity: 1;
+}
+
+.checklist-row input:focus-visible + .checklist-box {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.checklist-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+
+.checklist-copy strong {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.checklist-row input:checked ~ .checklist-copy strong {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.checklist-copy em {
+  font-size: 8px;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.checklist-meta {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* ---------- A2UI thinking and account cards ---------- */
 
 .a2ui-thinking-card {

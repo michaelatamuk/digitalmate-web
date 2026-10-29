@@ -614,6 +614,47 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function shoppingSurface(): A2uiSurface {
+  return makeSurface(
+    'Shopping list',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Weekly groceries', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['hero', 'checklist', 'budget', 'actions'] },
+      {
+        id: 'hero',
+        component: 'HeroBanner',
+        title: 'Six items, about ¥86',
+        body: 'A local checklist for the week. Tick items off here; nothing is ordered and no store account is used.'
+      },
+      { id: 'checklist', component: 'Checklist', title: 'To buy', dataPath: '/items' },
+      { id: 'budget', component: 'InfoRows', title: 'Budget', dataPath: '/budget' },
+      {
+        id: 'actions',
+        component: 'ActionBar',
+        actions: [
+          { id: 'shop-nearby', label: 'Find a nearby store', prompt: 'Find coffee nearby', variant: 'primary' },
+          { id: 'shop-brief', label: 'Plan my day', prompt: 'Show my daily brief', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      items: [
+        { label: 'Oat milk', note: '1 L · unsweetened', meta: '¥18', checked: false },
+        { label: 'Coffee beans', note: 'Medium roast · 250 g', meta: '¥32', checked: false },
+        { label: 'Bananas', note: 'About 6', meta: '¥9', checked: true },
+        { label: 'Greek yogurt', note: '4 cups', meta: '¥16', checked: false },
+        { label: 'Whole wheat bread', note: 'Loaf', meta: '¥11', checked: false }
+      ],
+      budget: [
+        { label: 'Estimated total', value: '¥86' },
+        { label: 'Budget left', value: '¥14', tone: 'success' },
+        { label: 'Store', value: 'Local demo · no order' }
+      ]
+    },
+    'Local demo · no ordering or payment'
+  );
+}
+
 export function dailyBriefSurface(): A2uiSurface {
   return makeSurface(
     'Daily brief',

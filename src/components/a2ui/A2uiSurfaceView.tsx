@@ -625,6 +625,30 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
       );
     }
 
+    case 'Checklist': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="a2ui-checklist">
+            {items.map((item, index) => (
+              <label className="checklist-row" key={`${key}-check-${index}`}>
+                <input type="checkbox" defaultChecked={item.checked === true} />
+                <span className="checklist-box" aria-hidden="true">
+                  <Icon name="check" size={11} />
+                </span>
+                <span className="checklist-copy">
+                  <strong>{textOf(item.label)}</strong>
+                  {item.note ? <em>{textOf(item.note)}</em> : null}
+                </span>
+                {item.meta ? <span className="checklist-meta">{textOf(item.meta)}</span> : null}
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     case 'ToolConnectCard':
       return (
         <div className="tool-connect-card" key={key}>

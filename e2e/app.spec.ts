@@ -126,6 +126,15 @@ test('inspects, exports and imports local skills', async ({ page }) => {
   await expect(page.getByText('Local test skill')).toBeVisible();
 });
 
+test('renders an interactive local shopping checklist', async ({ page }) => {
+  await sendMessage(page, 'Make a grocery shopping list');
+  await expect(page.locator('.a2ui-checklist')).toBeVisible();
+  const first = page.locator('.checklist-row input').first();
+  await expect(first).not.toBeChecked();
+  await page.locator('.checklist-row').first().click();
+  await expect(first).toBeChecked();
+});
+
 test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await sendMessage(page, 'Find coffee nearby');
   await expect(page.locator('.a2ui-surface')).toBeVisible();

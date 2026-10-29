@@ -24,7 +24,7 @@ envelopes and parses them with `A2uiSurfaceStore` before the renderer sees anyth
 `FlightBoard`, `List`, `ToolConnectCard`, `ExpandableCard`, `SkeletonCard`, `MediaSlider`,
 `SceneTabs`, `MasonryGrid`, `HotelOptions`, `RideOptions`, `PaymentCard`,
 `SegmentedRingChart`, `MultiSeriesLineChart`, `MatrixHeatmap`, `ThinkingCard`,
-`StripeReceivingAccountCard`.
+`StripeReceivingAccountCard`, `Checklist`.
 
 ## Components still missing
 

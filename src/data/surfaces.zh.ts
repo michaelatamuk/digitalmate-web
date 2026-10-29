@@ -615,6 +615,47 @@ export function mediaSurface(): A2uiSurface {
   );
 }
 
+export function shoppingSurface(): A2uiSurface {
+  return makeSurface(
+    '购物清单',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '本周采购', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['hero', 'checklist', 'budget', 'actions'] },
+      {
+        id: 'hero',
+        component: 'HeroBanner',
+        title: '6 件商品，约 ¥86',
+        body: '一份本地采购清单。可以在这里勾选完成；不会下单，也不使用任何商店账号。'
+      },
+      { id: 'checklist', component: 'Checklist', title: '待购买', dataPath: '/items' },
+      { id: 'budget', component: 'InfoRows', title: '预算', dataPath: '/budget' },
+      {
+        id: 'actions',
+        component: 'ActionBar',
+        actions: [
+          { id: 'shop-nearby', label: '找附近门店', prompt: '附近有什么咖啡店', variant: 'primary' },
+          { id: 'shop-brief', label: '安排今天', prompt: '看看今日简报', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      items: [
+        { label: '燕麦奶', note: '1 升 · 无糖', meta: '¥18', checked: false },
+        { label: '咖啡豆', note: '中深烘焙 · 250 克', meta: '¥32', checked: false },
+        { label: '香蕉', note: '约 6 根', meta: '¥9', checked: true },
+        { label: '希腊酸奶', note: '4 杯', meta: '¥16', checked: false },
+        { label: '全麦面包', note: '1 袋', meta: '¥11', checked: false }
+      ],
+      budget: [
+        { label: '预计合计', value: '¥86' },
+        { label: '剩余预算', value: '¥14', tone: 'success' },
+        { label: '门店', value: '本地演示 · 不下单' }
+      ]
+    },
+    '本地演示 · 不下单、不支付'
+  );
+}
+
 export function dailyBriefSurface(): A2uiSurface {
   return makeSurface(
     '每日简报',

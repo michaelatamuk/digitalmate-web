@@ -265,7 +265,8 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
   }
 
   if (/next step|next-step|action item|checklist|下一步|工作清单|清单/.test(lower) &&
-    !/summar|总结|摘要/.test(lower)) {
+    !/summar|总结|摘要/.test(lower) &&
+    !/shopping|grocery|购物|采购/.test(lower)) {
     return {
       thinking: [
         tr('Summarise conclusions', '归纳结论'),
@@ -278,6 +279,22 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
       ),
       surface: nextStepsSurface(),
       followUps: tr('Risks only|Show the full summary', '只看风险|生成完整摘要').split('|')
+    };
+  }
+
+  if (/shopping|grocery|groceries|购物|买菜|采购/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read the local list', '读取本地清单'),
+        tr('Estimate the budget', '估算预算'),
+        tr('Render the checklist', '渲染清单')
+      ],
+      text: tr(
+        'Here is your local shopping list: five items and an estimated ¥86. Tick items off in the card; nothing is ordered or paid here.',
+        '这是你的本地购物清单：5 件商品，预计 ¥86。可以在卡片中勾选完成；这里不会下单或支付。'
+      ),
+      surface: S.shoppingSurface(),
+      followUps: tr('Find coffee nearby|Show my daily brief', '附近有什么咖啡店|看看今日简报').split('|')
     };
   }
 

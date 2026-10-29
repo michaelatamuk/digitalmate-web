@@ -38,7 +38,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 33 components |
+| A2UI surface renderer | ✅ | 34 components |
 | Full component catalog | ✅ | Tracked native catalog covered |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ✅ | `A2uiUpdateQueue` coalesces adjacent updates |
@@ -60,6 +60,7 @@ No components from the tracked native list remain. Future native additions may s
 | Weather | ✅ | Mock |
 | Hotel / ride / payments / media | ✅ | Mock comparison and review cards |
 | Daily brief | ✅ | Local schedule, metrics and priorities |
+| Shopping list | ✅ | Local checklist with budget; no ordering |
 | Gmail send / calendar write | ❌ | Not implemented |
 | Firecrawl / shopping / DeepSearch | ❌ | Not implemented |
 | DailyBrief / BIM / multi-task | ❌ | Not implemented |
@@ -75,7 +76,7 @@ No components from the tracked native list remain. Future native additions may s
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: chat, attachments/PDF, artifacts, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 71 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
+| Unit tests | ✅ | 73 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable build, Dockerfile and compose self-hosting |
 | Android shell | 🟡 | PWA install works; Capacitor planned only for native features |
