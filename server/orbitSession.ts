@@ -69,6 +69,10 @@ export class OrbitSessionStore {
     return this.sessions.size;
   }
 
+  delete(id: string): void {
+    this.sessions.delete(id);
+  }
+
   prune(): void {
     const cutoff = this.now() - this.ttlMs;
     for (const [id, session] of this.sessions) {

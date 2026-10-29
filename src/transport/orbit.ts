@@ -18,6 +18,11 @@ export async function orbitHealth(signal?: AbortSignal): Promise<OrbitHealth> {
   return (await response.json()) as OrbitHealth;
 }
 
+export async function resetOrbitSession(): Promise<void> {
+  const response = await fetch('/api/orbit/reset', { method: 'POST' });
+  if (!response.ok) throw new Error(`Orbit session reset failed with HTTP ${response.status}`);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

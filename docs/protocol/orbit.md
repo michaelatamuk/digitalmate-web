@@ -114,6 +114,7 @@ Browser endpoints:
 ```text
 GET  /api/orbit/health   { configured, mode, gatewayHost, bindingId }
 POST /api/orbit/turn     { text, roomId?, submissionId? } → text/event-stream
+POST /api/orbit/reset    clear the session cookie and cached room/submissions
 ```
 
 One turn:
@@ -131,7 +132,9 @@ Session continuity:
 - the room id is remembered per session and reused when `roomId` is omitted;
 - completed `submission_id` values are cached in memory; a repeat replays the cached text
   with a `Reuse cached result` thinking step instead of re-sending the action;
-- errors are cached as completed results so retries do not loop.
+- errors are cached as completed results so retries do not loop;
+- `POST /api/orbit/reset` clears the cookie and cache; **Settings → Reset bridge session**
+  exposes the same action.
 
 `/api/orbit/health` includes the remembered `roomId` when a session cookie is present.
 

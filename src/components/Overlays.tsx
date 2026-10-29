@@ -3,7 +3,7 @@ import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Sk
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
-import { orbitHealth } from '../transport/orbit';
+import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
 
@@ -453,6 +453,24 @@ export function SettingsSheet({
                     )}
             </span>
           </div>
+        ) : null}
+        {settings.cloudBackend === 'orbit' && orbitStatus?.configured ? (
+          <button
+            type="button"
+            className="secondary-action orbit-reset"
+            onClick={async () => {
+              try {
+                await resetOrbitSession();
+                setOrbitStatus(current => (current ? { ...current, roomId: undefined } : current));
+                onNotice(tr('Bridge session cleared.', '桥接会话已清除。'));
+              } catch {
+                onNotice(tr('Could not clear the bridge session.', '无法清除桥接会话。'));
+              }
+            }}
+          >
+            <Icon name="refresh" size={14} />
+            {tr('Reset bridge session', '重置桥接会话')}
+          </button>
         ) : null}
       </div>
 

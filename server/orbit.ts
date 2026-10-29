@@ -415,6 +415,25 @@ async function handleRequest(request: IncomingMessage, response: ServerResponse)
     return;
   }
 
+  if (url.pathname === '/api/orbit/reset') {
+    if (request.method !== 'POST') {
+      response.statusCode = 405;
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.end(JSON.stringify({ error: 'Use POST' }));
+      return;
+    }
+    const sessionId = readCookie(request.headers.cookie, 'dm_orbit_session');
+    if (sessionId) orbitSessions.delete(sessionId);
+    const secure =
+      String(request.headers['x-forwarded-proto'] ?? '').split(',')[0].trim() === 'https' ||
+      Boolean((request.socket as { encrypted?: boolean }).encrypted);
+    response.statusCode = 200;
+    response.setHeader('content-type', 'application/json; charset=utf-8');
+    response.setHeader('set-cookie', sessionCookie('', secure, 0));
+    response.end(JSON.stringify({ ok: true }));
+    return;
+  }
+
   if (url.pathname !== '/api/orbit/turn') {
     response.statusCode = 404;
     response.end();

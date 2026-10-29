@@ -129,6 +129,7 @@ Endpoints:
 ```text
 GET  /api/orbit/health   → { configured, mode, gatewayHost, bindingId }
 POST /api/orbit/turn     → text/event-stream of ChatTurnEvent JSON
+POST /api/orbit/reset    → clear the bridge session cookie and cached room/submissions
 ```
 
 Flow per turn:

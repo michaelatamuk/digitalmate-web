@@ -168,6 +168,10 @@ describe('Orbit bridge sessions', () => {
 
     store.rememberSubmission(session, 'sub_1', { done: true });
     expect(store.getSubmission(session, 'sub_1')).toMatchObject({ done: true, text: 'Hello' });
+
+    store.delete('s1');
+    expect(store.get('s1')).toBeUndefined();
+    expect(store.size()).toBe(0);
   });
 
   it('prunes sessions after the TTL', () => {
