@@ -15,11 +15,16 @@ interface DiscoveryProps {
   reactions: Record<string, Reaction>;
   saved: string[];
   topics: string[];
+  topicOrder: string[];
+  hiddenTopics: string[];
   readCards: string[];
   enabledSources: string[];
   onToggleTopic: (topic: string) => void;
   onClearTopics: () => void;
   onApplyTopics: (topics: string[]) => void;
+  onMoveTopic: (topic: string, direction: -1 | 1) => void;
+  onToggleTopicVisibility: (topic: string) => void;
+  onResetTopicOrder: () => void;
   onToggleSource: (source: string) => void;
   onReact: (id: string, reaction: Reaction) => void;
   onSave: (id: string) => void;
@@ -35,11 +40,16 @@ export function DiscoveryView({
   reactions,
   saved,
   topics,
+  topicOrder,
+  hiddenTopics,
   readCards,
   enabledSources,
   onToggleTopic,
   onClearTopics,
   onApplyTopics,
+  onMoveTopic,
+  onToggleTopicVisibility,
+  onResetTopicOrder,
   onToggleSource,
   onReact,
   onSave,
@@ -55,6 +65,7 @@ export function DiscoveryView({
   const [query, setQuery] = useState('');
   const [rssOpen, setRssOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
+  const [topicsOpen, setTopicsOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(12);
   const [listening, setListening] = useState(false);
   const voiceRef = useRef<VoiceSession | null>(null);
@@ -81,6 +92,12 @@ export function DiscoveryView({
   }, [activeSource, enabled, filterCards, query, reactions, saved, topics]);
 
   const shown = visible.slice(0, visibleCount);
+  const orderedTopics = useMemo(() => {
+    const order = new Map(topicOrder.map((topic, index) => [topic, index]));
+    return topicOptions
+      .filter(topic => !hiddenTopics.includes(topic))
+      .sort((left, right) => (order.get(left) ?? 999) - (order.get(right) ?? 999));
+  }, [hiddenTopics, topicOptions, topicOrder]);
   const sourceCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const card of enabled) counts.set(card.source, (counts.get(card.source) ?? 0) + 1);
@@ -189,7 +206,7 @@ export function DiscoveryView({
           >
             {tr('All', '全部')}
           </button>
-          {topicOptions.map(topic => (
+          {orderedTopics.map(topic => (
             <button
               type="button"
               key={topic}
@@ -200,7 +217,55 @@ export function DiscoveryView({
               {topics.includes(topic) ? <Icon name="check" size={12} /> : null}
             </button>
           ))}
+          <button
+            type="button"
+            className="topic-chip is-add"
+            aria-expanded={topicsOpen}
+            onClick={() => setTopicsOpen(open => !open)}
+          >
+            <Icon name="filter" size={12} />
+            {tr('Edit', '编辑')}
+          </button>
         </div>
+
+        {topicsOpen ? (
+          <div className="topic-manage">
+            {topicOptions.map(topic => {
+              const hidden = hiddenTopics.includes(topic);
+              const visibleIndex = orderedTopics.indexOf(topic);
+              return (
+                <div className={`topic-manage-row ${hidden ? 'is-hidden' : ''}`} key={topic}>
+                  <span>{topic}</span>
+                  <div>
+                    <button
+                      type="button"
+                      aria-label={tr(`Move ${topic} earlier`, `前移 ${topic}`)}
+                      disabled={hidden || visibleIndex <= 0}
+                      onClick={() => onMoveTopic(topic, -1)}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={tr(`Move ${topic} later`, `后移 ${topic}`)}
+                      disabled={hidden || visibleIndex < 0 || visibleIndex >= orderedTopics.length - 1}
+                      onClick={() => onMoveTopic(topic, 1)}
+                    >
+                      ↓
+                    </button>
+                    <button type="button" onClick={() => onToggleTopicVisibility(topic)}>
+                      {hidden ? tr('Show', '显示') : tr('Hide', '隐藏')}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <button type="button" className="secondary-action" onClick={onResetTopicOrder}>
+              <Icon name="refresh" size={13} />
+              {tr('Reset topic order', '重置主题顺序')}
+            </button>
+          </div>
+        ) : null}
         <p className="interest-note">
           {tr(
             'Tap a topic to tune recommendations. The demo filters the local inventory immediately; the real client writes feedback into interest memory and triggers refills.',

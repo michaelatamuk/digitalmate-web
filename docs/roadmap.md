@@ -150,7 +150,7 @@ completed without a real service, but their UI/fallbacks can be built locally.
 - [x] Discussion/thread cards with reply previews (M)
 - [x] Natural-language topic editing with a local rules parser (S)
 - [x] Preference learning from likes, saves and reactions, with local re-ranking (M)
-- [ ] Preference-tag editor: add, remove and reorder interests (M)
+- [x] Preference-tag editor: add, remove and reorder interests (M)
 - [x] Source management: enable/disable sources and show source status (M)
 - [x] Deduplication and “continue where you left off” read state (M)
 - [x] Feed pagination/infinite scroll with local inventory (M)

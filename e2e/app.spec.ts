@@ -258,6 +258,17 @@ test('toggles discovery sources locally', async ({ page }) => {
   expect(await page.locator('.feed-card').count()).toBeLessThan(allCards);
 });
 
+test('reorders and hides discovery topics', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  const roboticsRow = page.locator('.topic-manage-row', { hasText: 'Robotics' });
+  await roboticsRow.getByRole('button', { name: /Hide/ }).click();
+  await expect(page.locator('.topic-chip', { hasText: 'Robotics' })).toHaveCount(0);
+  await roboticsRow.getByRole('button', { name: /Show/ }).click();
+  await expect(page.locator('.topic-chip', { hasText: 'Robotics' })).toHaveCount(1);
+  await page.getByRole('button', { name: 'Reset topic order' }).click();
+});
+
 test('starts with all discovery topics and no skill pre-selected', async ({ page }) => {
   await expect(page.locator('.skill-active')).toHaveText('Default companion');
   await expect(page.locator('.skill-pill.is-active')).toHaveCount(0);

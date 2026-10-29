@@ -119,6 +119,8 @@ export default function App() {
   const seed = seedFor(lang);
   const [reactions, setReactions] = usePersistentState<Record<string, Reaction>>(STORAGE_KEYS.reactions, {});
   const [topics, setTopics] = usePersistentState<string[]>(STORAGE_KEYS.topics, []);
+  const [topicOrder, setTopicOrder] = usePersistentState<string[]>(STORAGE_KEYS.topicOrder, seed.topicOptions);
+  const [hiddenTopics, setHiddenTopics] = usePersistentState<string[]>(STORAGE_KEYS.hiddenTopics, []);
   const [skills, setSkills] = usePersistentState<Skill[]>(STORAGE_KEYS.skills, seed.seedSkills);
   const [saved, setSaved] = usePersistentState<string[]>(STORAGE_KEYS.savedCards, []);
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
@@ -662,6 +664,8 @@ export default function App() {
     setSettings(defaultSettings);
     setReactions({});
     setTopics([]);
+    setTopicOrder(seed.topicOptions);
+    setHiddenTopics([]);
     setSkills(seed.seedSkills);
     setSaved([]);
     setRssCards([]);
@@ -696,6 +700,8 @@ export default function App() {
       JSON.stringify(current) === JSON.stringify(seed.memoryProfile) ? nextSeed.memoryProfile : current
     );
     setTopics([]);
+    setTopicOrder(nextSeed.topicOptions);
+    setHiddenTopics([]);
     setSkills(previous =>
       previous.map(skill => {
         const localized = nextSeed.seedSkills.find(item => item.id === skill.id);
@@ -856,6 +862,29 @@ export default function App() {
 
   const applyTopics = (next: string[]) => {
     setTopics(next.length >= seed.topicOptions.length ? [] : Array.from(new Set(next)));
+  };
+
+  const moveTopic = (topic: string, direction: -1 | 1) => {
+    setTopicOrder(previous => {
+      const order = previous.length > 0 ? [...previous] : [...seed.topicOptions];
+      const from = order.indexOf(topic);
+      const to = from + direction;
+      if (from < 0 || to < 0 || to >= order.length) return order;
+      const [item] = order.splice(from, 1);
+      order.splice(to, 0, item);
+      return order;
+    });
+  };
+
+  const toggleTopicVisibility = (topic: string) => {
+    setHiddenTopics(previous =>
+      previous.includes(topic) ? previous.filter(item => item !== topic) : [...previous, topic]
+    );
+  };
+
+  const resetTopicOrder = () => {
+    setTopicOrder(seed.topicOptions);
+    setHiddenTopics([]);
   };
 
   const toggleSource = (source: string) => {
@@ -1114,11 +1143,16 @@ export default function App() {
               reactions={reactions}
               saved={saved}
               topics={topics}
+              topicOrder={topicOrder}
+              hiddenTopics={hiddenTopics}
               readCards={readCards}
               enabledSources={enabledSources}
               onToggleTopic={toggleTopic}
               onClearTopics={() => setTopics([])}
               onApplyTopics={applyTopics}
+              onMoveTopic={moveTopic}
+              onToggleTopicVisibility={toggleTopicVisibility}
+              onResetTopicOrder={resetTopicOrder}
               onToggleSource={toggleSource}
               onReact={react}
               onSave={id => {

@@ -6599,3 +6599,19 @@ a {
 .task-dot { width: 6px; height: 6px; border-radius: 50%; background: #b07a45; }
 .task-dot.is-done { background: #5d7f73; }
 .task-dot.is-error, .task-dot.is-stopped { background: #a05a5a; }
+
+.topic-manage {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0;
+  padding: 10px;
+  border: 1px solid rgba(120,96,82,0.12);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.6);
+}
+.topic-manage-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 2px; font-size: 12px; }
+.topic-manage-row.is-hidden { opacity: 0.45; }
+.topic-manage-row > div { display: flex; gap: 4px; }
+.topic-manage-row button { min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid rgba(120,96,82,0.16); border-radius: 7px; background: rgba(255,255,255,0.8); color: var(--ink-muted, #6f625a); font-size: 10px; cursor: pointer; }
+.topic-manage-row button:disabled { opacity: 0.3; cursor: default; }

@@ -18,6 +18,8 @@ export const STORAGE_KEYS = {
   tasks: `${PREFIX}tasks.v1`,
   installed: `${PREFIX}installed.v1`,
   topicMigration: `${PREFIX}topicMigration.v1`,
+  topicOrder: `${PREFIX}topicOrder.v1`,
+  hiddenTopics: `${PREFIX}hiddenTopics.v1`,
   persona: `${PREFIX}persona.v1`,
   personaNotes: `${PREFIX}personaNotes.v1`,
   personaProfiles: `${PREFIX}personaProfiles.v1`,
@@ -28,7 +30,6 @@ export const STORAGE_KEYS = {
   deepSearch: `${PREFIX}deepSearch.v1`,
   welcomeSeen: `${PREFIX}welcomeSeen.v1`,
   readCards: `${PREFIX}readCards.v1`,
-  hiddenTopics: `${PREFIX}hiddenTopics.v1`,
   enabledSources: `${PREFIX}enabledSources.v1`
 };
 
