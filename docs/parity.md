@@ -15,7 +15,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Stop / retry / task clear | 🟡 | Stop works; retry/clear absent |
 | Attachments and upload | 🟡 | Fake PDF chip only |
 | Artifacts and preview | ❌ | Not implemented |
-| Discovery feed | 🟡 | Local seeds, no real sources |
+| Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ❌ | Interest feed only |
 | Saved cards / share | 🟡 | Save works; share absent |
 | Skill center | 🟡 | Install/toggle only |
@@ -69,6 +69,6 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | ❌ | localStorage only |
 | Automated UI tests | ❌ | Build only |
-| Unit tests | ✅ | 23 tests for mock logic, localization, scenarios and A2UI protocol |
+| Unit tests | ✅ | 28 tests for mock logic, scenarios, A2UI protocol and RSS |
 | Accessibility audit | ❌ | Not yet |
 | Deployment / PWA | ❌ | Not yet |

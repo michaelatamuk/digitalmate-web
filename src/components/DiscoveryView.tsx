@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import type { FeedCard, Reaction } from '../types';
+import type { FeedCard, Reaction, RssFeed } from '../types';
 import { Icon } from './Icons';
 import { seedFor } from '../data/seed';
+import { fetchRssFeed } from '../lib/rss';
 import { useI18n } from '../i18n/I18nContext';
 
 interface DiscoveryProps {
@@ -15,7 +16,7 @@ interface DiscoveryProps {
   onSave: (id: string) => void;
   onOpen: (card: FeedCard) => void;
   onRefresh: () => void;
-  onAddRss: (name: string, url: string) => void;
+  onAddRss: (name: string, url: string, feed: RssFeed) => void;
   onNotice: (message: string) => void;
 }
 
@@ -39,6 +40,7 @@ export function DiscoveryView({
   const [rssOpen, setRssOpen] = useState(false);
   const [rssName, setRssName] = useState('');
   const [rssUrl, setRssUrl] = useState('');
+  const [rssBusy, setRssBusy] = useState(false);
 
   const visible = useMemo(() => {
     return cards.filter(card => {
@@ -54,17 +56,27 @@ export function DiscoveryView({
     return counts;
   }, [cards]);
 
-  const submitRss = () => {
+  const submitRss = async () => {
     const url = rssUrl.trim();
     if (!/^https?:\/\/.+/i.test(url)) {
       onNotice(tr('Enter a valid RSS / Atom URL.', '请输入有效的 RSS / Atom URL。'));
       return;
     }
-    const name = rssName.trim() || new URL(url).hostname.replace(/^www\./, '');
-    onAddRss(name, url);
-    setRssName('');
-    setRssUrl('');
-    setRssOpen(false);
+    if (rssBusy) return;
+    setRssBusy(true);
+    try {
+      const feed = await fetchRssFeed(url);
+      const name = rssName.trim() || feed.title || new URL(url).hostname.replace(/^www\./, '');
+      onAddRss(name, url, feed);
+      setRssName('');
+      setRssUrl('');
+      setRssOpen(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      onNotice(tr(`Could not import the feed: ${message}`, `无法导入订阅：${message}`));
+    } finally {
+      setRssBusy(false);
+    }
   };
 
   return (
@@ -158,13 +170,13 @@ export function DiscoveryView({
               placeholder={tr('Name (optional)', '名称（可选）')}
               aria-label={tr('RSS name', 'RSS 名称')}
             />
-            <button type="button" className="primary-action" onClick={submitRss}>
-              {tr('Add', '添加')}
+            <button type="button" className="primary-action" onClick={() => void submitRss()} disabled={rssBusy}>
+              {rssBusy ? tr('Fetching…', '抓取中…') : tr('Add', '添加')}
             </button>
           </div>
           <p>{tr(
-            'The demo only saves to local storage and makes no network requests. The real client would first detect RSS 2.0 / Atom.',
-            '演示版只保存到本地，不会发起网络请求。真实版本会先识别 RSS 2.0 / Atom 协议。'
+            'The feed is fetched through the local /api/rss proxy, parsed as RSS 2.0, Atom or RDF, and only admitted if it contains usable items.',
+            '订阅通过本地 /api/rss 代理抓取，按 RSS 2.0、Atom 或 RDF 解析，只有包含可用条目时才会入池。'
           )}</p>
         </div>
       ) : null}

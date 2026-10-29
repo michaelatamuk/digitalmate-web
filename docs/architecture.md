@@ -17,8 +17,15 @@ real Jiuwen/Orbit client without rewriting the UI.
 │  surfaces.en.ts / surfaces.zh.ts                             │
 │  localStorage persistence                                    │
 ├──────────────────────────────────────────────────────────────┤
-│ Browser only                                                 │
-│  No network calls · no credentials · no native APIs          │
+│ Local domain / mock                                          │
+│  mockEngine.ts → thinking + text + A2UI surface objects      │
+│  seed.en.ts / seed.zh.ts                                     │
+│  surfaces.en.ts / surfaces.zh.ts                             │
+│  localStorage persistence                                    │
+├──────────────────────────────────────────────────────────────┤
+│ Local dev proxy (`server/rss.ts`)                            │
+│  GET /api/rss?url=… · SSRF guard · RSS/Atom/RDF parser       │
+│  Read-only feed import; no credentials or write actions      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -32,14 +39,15 @@ Transport interface
   └── OrbitTransport       (future, via local bridge)
   ↓
 Protocol
-  ├── A2UI JSONL parser / surface store
+  ├── A2UI JSONL parser / surface store   (implemented)
   ├── Orbit request/response/event contracts
   └── Session/task state reducer
   ↓
-Bridge (web) / native gateway (Android)
-  ├── Gateway authentication
-  ├── WSS connection
-  └── token and secret isolation
+Local helpers / bridge
+  ├── RSS fetch + parse proxy (dev/preview)
+  ├── Gateway authentication (future)
+  ├── WSS connection (future)
+  └── token and secret isolation (future)
 ```
 
 ### Why a bridge is needed for the browser

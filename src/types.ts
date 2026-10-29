@@ -104,6 +104,22 @@ export interface ItemDetail {
   item: Record<string, unknown>;
 }
 
+export interface RssItem {
+  title: string;
+  link: string;
+  summary: string;
+  published?: string;
+  author?: string;
+}
+
+export interface RssFeed {
+  title: string;
+  description: string;
+  link: string;
+  format: 'rss' | 'atom' | 'rdf';
+  items: RssItem[];
+}
+
 export interface CalendarEvent {
   id: string;
   time: string;

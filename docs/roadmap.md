@@ -28,6 +28,7 @@
 
 ## Phase 2 — Web bridge
 
+- [x] Local RSS fetch/parse dev proxy with SSRF, redirect, timeout and size guards
 - [ ] Add `services/bridge` (Node or edge runtime)
 - [ ] Gateway auth exchange or delegated session
 - [ ] WSS `/orbit/ws` proxy

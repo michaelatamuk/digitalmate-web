@@ -20,7 +20,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Card detail sheets, local calendar event creation and a guided demo mode
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
-- 23 unit tests for the mock engine, protocol parser/store, scenarios and localized data
+- 28 unit tests for the mock engine, protocol parser/store, scenarios and RSS handling
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -36,7 +36,7 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 28 components, 12 scenarios and a JSONL protocol demo |
-| Discovery | Topic/source filters, reactions, saved cards, detail reader, local RSS add |
+| Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
@@ -71,6 +71,17 @@ Tests:
 npm test
 ```
 
+## Local RSS proxy
+
+Discovery can import a real RSS 2.0, Atom or RDF feed during `npm run dev` and `npm run preview`.
+The browser calls `GET /api/rss?url=…`; `server/rss.ts` validates the URL, follows at most three
+redirects, enforces a 9-second timeout and a 2 MB response limit, and rejects loopback/private
+hosts. Feed XML is parsed by `src/lib/rssParse.ts`, HTML is stripped from summaries, and up to
+five usable items become feed cards stored in localStorage.
+
+This is a development helper, not a production-hardened fetcher: DNS rebinding and egress
+filtering belong in the future bridge deployment.
+
 ## Repository layout
 
 ```text
@@ -101,7 +112,9 @@ src/
     mockEngine.ts         prompt → thinking / text / surface (both languages)
     markdown.tsx          small Markdown renderer
     storage.ts            localStorage helpers
-  types.ts                shared UI and A2UI types
+    rss.ts                browser client for the local RSS proxy
+    rssParse.ts           RSS 2.0 / Atom / RDF parser and HTML cleanup
+  types.ts                shared UI, A2UI and RSS types
 public/
   bee/                    BeeBou assets
 docs/
@@ -112,9 +125,12 @@ docs/
   protocol/a2ui.md        surface protocol and catalog coverage
 services/
   bridge/                 future auth + WebSocket proxy for the web client
+server/
+  rss.ts                  dev/preview /api/rss proxy, size/redirect/SSRF guards
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
   a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo
+  rssParse.test.ts        RSS/Atom parsing and proxy URL guards
 ```
 
 ## Path to Jiuwen/Orbit and Android

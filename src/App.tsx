@@ -4,6 +4,7 @@ import type {
   CalendarEvent,
   FeedCard,
   ItemDetail,
+  RssFeed,
   Language,
   Message,
   Reaction,
@@ -447,31 +448,55 @@ export default function App() {
     });
   };
 
-  const addRss = (name: string, url: string) => {
-    const card: FeedCard = {
-      id: newId('rss'),
-      source: 'rss',
-      sourceLabel: 'RSS',
-      topic: seed.topicOptions[0],
-      title: tr(`${name} — latest content`, `${name} 的最新内容`),
-      summary: tr(
-        'This RSS feed was added in the demo. A real client would detect Atom / RSS 2.0, fetch the first cards and admit them after quality checks.',
-        '这是一个由演示版添加的 RSS 订阅。真实版本会识别 Atom / RSS 2.0、抓取首批卡片，并在质量校验后入池。'
-      ),
-      glyph: 'R',
-      cover: 'linear-gradient(135deg, #f6e6c8 0%, #e8cd96 50%, #b28b4d 100%)',
-      readingTime: tr('3 min read', '3 分钟阅读'),
-      published: tr('Just now', '刚刚'),
-      url,
-      body: tr(
-        'The RSS source is saved to this browser. The demo does not make network requests, so this is placeholder subscription content.|In the real client, adding a feed first requests the subscription document, identifies RSS 2.0 or Atom from the XML root, and then lets the adapter produce the first cards.|If parsing fails, the format is unsupported, or no card passes quality checks, the source is not registered and nothing is written to disk.',
-        'RSS 源已保存到本地浏览器。演示版不会发起网络请求，因此这里展示的是订阅占位内容。|在真实客户端中，添加操作会先请求订阅文档，按 XML 根节点识别 RSS 2.0 或 Atom，然后由 Adapter 生成首批卡片。|解析失败、格式不支持或没有合格卡片时，不会注册来源，也不会写入持久化文件。'
-      ).split('|'),
-      tags: ['RSS', tr('Subscription', '订阅'), name],
-      metric: tr('Added locally', '本地添加')
-    };
-    setRssCards(previous => [card, ...previous]);
-    showToast(tr(`Added RSS: ${name}`, `已添加 RSS：${name}`));
+  const addRss = (name: string, url: string, feed: RssFeed) => {
+    const palette = [
+      'linear-gradient(135deg, #f6e6c8 0%, #e8cd96 50%, #b28b4d 100%)',
+      'linear-gradient(135deg, #e8f1e6 0%, #c9dfc6 50%, #7ea47c 100%)',
+      'linear-gradient(135deg, #e9edf7 0%, #c7d3ea 50%, #7d8fb5 100%)',
+      'linear-gradient(135deg, #f8e7e0 0%, #ecc8bb 50%, #b57f6b 100%)'
+    ];
+    const items = feed.items.slice(0, 5);
+    const cards: FeedCard[] = items.map((item, index) => {
+      const summary =
+        item.summary ||
+        tr('No summary was included in this feed item.', '该订阅条目没有提供摘要。');
+      const words = summary.trim().split(/\s+/).length;
+      const minutes = Math.max(1, Math.min(12, Math.round(words / 180) || 1));
+      return {
+        id: newId('rss'),
+        source: 'rss',
+        sourceLabel: tr('RSS', 'RSS'),
+        topic: seed.topicOptions[index % seed.topicOptions.length],
+        title: item.title,
+        summary,
+        glyph: item.title.slice(0, 1).toUpperCase(),
+        cover: palette[index % palette.length],
+        readingTime: tr(`${minutes} min read`, `${minutes} 分钟阅读`),
+        published: item.published || tr('From feed', '来自订阅'),
+        url: item.link || url,
+        body: [
+          summary,
+          tr(
+            `Imported from ${feed.title} (${feed.format.toUpperCase()}) through the local RSS proxy.`,
+            `通过本地 RSS 代理从 ${feed.title}（${feed.format.toUpperCase()}）导入。`
+          ),
+          tr(
+            'The feed was fetched and parsed locally. Nothing is uploaded, and the original article opens on the publisher site.',
+            '订阅在本地抓取和解析，不会上传内容；原文会在发布方网站打开。'
+          )
+        ],
+        tags: Array.from(new Set(['RSS', name, feed.format.toUpperCase()])),
+        metric: feed.title
+      };
+    });
+
+    setRssCards(previous => [...cards, ...previous]);
+    showToast(
+      tr(
+        `Imported ${cards.length} item${cards.length === 1 ? '' : 's'} from ${name}.`,
+        `已从 ${name} 导入 ${cards.length} 条内容。`
+      )
+    );
   };
 
   const installedEnabled = skills.filter(skill => skill.installed && skill.enabled);
