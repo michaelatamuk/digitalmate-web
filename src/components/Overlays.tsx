@@ -707,55 +707,228 @@ export function SettingsSheet({
   );
 }
 
+function cloneProfile(profile: MemoryProfile): MemoryProfile {
+  return {
+    ...profile,
+    tags: [...profile.tags],
+    sections: profile.sections.map(section => ({ ...section }))
+  };
+}
+
 export function MemorySheet({
   profile,
-  onClose,
-  onNotice
+  onSave,
+  onForget,
+  onClose
 }: {
   profile: MemoryProfile;
+  onSave: (profile: MemoryProfile) => void;
+  onForget: () => void;
   onClose: () => void;
-  onNotice: (message: string) => void;
 }) {
   const { tr, lang } = useI18n();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<MemoryProfile>(() => cloneProfile(profile));
+  const [tagText, setTagText] = useState(profile.tags.join(', '));
+
+  const startEdit = () => {
+    setDraft(cloneProfile(profile));
+    setTagText(profile.tags.join(', '));
+    setEditing(true);
+  };
+
+  const save = () => {
+    const next: MemoryProfile = {
+      ...draft,
+      name: draft.name.trim() || tr('You', '你'),
+      tags: tagText
+        .split(/[,，]/)
+        .map(tag => tag.trim())
+        .filter(Boolean),
+      sections: draft.sections
+        .filter(section => section.title.trim() || section.body.trim())
+        .map(section => ({ title: section.title.trim() || tr('Untitled', '未命名'), body: section.body.trim() }))
+    };
+    onSave(next);
+    setDraft(next);
+    setEditing(false);
+  };
+
   return (
-    <Sheet title={tr('About you', '关于你')} subtitle={tr('Long-term memory overview · local only', '长期记忆概览 · 仅本地')} onClose={onClose} wide>
+    <Sheet
+      title={tr('About you', '关于你')}
+      subtitle={tr('Long-term memory · local only, no account', '长期记忆 · 仅本地，无需账号')}
+      onClose={onClose}
+      wide
+    >
       <div className="memory-head">
         <span className="memory-avatar">{lang === 'zh' ? '林' : 'L'}</span>
         <div>
-          <h3>{profile.name}</h3>
-          <p>{profile.headline}</p>
+          <h3>{editing ? draft.name || tr('You', '你') : profile.name}</h3>
+          <p>{editing ? draft.headline : profile.headline}</p>
         </div>
-        <span className="mbti-pill">{profile.mbti}</span>
+        <span className="mbti-pill">{editing ? draft.mbti || '—' : profile.mbti}</span>
       </div>
-      <p className="memory-summary">{profile.summary}</p>
-      <div className="tag-row">
-        {profile.tags.map(tag => (
-          <span className="memory-tag" key={tag}>
-            {tag}
-          </span>
-        ))}
-      </div>
-      <div className="memory-sections">
-        {profile.sections.map(section => (
-          <article className="memory-section" key={section.title}>
-            <h4>{section.title}</h4>
-            <p>{section.body}</p>
-          </article>
-        ))}
-      </div>
-      <div className="memory-actions">
-        <button type="button" className="secondary-action" onClick={() => onNotice(tr('Memory editing in the real client is drafted by a memory-only model.', '记忆编辑在真实版本中由 memory-only 模型生成草稿。'))}>
-          {tr('Edit memory', '修正记忆')}
-        </button>
-        <button type="button" className="ghost-action" onClick={() => onNotice(tr('Public profile search is not enabled in the demo.', '公开画像搜索在演示版中未启用。'))}>
-          {tr('Public profile', '公开账号画像')}
-        </button>
-      </div>
+
+      {editing ? (
+        <div className="memory-edit">
+          <div className="field-row">
+            <label className="field">
+              <span>{tr('Name', '称呼')}</span>
+              <input
+                value={draft.name}
+                onChange={event => setDraft(current => ({ ...current, name: event.target.value }))}
+                placeholder={tr('Your name', '你的称呼')}
+              />
+            </label>
+            <label className="field">
+              <span>MBTI</span>
+              <input
+                value={draft.mbti}
+                onChange={event => setDraft(current => ({ ...current, mbti: event.target.value }))}
+                placeholder="INTJ"
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span>{tr('Headline', '一句话介绍')}</span>
+            <input
+              value={draft.headline}
+              onChange={event => setDraft(current => ({ ...current, headline: event.target.value }))}
+            />
+          </label>
+          <label className="field">
+            <span>{tr('Summary', '摘要')}</span>
+            <textarea
+              rows={3}
+              value={draft.summary}
+              onChange={event => setDraft(current => ({ ...current, summary: event.target.value }))}
+            />
+          </label>
+          <label className="field">
+            <span>{tr('Tags (comma separated)', '标签（用逗号分隔）')}</span>
+            <input value={tagText} onChange={event => setTagText(event.target.value)} />
+          </label>
+
+          <div className="memory-edit-head">
+            <span className="settings-label">{tr('Details', '详细记忆')}</span>
+            <button
+              type="button"
+              className="ghost-action"
+              onClick={() =>
+                setDraft(current => ({
+                  ...current,
+                  sections: [...current.sections, { title: '', body: '' }]
+                }))
+              }
+            >
+              <Icon name="plus" size={12} />
+              {tr('Add section', '添加分组')}
+            </button>
+          </div>
+          {draft.sections.map((section, index) => (
+            <div className="memory-section-edit" key={`section-${index}`}>
+              <div className="memory-section-edit-head">
+                <input
+                  value={section.title}
+                  placeholder={tr('Section title', '分组标题')}
+                  aria-label={tr('Section title', '分组标题')}
+                  onChange={event =>
+                    setDraft(current => ({
+                      ...current,
+                      sections: current.sections.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, title: event.target.value } : item
+                      )
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={tr('Remove section', '删除分组')}
+                  onClick={() =>
+                    setDraft(current => ({
+                      ...current,
+                      sections: current.sections.filter((_, itemIndex) => itemIndex !== index)
+                    }))
+                  }
+                >
+                  <Icon name="trash" size={14} />
+                </button>
+              </div>
+              <textarea
+                rows={2}
+                value={section.body}
+                placeholder={tr('What should DigitalMate remember?', '希望 DigitalMate 记住什么？')}
+                aria-label={tr('Section body', '分组内容')}
+                onChange={event =>
+                  setDraft(current => ({
+                    ...current,
+                    sections: current.sections.map((item, itemIndex) =>
+                      itemIndex === index ? { ...item, body: event.target.value } : item
+                    )
+                  }))
+                }
+              />
+            </div>
+          ))}
+
+          <div className="memory-actions">
+            <button type="button" className="primary-action" onClick={save}>
+              <Icon name="check" size={14} />
+              {tr('Save memory', '保存记忆')}
+            </button>
+            <button type="button" className="ghost-action" onClick={() => setEditing(false)}>
+              {tr('Cancel', '取消')}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <p className="memory-summary">{profile.summary}</p>
+          {profile.tags.length ? (
+            <div className="tag-row">
+              {profile.tags.map(tag => (
+                <span className="memory-tag" key={tag}>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          ) : null}
+          <div className="memory-sections">
+            {profile.sections.map(section => (
+              <article className="memory-section" key={section.title}>
+                <h4>{section.title}</h4>
+                <p>{section.body}</p>
+              </article>
+            ))}
+          </div>
+          <div className="memory-actions">
+            <button type="button" className="secondary-action" onClick={startEdit}>
+              <Icon name="edit" size={14} />
+              {tr('Edit memory', '编辑记忆')}
+            </button>
+            <button
+              type="button"
+              className="ghost-action"
+              onClick={() => {
+                if (window.confirm(tr('Forget all local memory?', '清除全部本地记忆？'))) {
+                  onForget();
+                }
+              }}
+            >
+              <Icon name="trash" size={14} />
+              {tr('Forget everything', '全部忘记')}
+            </button>
+          </div>
+        </>
+      )}
+
       <div className="sheet-footnote">
         <Icon name="lock" size={14} />
         {tr(
-          'The demo does not read or write real memory; the real client uses a local vector store with account isolation.',
-          '演示版不读写真实记忆；真实版本使用本地向量库与账号隔离。'
+          'Memory stays in this browser and is included in Settings → Export backup. No account is used.',
+          '记忆只保存在当前浏览器，并会包含在“设置 → 导出备份”中。无需账号。'
         )}
       </div>
     </Sheet>

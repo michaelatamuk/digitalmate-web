@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   savedCards: `${PREFIX}saved.v1`,
   rssCards: `${PREFIX}rssCards.v1`,
   calendarEvents: `${PREFIX}calendarEvents.v1`,
+  memoryProfile: `${PREFIX}memoryProfile.v1`,
   installed: `${PREFIX}installed.v1`
 };
 

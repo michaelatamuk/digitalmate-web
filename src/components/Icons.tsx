@@ -47,6 +47,8 @@ export type IconName =
   | 'grid'
   | 'hotel'
   | 'car'
+  | 'copy'
+  | 'edit'
   | 'volume';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -377,6 +379,20 @@ export function Icon({ name, size = 22, filled = false, ...rest }: IconProps) {
           <path d="M5 12.5h14M7.5 16.5v2M16.5 16.5v2" />
           <circle cx="8" cy="14.2" r="0.9" />
           <circle cx="16" cy="14.2" r="0.9" />
+        </svg>
+      );
+    case 'copy':
+      return (
+        <svg {...common}>
+          <rect x="8" y="8" width="11" height="11" rx="2" />
+          <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+        </svg>
+      );
+    case 'edit':
+      return (
+        <svg {...common}>
+          <path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+          <path d="m13.5 7 3.5 3.5" />
         </svg>
       );
     case 'volume':

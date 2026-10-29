@@ -2911,6 +2911,32 @@ a {
 
 /* follow-ups */
 
+.message-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(33, 27, 23, 0.05);
+}
+
+.message-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.message-actions button:hover {
+  background: rgba(33, 27, 23, 0.04);
+  color: var(--ink);
+}
+
 .follow-ups {
   display: flex;
   flex-wrap: wrap;
@@ -4352,6 +4378,72 @@ a {
   display: flex;
   gap: 6px;
   margin-top: 8px;
+}
+
+.memory-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.memory-edit .field textarea,
+.memory-section-edit textarea {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(33, 27, 23, 0.1);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+}
+
+.memory-edit .field textarea:focus,
+.memory-section-edit textarea:focus {
+  border-color: rgba(153, 95, 76, 0.4);
+}
+
+.memory-edit-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.memory-section-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border-radius: 11px;
+  border: 1px solid rgba(33, 27, 23, 0.06);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.memory-section-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.memory-section-edit-head input {
+  flex: 1;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(33, 27, 23, 0.1);
+  background: #fff;
+  color: var(--ink);
+  font-size: 10.5px;
+  font-weight: 600;
+  outline: none;
+}
+
+.memory-section-edit-head input:focus {
+  border-color: rgba(153, 95, 76, 0.4);
 }
 
 /* ---------- detail sheet ---------- */

@@ -8,13 +8,19 @@ export function ChatView({
   showThinking,
   onAction,
   onDetails,
-  onFollowUp
+  onFollowUp,
+  onRetry,
+  onClear,
+  onCopy
 }: {
   messages: Message[];
   showThinking: boolean;
   onAction: (action: A2uiAction) => void;
   onDetails: (detail: ItemDetail) => void;
   onFollowUp: (prompt: string) => void;
+  onRetry: (id: string) => void;
+  onClear: (id: string) => void;
+  onCopy: (text: string) => void;
 }) {
   const { tr } = useI18n();
   const endRef = useRef<HTMLDivElement>(null);
@@ -37,14 +43,18 @@ export function ChatView({
   return (
     <div className="chat-view">
       <div className="chat-date">{tr('Today', '今天')}</div>
-      {messages.map(message => (
+      {messages.map((message, index) => (
         <MessageBubble
           key={message.id}
           message={message}
           showThinking={showThinking}
+          isLast={index === messages.length - 1}
           onAction={onAction}
           onDetails={onDetails}
           onFollowUp={onFollowUp}
+          onRetry={onRetry}
+          onClear={onClear}
+          onCopy={onCopy}
         />
       ))}
       <div ref={endRef} />

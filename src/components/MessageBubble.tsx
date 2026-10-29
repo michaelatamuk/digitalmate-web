@@ -88,12 +88,26 @@ export function ThinkingCard({
 interface MessageBubbleProps {
   message: Message;
   showThinking: boolean;
+  isLast: boolean;
   onAction: (action: A2uiAction) => void;
   onDetails: (detail: ItemDetail) => void;
   onFollowUp: (prompt: string) => void;
+  onRetry: (id: string) => void;
+  onClear: (id: string) => void;
+  onCopy: (text: string) => void;
 }
 
-export function MessageBubble({ message, showThinking, onAction, onDetails, onFollowUp }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  showThinking,
+  isLast,
+  onAction,
+  onDetails,
+  onFollowUp,
+  onRetry,
+  onClear,
+  onCopy
+}: MessageBubbleProps) {
   const { tr, locale } = useI18n();
   if (message.role === 'user') {
     return (
@@ -137,6 +151,26 @@ export function MessageBubble({ message, showThinking, onAction, onDetails, onFo
                 <Icon name="chevronRight" size={12} />
               </button>
             ))}
+          </div>
+        ) : null}
+        {!message.streaming ? (
+          <div className="message-actions">
+            {message.text ? (
+              <button type="button" onClick={() => onCopy(message.text)}>
+                <Icon name="copy" size={12} />
+                {tr('Copy', '复制')}
+              </button>
+            ) : null}
+            {isLast ? (
+              <button type="button" onClick={() => onRetry(message.id)}>
+                <Icon name="refresh" size={12} />
+                {tr('Retry', '重试')}
+              </button>
+            ) : null}
+            <button type="button" onClick={() => onClear(message.id)}>
+              <Icon name="trash" size={12} />
+              {tr('Clear', '清除')}
+            </button>
           </div>
         ) : null}
       </div>

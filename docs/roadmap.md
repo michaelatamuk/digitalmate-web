@@ -43,11 +43,13 @@
 ## Phase 3 — Feature parity
 
 - [ ] Orbit room/session/task shell
-- [ ] Task rows: stop, retry, clear, long-press details
+- [x] Stop, retry, copy and clear a message exchange
+- [ ] Long-press and per-task detail rows
 - [ ] Attachments and artifact preview
 - [ ] Approval cards and connection/quota states
 - [ ] Skill detail, publish and OAuth setup
-- [ ] Memory editing and public profile import
+- [x] Local memory editing and forget-all
+- [ ] Memory evidence and public profile import
 - [ ] Stripe account card and deeper scenario states
 - [ ] Mobile viewport and accessibility audit
 

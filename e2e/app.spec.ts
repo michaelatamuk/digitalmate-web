@@ -65,6 +65,38 @@ test('is installable and advertises account-free offline access', async ({ page 
   await expect(page.getByText(/Offline ·|Online ·/)).toBeVisible();
 });
 
+test('retries and clears a local message exchange', async ({ page }) => {
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await expect(page.locator('.message-actions').last()).toBeVisible();
+  const userCount = await page.locator('.message-user').count();
+
+  await page.locator('.message-actions').last().getByRole('button', { name: 'Retry' }).click();
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await expect(page.locator('.message-user')).toHaveCount(userCount);
+
+  await page.locator('.message-actions').last().getByRole('button', { name: 'Clear' }).click();
+  await expect(page.locator('.message-assistant')).toHaveCount(0);
+  await expect(page.locator('.message-user')).toHaveCount(0);
+});
+
+test('edits and forgets local memory without an account', async ({ page }) => {
+  await page.getByRole('button', { name: 'About you' }).click();
+  await page.getByRole('button', { name: 'Edit memory' }).click();
+  await page.getByLabel('Name', { exact: true }).fill('Test User');
+  await page.getByLabel('Summary').fill('Prefers local-first tools and short replies.');
+  await page.getByRole('button', { name: 'Save memory' }).click();
+  await expect(page.locator('.memory-head h3')).toHaveText('Test User');
+
+  await page.locator('.sheet-head .icon-button').click();
+  await page.getByRole('button', { name: 'About you' }).click();
+  await expect(page.locator('.memory-head h3')).toHaveText('Test User');
+
+  page.once('dialog', dialog => dialog.accept());
+  await page.getByRole('button', { name: 'Forget everything' }).click();
+  await expect(page.locator('.memory-head h3')).toHaveText('You');
+});
+
 test('exports and restores a local backup without an account', async ({ page }) => {
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Settings/ }).click();

@@ -6,6 +6,7 @@ import type {
   ItemDetail,
   RssFeed,
   Language,
+  MemoryProfile,
   Message,
   Reaction,
   Settings,
@@ -84,6 +85,7 @@ export default function App() {
   const [saved, setSaved] = usePersistentState<string[]>(STORAGE_KEYS.savedCards, []);
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
   const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
+  const [memory, setMemory] = usePersistentState<MemoryProfile>(STORAGE_KEYS.memoryProfile, seed.memoryProfile);
 
   const generation = useRef(0);
   const activeController = useRef<AbortController | null>(null);
@@ -138,7 +140,7 @@ export default function App() {
     }
   };
 
-  const send = async (raw: string) => {
+  const send = async (raw: string, options: { appendUser?: boolean } = {}) => {
     const prompt = raw.trim();
     if (!prompt) return;
     if (busy) {
@@ -173,7 +175,11 @@ export default function App() {
       }
     };
 
-    setMessages(previous => [...previous, userMessage, assistant]);
+    setMessages(previous =>
+      options.appendUser === false
+        ? [...previous, assistant]
+        : [...previous, userMessage, assistant]
+    );
     setActiveSkill('general');
 
     activeController.current?.abort();
@@ -291,6 +297,55 @@ export default function App() {
     showToast(tr('Generation stopped.', '已停止生成。'));
   };
 
+  const retryMessage = (id: string) => {
+    const index = messages.findIndex(message => message.id === id);
+    const previousUser = index > 0 ? messages[index - 1] : undefined;
+    if (!previousUser || previousUser.role !== 'user') {
+      showToast(tr('Cannot retry this message.', '无法重试这条消息。'));
+      return;
+    }
+    generation.current += 1;
+    activeController.current?.abort();
+    activeController.current = null;
+    setMessages(current => current.filter(message => message.id !== id));
+    setBusy(false);
+    void send(previousUser.text, { appendUser: false });
+  };
+
+  const clearMessage = (id: string) => {
+    const target = messages.find(message => message.id === id);
+    if (!target) return;
+    if (target.streaming) {
+      generation.current += 1;
+      activeController.current?.abort();
+      activeController.current = null;
+      setBusy(false);
+    }
+    setMessages(current => {
+      const index = current.findIndex(message => message.id === id);
+      if (index === -1) return current;
+      const next = [...current];
+      if (next[index].role === 'assistant' && index > 0 && next[index - 1].role === 'user') {
+        next.splice(index - 1, 2);
+      } else if (next[index].role === 'user' && next[index + 1]?.role === 'assistant') {
+        next.splice(index, 2);
+      } else {
+        next.splice(index, 1);
+      }
+      return next;
+    });
+    showToast(tr('Message cleared.', '消息已清除。'));
+  };
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast(tr('Copied to the clipboard.', '已复制到剪贴板。'));
+    } catch {
+      showToast(tr('Clipboard access is not available.', '当前浏览器无法访问剪贴板。'));
+    }
+  };
+
   const newChat = () => {
     generation.current += 1;
     activeController.current?.abort();
@@ -322,6 +377,7 @@ export default function App() {
     setSaved([]);
     setRssCards([]);
     setCalendarEvents([]);
+    setMemory(seed.memoryProfile);
     setBusy(false);
     setHome(true);
     setTab('chat');
@@ -344,6 +400,9 @@ export default function App() {
     setArchived([]);
     setRssCards([]);
     setCalendarEvents([]);
+    setMemory(current =>
+      JSON.stringify(current) === JSON.stringify(seed.memoryProfile) ? nextSeed.memoryProfile : current
+    );
     setTopics([nextSeed.topicOptions[0], nextSeed.topicOptions[3]]);
     setSkills(previous =>
       previous.map(skill => {
@@ -480,6 +539,21 @@ export default function App() {
       return;
     }
     showToast(tr(`Triggered: ${action.label}`, `已触发：${action.label}`));
+  };
+
+  const forgetMemory = () => {
+    setMemory({
+      name: tr('You', '你'),
+      headline: tr('Local profile', '本地画像'),
+      summary: tr(
+        'No long-term memory is stored yet. Add details whenever you want.',
+        '还没有保存长期记忆。你可以随时补充。'
+      ),
+      tags: [],
+      mbti: '—',
+      sections: []
+    });
+    showToast(tr('Local memory cleared.', '本地记忆已清除。'));
   };
 
   const toggleTopic = (topic: string) => {
@@ -645,6 +719,9 @@ export default function App() {
                 onAction={onAction}
                 onDetails={setDetailItem}
                 onFollowUp={prompt => void send(prompt)}
+                onRetry={retryMessage}
+                onClear={clearMessage}
+                onCopy={text => void copyText(text)}
               />
             )
           ) : (
@@ -803,7 +880,15 @@ export default function App() {
           />
         ) : null}
         {sheet === 'memory' ? (
-          <MemorySheet profile={seed.memoryProfile} onClose={() => setSheet(null)} onNotice={showToast} />
+          <MemorySheet
+            profile={memory}
+            onSave={profile => {
+              setMemory(profile);
+              showToast(tr('Memory saved locally.', '记忆已保存到本地。'));
+            }}
+            onForget={forgetMemory}
+            onClose={() => setSheet(null)}
+          />
         ) : null}
 
         {detail ? (

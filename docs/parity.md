@@ -12,7 +12,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Card detail sheets | ✅ | Travel, train and food |
 | Guided demo | ✅ | Scripted walkthrough |
 | Orbit rooms/sessions/task rows | ❌ | Single mock thread |
-| Stop / retry / task clear | 🟡 | Stop works; retry/clear absent |
+| Stop / retry / task clear | ✅ | Stop, retry, copy and clear per exchange |
 | Attachments and upload | 🟡 | Fake PDF chip only |
 | Artifacts and preview | ❌ | Not implemented |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
@@ -20,8 +20,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Saved cards / share | 🟡 | Save works; share absent |
 | Skill center | 🟡 | Install/toggle only |
 | Skill detail / publish / OAuth | ❌ | Not implemented |
-| Memory profile | 🟡 | Static |
-| Memory edit / forget / evidence | ❌ | Not implemented |
+| Memory profile | ✅ | Editable local profile, persisted |
+| Memory edit / forget / evidence | 🟡 | Edit and forget work; evidence view absent |
 | Calendar read | ✅ | Mock schedule |
 | Calendar event create | 🟡 | Local browser state only |
 | Login / onboarding | ❌ | Not required — the app works fully without an account |
@@ -72,7 +72,7 @@ custom thinking card).
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
+| Automated UI tests | ✅ | Playwright: chat, retry/clear, memory, language, protocol, RSS, backup, Orbit fallback, mobile |
 | Unit tests | ✅ | 48 tests for mock logic, scenarios, A2UI, RSS, transport, sessions and backup |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable production build with offline shell |

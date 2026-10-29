@@ -35,14 +35,14 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Area | Current behaviour |
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
-| Chat | Streaming replies through the transport layer, execution trace, markdown, follow-ups |
+| Chat | Transport streaming, execution trace, markdown, follow-ups, copy/retry/clear |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
+| Memory | Editable local profile with tags and sections; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
 | Skills | Install, enable, disable and uninstall demo skills |
-| Memory | Static “About you” profile with MBTI, tags and sections |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
