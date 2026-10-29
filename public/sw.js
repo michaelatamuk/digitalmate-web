@@ -1,6 +1,6 @@
 /* DigitalMate Web service worker: account-free offline shell and runtime cache. */
 const CACHE = 'digitalmate-web-v2';
-const scope = self.registration.scope;
+const scope = new URL('./', self.location.href);
 const shellPath = (path: string) => new URL(path, scope).href;
 const SHELL = [
   shellPath('./'),

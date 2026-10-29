@@ -11,7 +11,12 @@ const page = await context.newPage();
 
 try {
   await page.goto(url, { waitUntil: 'networkidle' });
-  await page.evaluate(() => navigator.serviceWorker.ready);
+  await Promise.race([
+    page.evaluate(() => navigator.serviceWorker.ready),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('service worker did not become ready')), 20_000)
+    )
+  ]);
   await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller), null, {
     timeout: 15_000
   });
