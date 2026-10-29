@@ -97,6 +97,7 @@ interface MessageBubbleProps {
   onClear: (id: string) => void;
   onCopy: (text: string) => void;
   onShare: (text: string) => void;
+  onSaveArtifact: (id: string) => void;
 }
 
 export function MessageBubble({
@@ -109,7 +110,8 @@ export function MessageBubble({
   onRetry,
   onClear,
   onCopy,
-  onShare
+  onShare,
+  onSaveArtifact
 }: MessageBubbleProps) {
   const { tr, locale } = useI18n();
   if (message.role === 'user') {
@@ -179,6 +181,12 @@ export function MessageBubble({
               <button type="button" onClick={() => onShare(message.text)}>
                 <Icon name="share" size={12} />
                 {tr('Share', '分享')}
+              </button>
+            ) : null}
+            {message.text ? (
+              <button type="button" onClick={() => onSaveArtifact(message.id)}>
+                <Icon name="bookmark" size={12} />
+                {tr('Artifact', '成果')}
               </button>
             ) : null}
             {isLast ? (

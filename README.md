@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 67 unit tests plus 19 Playwright UI, mobile and accessibility checks
+- 71 unit tests plus 20 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -36,6 +36,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Transport streaming, execution trace, markdown, follow-ups, copy/share/retry/clear |
+| Artifacts | Save replies locally, browse, preview, download and delete |
 | Attachments | Local picker, text/image preview, PDF text extraction; nothing uploaded |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
@@ -246,6 +247,7 @@ src/
     backup.ts             local JSON export/import and validation
     attachments.ts        local file validation, reading and preview metadata
     skillBundle.ts        local skill import/export and sanitising
+    artifacts.ts          local reply-to-artifact conversion and filenames
   transport/
     types.ts              ChatTransport and turn-event contract
     mock.ts               local mock transport
@@ -278,6 +280,7 @@ tests/
   backup.test.ts          local backup export, validation and restore
   attachments.test.ts     local attachment kinds, validation and reading
   skillBundle.test.ts     skill bundle parsing, sanitising and merging
+  artifacts.test.ts       local artifact titles, filenames and duplicates
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
 scripts/

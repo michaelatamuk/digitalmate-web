@@ -51,12 +51,18 @@ export interface AttachmentMeta {
   size: number;
   type: string;
   kind: 'text' | 'image' | 'pdf' | 'other';
-}
-
-export interface Attachment extends AttachmentMeta {
+}export interface Attachment extends AttachmentMeta {
   id: string;
   url?: string;
   text?: string;
+}
+
+export interface Artifact {
+  id: string;
+  title: string;
+  kind: 'markdown' | 'text' | 'json';
+  content: string;
+  createdAt: number;
 }
 
 export interface Message {

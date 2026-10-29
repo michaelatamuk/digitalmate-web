@@ -126,6 +126,20 @@ test('inspects, exports and imports local skills', async ({ page }) => {
   await expect(page.getByText('Local test skill')).toBeVisible();
 });
 
+test('saves a reply as a local artifact and previews it', async ({ page }) => {
+  await sendMessage(page, 'Find coffee nearby');
+  await expect(page.locator('.a2ui-surface')).toBeVisible();
+  await page.locator('.message-actions').last().getByRole('button', { name: 'Artifact' }).click();
+  await expect(page.locator('.artifact-row')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Artifacts/ }).click();
+  await expect(page.locator('.artifact-row')).toHaveCount(1);
+  await page.locator('.artifact-row').first().click();
+  await expect(page.locator('.artifact-preview')).toContainText('coffee');
+  await expect(page.locator('.artifact-preview')).toContainText('sources');
+});
+
 test('searches the local discovery feed', async ({ page }) => {
   await page.getByRole('button', { name: 'Discover' }).click();
   const cards = page.locator('.feed-card');

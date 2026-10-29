@@ -14,6 +14,7 @@ export const STORAGE_KEYS = {
   rssCards: `${PREFIX}rssCards.v1`,
   calendarEvents: `${PREFIX}calendarEvents.v1`,
   memoryProfile: `${PREFIX}memoryProfile.v1`,
+  artifacts: `${PREFIX}artifacts.v1`,
   installed: `${PREFIX}installed.v1`
 };
 

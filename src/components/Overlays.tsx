@@ -1,10 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Skill } from '../types';
+import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Skill, Artifact } from '../types';
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
 import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
+import { artifactFilename } from '../lib/artifacts';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
@@ -215,7 +216,8 @@ export function MoreSheet({
   onSettings,
   onNewChat,
   onDemo,
-  onProtocol
+  onProtocol,
+  onArtifacts
 }: {
   onClose: () => void;
   onSkills: () => void;
@@ -225,11 +227,13 @@ export function MoreSheet({
   onNewChat: () => void;
   onDemo: () => void;
   onProtocol: () => void;
+  onArtifacts: () => void;
 }) {
   const { tr } = useI18n();
   const items = [
     { icon: 'play' as const, title: tr('Guided demo', '引导演示'), subtitle: tr('Run the 2-minute walkthrough automatically', '自动播放两分钟演示流程'), onClick: onDemo },
     { icon: 'grid' as const, title: tr('A2UI protocol demo', 'A2UI 协议演示'), subtitle: tr('Render a surface parsed from JSONL envelopes', '渲染由 JSONL 信封解析出的界面'), onClick: onProtocol },
+    { icon: 'bookmark' as const, title: tr('Artifacts', '成果'), subtitle: tr('Saved replies with local preview and export', '已保存的回复，可本地预览与导出'), onClick: onArtifacts },
     { icon: 'spark' as const, title: tr('Skill center', '技能中心'), subtitle: tr('Install, enable and manage skills', '安装、启用和管理技能'), onClick: onSkills },
     { icon: 'heart' as const, title: tr('About you', '关于你'), subtitle: tr('Long-term memory and public profile', '长期记忆与公开画像'), onClick: onMemory },
     { icon: 'clock' as const, title: tr('History', '历史记录'), subtitle: tr('Return to a previous task', '回到之前完成的任务'), onClick: onHistory },
@@ -1193,6 +1197,130 @@ export function MemorySheet({
         {tr(
           'Memory stays in this browser and is included in Settings → Export backup. No account is used.',
           '记忆只保存在当前浏览器，并会包含在“设置 → 导出备份”中。无需账号。'
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
+export function ArtifactsSheet({
+  artifacts,
+  onDelete,
+  onClose,
+  onNotice
+}: {
+  artifacts: Artifact[];
+  onDelete: (id: string) => void;
+  onClose: () => void;
+  onNotice: (message: string) => void;
+}) {
+  const { tr, locale } = useI18n();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = artifacts.find(artifact => artifact.id === selectedId);
+
+  const download = (artifact: Artifact) => {
+    const blob = new Blob([artifact.content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = artifactFilename(artifact);
+    anchor.click();
+    URL.revokeObjectURL(url);
+    onNotice(tr('Artifact downloaded.', '成果已下载。'));
+  };
+
+  return (
+    <Sheet
+      title={tr('Artifacts', '成果')}
+      subtitle={tr(`${artifacts.length} saved locally · no account`, `${artifacts.length} 项本地成果 · 无需账号`)}
+      onClose={onClose}
+      wide
+    >
+      {selected ? (
+        <>
+          <button type="button" className="ghost-action artifact-back" onClick={() => setSelectedId(null)}>
+            <Icon name="back" size={14} />
+            {tr('All artifacts', '全部成果')}
+          </button>
+          <h3 className="artifact-title">{selected.title}</h3>
+          <div className="artifact-meta">
+            {new Date(selected.createdAt).toLocaleString(locale, {
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+            {' · '}
+            {selected.kind}
+          </div>
+          <div className="artifact-preview">{renderMarkdown(selected.content)}</div>
+          <div className="detail-actions">
+            <button type="button" className="secondary-action" onClick={() => download(selected)}>
+              <Icon name="download" size={15} />
+              {tr('Download', '下载')}
+            </button>
+            <button
+              type="button"
+              className="ghost-action"
+              onClick={() => {
+                if (window.confirm(tr('Delete this artifact?', '删除这个成果？'))) {
+                  onDelete(selected.id);
+                  setSelectedId(null);
+                }
+              }}
+            >
+              <Icon name="trash" size={15} />
+              {tr('Delete', '删除')}
+            </button>
+          </div>
+        </>
+      ) : artifacts.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-orb">
+            <Icon name="grid" size={26} />
+          </div>
+          <strong>{tr('No artifacts yet', '还没有成果')}</strong>
+          <p>
+            {tr(
+              'Save an assistant reply as an artifact to preview, export or keep it locally.',
+              '把助手回复保存为成果，即可预览、导出或长期保留。'
+            )}
+          </p>
+        </div>
+      ) : (
+        <div className="artifact-list">
+          {artifacts.map(artifact => (
+            <button
+              type="button"
+              className="artifact-row"
+              key={artifact.id}
+              onClick={() => setSelectedId(artifact.id)}
+            >
+              <span className="artifact-icon">
+                <Icon name="grid" size={16} />
+              </span>
+              <span className="artifact-copy">
+                <strong>{artifact.title}</strong>
+                <em>
+                  {new Date(artifact.createdAt).toLocaleString(locale, {
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}{' '}
+                  · {artifact.kind}
+                </em>
+              </span>
+              <Icon name="chevronRight" size={15} />
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="sheet-footnote">
+        <Icon name="lock" size={14} />
+        {tr(
+          'Artifacts are stored in this browser and included in Settings → Export backup.',
+          '成果保存在当前浏览器，并会包含在“设置 → 导出备份”中。'
         )}
       </div>
     </Sheet>

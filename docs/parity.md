@@ -14,7 +14,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Orbit rooms/sessions/task rows | ❌ | Single mock thread |
 | Stop / retry / task clear | ✅ | Stop, retry, copy and clear per exchange |
 | Attachments and upload | ✅ | Local picker, text/image preview, PDF text extraction; no upload |
-| Artifacts and preview | 🟡 | Local text, image and PDF text; rich rendered artifacts absent |
+| Artifacts and preview | 🟡 | Saved Markdown/text artifacts; slides and charts absent |
+| Local artifacts | ✅ | Save, browse, preview, download and delete |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
 | Discovery search mode | ✅ | Searches local and imported RSS inventory |
 | Saved cards / share | ✅ | Save works and cards or replies can be shared |
@@ -73,8 +74,8 @@ No components from the tracked native list remain. Future native additions may s
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, attachments/PDF, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 67 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
+| Automated UI tests | ✅ | Playwright: chat, attachments/PDF, artifacts, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Unit tests | ✅ | 71 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable build, Dockerfile and compose self-hosting |
 | Android shell | 🟡 | PWA install works; Capacitor planned only for native features |

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   A2uiAction,
+  Artifact,
   Attachment,
   CalendarEvent,
   FeedCard,
@@ -29,14 +30,15 @@ import { AttachmentSheet } from './components/AttachmentSheet';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { mergeSkills } from './lib/skillBundle';
+import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
-import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, Toast } from './components/Overlays';
+import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
-type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | null;
+type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | null;
 
 const defaultSettings: Settings = {
   cloudBackend: 'local',
@@ -93,6 +95,7 @@ export default function App() {
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
   const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
   const [memory, setMemory] = usePersistentState<MemoryProfile>(STORAGE_KEYS.memoryProfile, seed.memoryProfile);
+  const [artifacts, setArtifacts] = usePersistentState<Artifact[]>(STORAGE_KEYS.artifacts, []);
 
   const generation = useRef(0);
   const activeController = useRef<AbortController | null>(null);
@@ -418,6 +421,23 @@ export default function App() {
     await copyText(text);
   };
 
+  const saveArtifact = (messageId: string) => {
+    const message = messages.find(item => item.id === messageId);
+    if (!message?.text.trim()) {
+      showToast(tr('This message has no text to save.', '这条消息没有可保存的文本。'));
+      return;
+    }
+    const duplicate = findDuplicateArtifact(artifacts, message.text);
+    if (duplicate) {
+      showToast(tr('This reply is already saved as an artifact.', '这条回复已保存为成果。'));
+      return;
+    }
+    const artifact = artifactFromText(message.text);
+    if (!artifact) return;
+    setArtifacts(previous => [artifact, ...previous]);
+    showToast(tr('Saved as a local artifact.', '已保存为本地成果。'));
+  };
+
   const newChat = () => {
     generation.current += 1;
     activeController.current?.abort();
@@ -450,6 +470,7 @@ export default function App() {
     setRssCards([]);
     setCalendarEvents([]);
     setMemory(seed.memoryProfile);
+    setArtifacts([]);
     setBusy(false);
     setHome(true);
     setTab('chat');
@@ -805,6 +826,7 @@ export default function App() {
                 onClear={clearMessage}
                 onCopy={text => void copyText(text)}
                 onShare={text => void shareText(text)}
+                onSaveArtifact={saveArtifact}
               />
             )
           ) : (
@@ -922,6 +944,7 @@ export default function App() {
             onNewChat={newChat}
             onDemo={() => void startDemo()}
             onProtocol={openProtocolDemo}
+            onArtifacts={() => setSheet('artifacts')}
           />
         ) : null}
         {sheet === 'skills' ? (
@@ -968,6 +991,18 @@ export default function App() {
             }}
             onForget={forgetMemory}
             onClose={() => setSheet(null)}
+          />
+        ) : null}
+
+        {sheet === 'artifacts' ? (
+          <ArtifactsSheet
+            artifacts={artifacts}
+            onDelete={id => {
+              setArtifacts(previous => previous.filter(artifact => artifact.id !== id));
+              showToast(tr('Artifact deleted.', '成果已删除。'));
+            }}
+            onClose={() => setSheet(null)}
+            onNotice={showToast}
           />
         ) : null}
 
