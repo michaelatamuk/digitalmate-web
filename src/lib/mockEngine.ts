@@ -1,5 +1,6 @@
 import type { A2uiSurface, CalendarEvent, Language } from '../types';
 import { surfacesFor } from '../data/surfaces';
+import { personaById, type PersonaId } from '../data/personas';
 
 export interface MockReply {
   thinking: string[];
@@ -12,11 +13,19 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function replyFor(prompt: string, lang: Language, calendarEvents: CalendarEvent[] = []): MockReply {
+export function replyFor(
+  prompt: string,
+  lang: Language,
+  calendarEvents: CalendarEvent[] = [],
+  personaId?: string
+): MockReply {
   const text = prompt.trim();
   const lower = text.toLowerCase();
   const tr = (english: string, chinese: string): string => (lang === 'zh' ? chinese : english);
   const S = surfacesFor(lang);
+  const persona = personaById((personaId as PersonaId | undefined) ?? 'default');
+  const personaName = persona.name[lang === 'zh' ? 'zh' : 'en'];
+  const personaSuggestions = persona.suggestions.slice(0, 4).map(item => item[lang === 'zh' ? 'zh' : 'en']);
 
   const luckinOnlySurface = (): A2uiSurface => {
     const surface = clone(S.foodSurface());
@@ -541,12 +550,9 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
   return {
     thinking: [tr('Understand the task', '理解任务'), tr('Assemble local context', '整理本地上下文'), tr('Generate a reply', '生成回复')],
     text: tr(
-      'Got it. This is a **mock-first demo**, so I am not connected to a real Orbit service or on-device model yet.\n\nTry one of these tasks to see the full A2UI cards and interactions:\n\n- Find trains from Beijing to Shanghai tomorrow\n- Find coffee nearby\n- Show today’s social messages\n- Summarize a requirements document',
-      '收到。当前是 **mock-first 演示模式**，我还没有连接真实的 Orbit 服务或端侧模型。\n\n你可以试试下面的任务，它们会展示完整的 A2UI 卡片和交互：\n\n- 查明天北京到上海的高铁\n- 附近有什么咖啡店\n- 看看今天的社交消息\n- 总结一份需求文档'
+      `I'm your ${personaName}. This is a **mock-first demo**, so I am not connected to a real Orbit service or on-device model yet.\n\nTry one of these tasks to see the full A2UI cards and interactions:\n\n- ${personaSuggestions.join('\n- ')}`,
+      `我是你的${personaName}。当前是 **mock-first 演示模式**，我还没有连接真实的 Orbit 服务或端侧模型。\n\n你可以试试下面的任务，它们会展示完整的 A2UI 卡片和交互：\n\n- ${personaSuggestions.join('\n- ')}`
     ),
-    followUps: tr(
-      'Find trains from Beijing to Shanghai tomorrow|Find coffee nearby|Show today’s social messages|Summarize a requirements document',
-      '查明天北京到上海的高铁|附近有什么咖啡店|看看今天的社交消息|总结一份需求文档'
-    ).split('|')
+    followUps: personaSuggestions
   };
 }

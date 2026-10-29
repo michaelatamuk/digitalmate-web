@@ -296,7 +296,7 @@ export const seedCards: FeedCard[] = [
 export const seedSkills: Skill[] = [
   {
     id: 'general',
-    name: '通用助手',
+    name: '默认分身',
     icon: '✦',
     category: '效率',
     description: '任务拆解、写作、总结与日常问答。',

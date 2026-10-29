@@ -77,6 +77,7 @@ export interface TaskRecord {
   updatedAt: number;
   roomId: string;
   skill: string;
+  persona?: string;
 }
 
 export interface Message {
@@ -134,6 +135,7 @@ export interface Settings {
   notifications: boolean;
   reducedMotion: boolean;
   showThinking: boolean;
+  speakReplies: boolean;
 }
 
 export interface ItemDetail {

@@ -35,6 +35,10 @@ import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell } from './lib/native';
 import { installDiagnostics } from './lib/diagnostics';
+import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
+import type { CapabilityOption, ModelOption, PersonaId, ProjectOption } from './data/personas';
+import { CapabilitiesSheet, ModelSheet, PersonaSheet, ProjectSheet, modelLabel } from './components/ComposerSheets';
+import { speakText, stopSpeaking } from './lib/voice';
 import { App as CapacitorApp } from '@capacitor/app';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
@@ -43,13 +47,14 @@ import { Icon } from './components/Icons';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
-type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | 'tasks' | null;
+type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | 'tasks' | 'persona' | 'model' | 'project' | 'capabilities' | 'labs' | null;
 
 const defaultSettings: Settings = {
   cloudBackend: 'local',
   notifications: true,
   reducedMotion: false,
-  showThinking: true
+  showThinking: true,
+  speakReplies: false
 };
 
 const sleep = (ms: number) => new Promise<void>(resolve => window.setTimeout(resolve, ms));
@@ -79,6 +84,17 @@ export default function App() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [previewAttachment, setPreviewAttachment] = useState<Attachment | null>(null);
   const [activeSkill, setActiveSkill] = useState('');
+  const [activePersona, setActivePersona] = usePersistentState<PersonaId>(STORAGE_KEYS.persona, DEFAULT_PERSONA);
+  const [personaNotes, setPersonaNotes] = usePersistentState<Record<string, string>>(STORAGE_KEYS.personaNotes, {});
+  const [model, setModel] = usePersistentState<string>(STORAGE_KEYS.model, 'local-balanced');
+  const [project, setProject] = usePersistentState<string>(STORAGE_KEYS.project, 'none');
+  const [projects, setProjects] = usePersistentState<ProjectOption[]>(STORAGE_KEYS.projects, DEFAULT_PROJECTS);
+  const [capabilities, setCapabilities] = usePersistentState<string[]>(STORAGE_KEYS.capabilities, [
+    'local-search',
+    'pdf-reader',
+    'calendar'
+  ]);
+  const [deepSearch, setDeepSearch] = usePersistentState<boolean>(STORAGE_KEYS.deepSearch, false);
   const [sheet, setSheet] = useState<SheetName>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
   const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
@@ -124,6 +140,21 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   }, [lang]);
+
+  useEffect(() => {
+    if (readStorage<boolean>(STORAGE_KEYS.topicMigration, false)) return;
+    const legacyDefaults = [
+      ['AI & Tech', 'HarmonyOS'],
+      ['AI 科技', '鸿蒙开发']
+    ];
+    const isLegacyDefault = legacyDefaults.some(
+      set => topics.length === set.length && set.every(topic => topics.includes(topic))
+    );
+    if (isLegacyDefault) setTopics([]);
+    writeStorage(STORAGE_KEYS.topicMigration, true);
+    // One-time migration from the old two-topic default.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
@@ -243,6 +274,17 @@ export default function App() {
     });
   };
 
+  const moveAttachment = (from: number, direction: -1 | 1) => {
+    setAttachments(previous => {
+      const to = from + direction;
+      if (to < 0 || to >= previous.length) return previous;
+      const next = [...previous];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+
   const send = async (raw: string, options: { appendUser?: boolean } = {}) => {
     const outgoing = attachments;
     const prompt =
@@ -284,7 +326,8 @@ export default function App() {
           createdAt: taskStartedAt,
           updatedAt: taskStartedAt,
           roomId: settings.cloudBackend === 'orbit' ? 'orbit' : 'local',
-          skill: activeSkill || 'general'
+          skill: activeSkill || 'general',
+          persona: activePersona
         },
         ...previous
       ].slice(0, 40)
@@ -348,7 +391,15 @@ export default function App() {
 
     try {
       await transport.send(
-        { text: prompt, lang, submissionId: newId('sub') },
+        {
+          text: prompt,
+          lang,
+          submissionId: newId('sub'),
+          persona: activePersona,
+          model,
+          capabilities,
+          deepSearch
+        },
         event => {
           if (generation.current !== runId) return;
           switch (event.type) {
@@ -409,9 +460,11 @@ export default function App() {
     patchTask('done');
     activeTaskId.current = null;
     void notifyCompletion(accumulated);
+    if (settings.speakReplies) speakText(accumulated, lang);
   };
 
   const stop = () => {
+    stopSpeaking();
     generation.current += 1;
     activeController.current?.abort();
     activeController.current = null;
@@ -747,6 +800,12 @@ export default function App() {
     );
   };
 
+  const toggleCapability = (id: string) => {
+    setCapabilities(previous =>
+      previous.includes(id) ? previous.filter(item => item !== id) : [...previous, id]
+    );
+  };
+
   const react = (id: string, reaction: Reaction) => {
     setReactions(previous => {
       const next = { ...previous };
@@ -816,7 +875,10 @@ export default function App() {
   };
 
   const installedEnabled = skills.filter(skill => skill.installed && skill.enabled);
-  const activeSkillName = skills.find(skill => skill.id === activeSkill)?.name ?? tr('General assistant', '通用助手');
+  const activePersonaDefinition = personaById(activePersona);
+  const activePersonaName = personaName(activePersona, lang);
+  const activeProject = projects.find(item => item.id === project) ?? projects[0];
+  const activeSkillName = skills.find(skill => skill.id === activeSkill)?.name ?? tr('Default companion', '默认分身');
   const detailRelated = detail
     ? allCards.filter(card => card.id !== detail.id && (card.topic === detail.topic || card.source === detail.source)).slice(0, 2)
     : [];
@@ -940,6 +1002,10 @@ export default function App() {
                 onSuggestion={prompt => void send(prompt)}
                 onContinue={() => setHome(false)}
                 onOpenSkills={() => setSheet('skills')}
+                personaName={activePersonaName}
+                personaAvatar={activePersonaDefinition.avatar}
+                personaPrompts={personaSuggestions(activePersona, lang)}
+                onOpenPersona={() => setSheet('persona')}
               />
             ) : (
               <ChatView
@@ -982,6 +1048,47 @@ export default function App() {
 
         {tab === 'chat' ? (
           <div className="composer-area">
+            <div className="composer-context">
+              <button
+                type="button"
+                className="context-chip is-persona"
+                onClick={() => setSheet('persona')}
+                aria-label={tr(`Companion: ${activePersonaName}`, `分身：${activePersonaName}`)}
+              >
+                <span className="context-avatar" style={{ background: activePersonaDefinition.accent }}>
+                  {activePersonaDefinition.avatar}
+                </span>
+                <span>{activePersonaName}</span>
+              </button>
+              <button type="button" className="context-chip" onClick={() => setSheet('model')}>
+                <Icon name="spark" size={12} />
+                <span>{modelLabel(model, lang)}</span>
+              </button>
+              <button type="button" className="context-chip" onClick={() => setSheet('project')}>
+                <Icon name="grid" size={12} />
+                <span>{activeProject.name}</span>
+              </button>
+              <button type="button" className="context-chip" onClick={() => setSheet('capabilities')}>
+                <Icon name="plus" size={12} />
+                <span>{tr(`${capabilities.length} tools`, `${capabilities.length} 个工具`)}</span>
+              </button>
+              <button
+                type="button"
+                className={`context-toggle ${deepSearch ? 'is-active' : ''}`}
+                aria-pressed={deepSearch}
+                onClick={() => {
+                  setDeepSearch(!deepSearch);
+                  showToast(
+                    !deepSearch
+                      ? tr('Deep search enabled for this task.', '已为本次任务开启深度搜索。')
+                      : tr('Deep search disabled.', '已关闭深度搜索。')
+                  );
+                }}
+              >
+                <Icon name="search" size={12} />
+                {tr('Deep', '深度')}
+              </button>
+            </div>
             <div className="skill-dock">
               <span className="skill-dock-label">
                 <Icon name="spark" size={13} />
@@ -1024,6 +1131,7 @@ export default function App() {
               onAddFiles={files => void addFiles(files)}
               onPreviewAttachment={setPreviewAttachment}
               onRemoveAttachment={removeAttachment}
+              onMoveAttachment={moveAttachment}
               onNotice={showToast}
             />
           </div>
@@ -1108,6 +1216,55 @@ export default function App() {
             onLanguageChange={changeLanguage}
             savedCount={saved.length}
             messageCount={messages.length + archived.length}
+          />
+        ) : null}
+        {sheet === 'persona' ? (
+          <PersonaSheet
+            active={activePersona}
+            notes={personaNotes[activePersona] ?? ''}
+            onSelect={id => {
+              setActivePersona(id);
+              showToast(tr(`Companion: ${personaName(id, lang)}`, `已切换分身：${personaName(id, lang)}`));
+            }}
+            onNotes={notes =>
+              setPersonaNotes(previous => ({ ...previous, [activePersona]: notes }))
+            }
+            onClose={() => setSheet(null)}
+          />
+        ) : null}
+        {sheet === 'model' ? (
+          <ModelSheet
+            selected={model}
+            onSelect={id => {
+              setModel(id);
+              showToast(tr(`Model: ${modelLabel(id, lang)}`, `模型：${modelLabel(id, lang)}`));
+            }}
+            onClose={() => setSheet(null)}
+          />
+        ) : null}
+        {sheet === 'project' ? (
+          <ProjectSheet
+            projects={projects}
+            selected={project}
+            onSelect={id => {
+              setProject(id);
+              const next = projects.find(item => item.id === id);
+              showToast(tr(`Project: ${next?.name ?? id}`, `项目：${next?.name ?? id}`));
+            }}
+            onAdd={(name, path) => {
+              const id = `project-${Date.now().toString(36)}`;
+              setProjects(previous => [...previous, { id, name, path }]);
+              setProject(id);
+              showToast(tr(`Project added: ${name}`, `已添加项目：${name}`));
+            }}
+            onClose={() => setSheet(null)}
+          />
+        ) : null}
+        {sheet === 'capabilities' ? (
+          <CapabilitiesSheet
+            selected={capabilities}
+            onToggle={toggleCapability}
+            onClose={() => setSheet(null)}
           />
         ) : null}
         {sheet === 'memory' ? (

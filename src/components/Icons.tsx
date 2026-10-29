@@ -50,7 +50,8 @@ export type IconName =
   | 'copy'
   | 'edit'
   | 'share'
-  | 'volume';
+  | 'volume'
+  | 'camera';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
   name: IconName;
@@ -410,6 +411,13 @@ export function Icon({ name, size = 22, filled = false, ...rest }: IconProps) {
         <svg {...common}>
           <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4v-5Z" />
           <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" />
+        </svg>
+      );
+    case 'camera':
+      return (
+        <svg {...common}>
+          <path d="M4.5 8.5h3l1.4-2h6.2l1.4 2h3a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18v-8a1.5 1.5 0 0 1 1.5-1.5Z" />
+          <circle cx="12" cy="13.5" r="3.2" />
         </svg>
       );
     default:

@@ -968,6 +968,12 @@ export function SettingsSheet({
           checked={settings.reducedMotion}
           onChange={value => onChange({ ...settings, reducedMotion: value })}
         />
+        <Toggle
+          label={tr('Speak replies', '朗读回复')}
+          description={tr('Read assistant replies aloud with the system voice.', '使用系统语音朗读助手回复。')}
+          checked={Boolean(settings.speakReplies)}
+          onChange={value => onChange({ ...settings, speakReplies: value })}
+        />
       </div>
 
       <div className="settings-group">

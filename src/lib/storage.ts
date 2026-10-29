@@ -16,7 +16,19 @@ export const STORAGE_KEYS = {
   memoryProfile: `${PREFIX}memoryProfile.v1`,
   artifacts: `${PREFIX}artifacts.v1`,
   tasks: `${PREFIX}tasks.v1`,
-  installed: `${PREFIX}installed.v1`
+  installed: `${PREFIX}installed.v1`,
+  topicMigration: `${PREFIX}topicMigration.v1`,
+  persona: `${PREFIX}persona.v1`,
+  personaNotes: `${PREFIX}personaNotes.v1`,
+  model: `${PREFIX}model.v1`,
+  project: `${PREFIX}project.v1`,
+  projects: `${PREFIX}projects.v1`,
+  capabilities: `${PREFIX}capabilities.v1`,
+  deepSearch: `${PREFIX}deepSearch.v1`,
+  welcomeSeen: `${PREFIX}welcomeSeen.v1`,
+  readCards: `${PREFIX}readCards.v1`,
+  hiddenTopics: `${PREFIX}hiddenTopics.v1`,
+  enabledSources: `${PREFIX}enabledSources.v1`
 };
 
 export function readStorage<T>(key: string, fallback: T): T {

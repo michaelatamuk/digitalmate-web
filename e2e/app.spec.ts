@@ -169,8 +169,31 @@ test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await expect(page.locator('.artifact-surface .a2ui-surface')).toBeVisible();
 });
 
+test('switches companion, model, project and tools locally', async ({ page }) => {
+  await expect(page.getByRole('button', { name: /Companion: Default companion/ })).toBeVisible();
+  await page.getByRole('button', { name: /Companion: Default companion/ }).click();
+  await expect(page.getByText('Choose a companion')).toBeVisible();
+  await page.getByRole('button', { name: /Food companion/ }).click();
+  await page.locator('.sheet-head .icon-button').click();
+  await expect(page.locator('.context-chip.is-persona')).toContainText('Food companion');
+
+  await page.locator('.context-chip').nth(1).click();
+  await page.getByRole('button', { name: /Local · Fast/ }).click();
+  await page.locator('.sheet-head .icon-button').click();
+  await expect(page.locator('.context-chip').nth(1)).toContainText('Local · Fast');
+
+  await page.locator('.context-toggle').click();
+  await expect(page.locator('.context-toggle')).toHaveAttribute('aria-pressed', 'true');
+
+  await page.locator('.context-chip').nth(3).click();
+  await expect(page.getByText('Capabilities and tools')).toBeVisible();
+  await page.getByRole('button', { name: /Weather MCP/ }).click();
+  await page.locator('.sheet-head .icon-button').click();
+  await expect(page.locator('.context-chip').nth(3)).toContainText('4 tools');
+});
+
 test('starts with all discovery topics and no skill pre-selected', async ({ page }) => {
-  await expect(page.locator('.skill-active')).toHaveText('General assistant');
+  await expect(page.locator('.skill-active')).toHaveText('Default companion');
   await expect(page.locator('.skill-pill.is-active')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Discover' }).click();

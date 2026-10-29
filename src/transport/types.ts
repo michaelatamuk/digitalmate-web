@@ -5,6 +5,10 @@ export interface ChatTurnRequest {
   lang: Language;
   roomId?: string;
   submissionId: string;
+  persona?: string;
+  model?: string;
+  capabilities?: string[];
+  deepSearch?: boolean;
 }
 
 export type ChatTurnEvent =

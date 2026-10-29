@@ -37,7 +37,7 @@ export class MockChatTransport implements ChatTransport {
     onEvent: (event: ChatTurnEvent) => void,
     signal: AbortSignal
   ): Promise<void> {
-    const reply = replyFor(request.text, request.lang, this.calendarEvents);
+    const reply = replyFor(request.text, request.lang, this.calendarEvents, request.persona);
 
     if (this.timingScale <= 0) {
       if (signal.aborted) return;

@@ -16,13 +16,21 @@ export function HomeView({
   reducedMotion,
   onSuggestion,
   onContinue,
-  onOpenSkills
+  onOpenSkills,
+  personaName,
+  personaAvatar,
+  personaPrompts,
+  onOpenPersona
 }: {
   messages: Message[];
   reducedMotion: boolean;
   onSuggestion: (prompt: string) => void;
   onContinue: () => void;
   onOpenSkills: () => void;
+  personaName?: string;
+  personaAvatar?: string;
+  personaPrompts?: string[];
+  onOpenPersona?: () => void;
 }) {
   const { lang, tr, locale } = useI18n();
   const [now, setNow] = useState(() => new Date());
@@ -32,7 +40,7 @@ export function HomeView({
     return () => window.clearInterval(timer);
   }, []);
 
-  const suggestions: { icon: IconName; title: string; subtitle: string; prompt: string }[] = [
+  const defaultSuggestions: { icon: IconName; title: string; subtitle: string; prompt: string }[] = [
     {
       icon: 'train',
       title: tr('Travel options', '出行方案'),
@@ -59,6 +67,17 @@ export function HomeView({
     }
   ];
 
+  const personaIcons: IconName[] = ['spark', 'compass', 'chat', 'grid'];
+  const suggestions =
+    personaPrompts && personaPrompts.length > 0
+      ? personaPrompts.slice(0, 4).map((prompt, index) => ({
+          icon: personaIcons[index % personaIcons.length],
+          title: prompt.length > 46 ? `${prompt.slice(0, 43)}…` : prompt,
+          subtitle: personaName ? tr(`Suggested by ${personaName}`, `由${personaName}推荐`) : '',
+          prompt
+        }))
+      : defaultSuggestions;
+
   const clock = now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
   const day = now.getDate();
   const month = now.toLocaleDateString(locale, { month: lang === 'zh' ? 'numeric' : 'short' });
@@ -79,6 +98,13 @@ export function HomeView({
       <div className="greeting-block">
         <h1>{greetingFor(now.getHours(), tr)}</h1>
         <p>{tr('What’s on your mind today?', '今天有什么安排吗？')}</p>
+        {personaName ? (
+          <button type="button" className="home-persona" onClick={onOpenPersona}>
+            <span>{personaAvatar ?? '✦'}</span>
+            {personaName}
+            <Icon name="chevronRight" size={12} />
+          </button>
+        ) : null}
       </div>
 
       {lastUser ? (
@@ -97,8 +123,8 @@ export function HomeView({
       <div className="home-suggestions">
         <div className="section-label">
           <span>{tr('Try one of these', '可以试试')}</span>
-          <button type="button" onClick={onOpenSkills}>
-            {tr('Choose a skill', '选择技能')}
+          <button type="button" onClick={onOpenPersona ?? onOpenSkills}>
+            {personaName ? tr('Change companion', '切换分身') : tr('Choose a skill', '选择技能')}
             <Icon name="chevronRight" size={12} />
           </button>
         </div>
