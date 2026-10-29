@@ -47,7 +47,8 @@
 - [x] Stop, retry, copy, share and clear a message exchange
 - [ ] Long-press and per-task detail rows
 - [x] Local attachments with text/image preview
-- [ ] PDF text extraction and richer artifact preview
+- [x] PDF text extraction and richer local previews
+- [ ] Rich rendered artifacts (charts, slides, app previews)
 - [ ] Approval cards and connection/quota states
 - [x] Skill detail and local JSON import/export
 - [ ] OAuth and marketplace skill publishing *(not required without an account)*

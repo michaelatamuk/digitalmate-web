@@ -10,6 +10,30 @@ async function sendMessage(page: Page, text: string) {
   await page.locator('.composer-send').click();
 }
 
+function makePdf(text: string): Buffer {
+  const stream = `BT /F1 18 Tf 72 720 Td (${text}) Tj ET`;
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xref = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let index = 1; index <= objects.length; index += 1) {
+    pdf += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+  }
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => window.localStorage.clear());
   await page.goto('/');
@@ -166,6 +190,22 @@ test('previews and sends a local attachment without uploading', async ({ page })
   await expect(page.locator('.user-bubble')).toHaveText('Summarize the attachment');
   await expect(page.locator('.message-attachment')).toContainText('notes.txt');
   await expect(page.locator('.message-assistant')).toBeVisible();
+});
+
+test('extracts searchable text from a local PDF', async ({ page }) => {
+  await page.locator('.composer-wrap input[type="file"]').setInputFiles({
+    name: 'report.pdf',
+    mimeType: 'application/pdf',
+    buffer: makePdf('DigitalMate PDF test')
+  });
+  await expect(page.getByRole('button', { name: 'Preview report.pdf' })).toBeVisible({
+    timeout: 15_000
+  });
+  await page.getByRole('button', { name: 'Preview report.pdf' }).click();
+  await expect(page.locator('.attachment-preview-text')).toContainText('DigitalMate PDF test', {
+    timeout: 15_000
+  });
+  await expect(page.getByText(/PDF text extracted locally/)).toBeVisible();
 });
 
 test('shares a reply through the Web Share API', async ({ page }) => {

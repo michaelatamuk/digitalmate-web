@@ -1,4 +1,5 @@
 import type { Attachment, AttachmentMeta } from '../types';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 export const MAX_ATTACHMENTS = 5;
@@ -70,7 +71,38 @@ export async function readAttachment(file: File): Promise<Attachment> {
     return { ...base, url: URL.createObjectURL(file) };
   }
 
+  if (base.kind === 'pdf') {
+    const text = await extractPdfText(file).catch(() => '');
+    return text ? { ...base, text } : base;
+  }
+
   return base;
+}
+
+async function extractPdfText(file: File): Promise<string> {
+  const pdfjs = await import('pdfjs-dist');
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  const data = new Uint8Array(await file.arrayBuffer());
+  const loadingTask = pdfjs.getDocument({ data });
+  const document = await loadingTask.promise;
+  try {
+    const pages = Math.min(document.numPages, 20);
+    let output = '';
+    for (let pageNumber = 1; pageNumber <= pages; pageNumber += 1) {
+      if (output.length >= MAX_TEXT_CHARS) break;
+      const page = await document.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const line = content.items
+        .map(item => ('str' in item && typeof item.str === 'string' ? item.str : ''))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (line) output += `${line}\n\n`;
+    }
+    return output.slice(0, MAX_TEXT_CHARS).trim();
+  } finally {
+    await loadingTask.destroy();
+  }
 }
 
 export function releaseAttachment(attachment: Attachment): void {

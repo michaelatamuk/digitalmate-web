@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 56 unit tests plus 17 Playwright UI, mobile and accessibility checks
+- 56 unit tests plus 18 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -36,7 +36,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Transport streaming, execution trace, markdown, follow-ups, copy/share/retry/clear |
-| Attachments | Local file picker, text/image preview, PDF metadata; nothing uploaded |
+| Attachments | Local picker, text/image preview, PDF text extraction; nothing uploaded |
 | Transport | Mock transport for local demos; Orbit transport through the local bridge |
 | Orbit bridge | Server-side token, WSS `orbit.request`/event mapping, SSE to the browser |
 | Memory | Editable local profile with evidence notes; forget everything |
@@ -162,9 +162,10 @@ marketplace or OAuth flow.
 ## Local attachments
 
 The composer can attach up to five local files (5 MB each). Text-like files are read in the
-browser and previewed as text; images are previewed with an object URL; PDFs show metadata only.
-Nothing is uploaded. Sent messages keep the file name, size and kind, while the file contents
-stay in memory for the current session only.
+browser and previewed as text; images are previewed with an object URL; searchable PDFs have
+their text extracted locally with `pdfjs-dist` (up to 20 pages). Nothing is uploaded. Sent
+messages keep the file name, size and kind, while the file contents stay in memory for the
+current session only.
 
 Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
 bridge is configured. If it is not, turns fall back to the local mock and say so.

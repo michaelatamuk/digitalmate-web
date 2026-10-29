@@ -38,15 +38,33 @@ export function AttachmentSheet({ attachment, onClose, onNotice }: AttachmentShe
         <pre className="attachment-preview-text">{attachment.text}</pre>
       ) : null}
 
-      {attachment.kind === 'pdf' ? (
+      {attachment.kind === 'pdf' && attachment.text ? (
+        <>
+          <pre className="attachment-preview-text">{attachment.text}</pre>
+          <div className="attachment-preview-note">
+            <Icon name="check" size={18} />
+            <div>
+              <strong>{tr('PDF text extracted locally', 'PDF 文本已在本地提取')}</strong>
+              <p>
+                {tr(
+                  'Layout and images are not preserved. The file and extracted text never leave this browser.',
+                  '版式和图片不会保留。文件与提取文本都不会离开当前浏览器。'
+                )}
+              </p>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {attachment.kind === 'pdf' && !attachment.text ? (
         <div className="attachment-preview-note">
           <Icon name="info" size={18} />
           <div>
-            <strong>{tr('PDF preview is metadata only', 'PDF 仅显示文件信息')}</strong>
+            <strong>{tr('No selectable text found', '没有找到可提取文本')}</strong>
             <p>
               {tr(
-                'Text extraction from PDF files is not enabled in the local demo. The file never leaves this browser.',
-                '本地演示暂未启用 PDF 文本提取。文件不会离开当前浏览器。'
+                'This PDF may be scanned or image-only. Text extraction runs locally; the file never leaves this browser.',
+                '这个 PDF 可能是扫描件或纯图片。文本提取在本地进行，文件不会离开当前浏览器。'
               )}
             </p>
           </div>
