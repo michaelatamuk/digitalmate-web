@@ -1,4 +1,4 @@
-import type { A2uiSurface, Language } from '../types';
+import type { A2uiSurface, CalendarEvent, Language } from '../types';
 import { surfacesFor } from '../data/surfaces';
 
 export interface MockReply {
@@ -12,7 +12,7 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-export function replyFor(prompt: string, lang: Language): MockReply {
+export function replyFor(prompt: string, lang: Language, calendarEvents: CalendarEvent[] = []): MockReply {
   const text = prompt.trim();
   const lower = text.toLowerCase();
   const tr = (english: string, chinese: string): string => (lang === 'zh' ? chinese : english);
@@ -383,7 +383,7 @@ export function replyFor(prompt: string, lang: Language): MockReply {
         'There are six meetings this week, with one conflict on Thursday afternoon. Below are the next three events.',
         '本周有 6 场会议，周四下午有一处冲突。下面只展示接下来的 3 个日程。'
       ),
-      surface: S.calendarSurface(),
+      surface: S.calendarSurface(calendarEvents),
       followUps: tr('Create a new event|Show conflicts only', '新建日程|只看冲突').split('|')
     };
   }

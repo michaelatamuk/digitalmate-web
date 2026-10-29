@@ -155,7 +155,7 @@ export default function App() {
       createdAt: Date.now()
     };
     const assistantId = newId('a');
-    const reply = replyFor(prompt, lang);
+    const reply = replyFor(prompt, lang, calendarEvents);
     const assistant: Message = {
       id: assistantId,
       role: 'assistant',
