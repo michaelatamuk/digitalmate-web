@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   A2uiAction,
+  CalendarEvent,
   FeedCard,
+  ItemDetail,
   Language,
   Message,
   Reaction,
@@ -11,11 +13,14 @@ import type {
 import { replyFor } from './lib/mockEngine';
 import { newId, readStorage, writeStorage, clearDemoStorage, STORAGE_KEYS, usePersistentState } from './lib/storage';
 import { seedFor } from './data/seed';
+import { surfacesFor } from './data/surfaces';
 import { I18nContext } from './i18n/I18nContext';
 import { HomeView } from './components/HomeView';
 import { ChatView } from './components/ChatView';
 import { DiscoveryView } from './components/DiscoveryView';
 import { Composer } from './components/Composer';
+import { DetailsSheet } from './components/DetailsSheet';
+import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, Toast } from './components/Overlays';
@@ -27,7 +32,6 @@ const defaultSettings: Settings = {
   cloudBackend: 'orbit',
   notifications: true,
   reducedMotion: false,
-  autoPlay: false,
   showThinking: true
 };
 
@@ -59,8 +63,12 @@ export default function App() {
   const [activeSkill, setActiveSkill] = useState('general');
   const [sheet, setSheet] = useState<SheetName>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
+  const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [feedSeed, setFeedSeed] = useState(0);
+  const [demoRunning, setDemoRunning] = useState(false);
+  const demoRun = useRef(0);
 
   const [settings, setSettings] = usePersistentState<Settings>(STORAGE_KEYS.settings, defaultSettings);
   const [lang, setLang] = usePersistentState<Language>(STORAGE_KEYS.language, 'en');
@@ -71,6 +79,7 @@ export default function App() {
   const [skills, setSkills] = usePersistentState<Skill[]>(STORAGE_KEYS.skills, seed.seedSkills);
   const [saved, setSaved] = usePersistentState<string[]>(STORAGE_KEYS.savedCards, []);
   const [rssCards, setRssCards] = usePersistentState<FeedCard[]>(STORAGE_KEYS.rssCards, []);
+  const [calendarEvents, setCalendarEvents] = usePersistentState<CalendarEvent[]>(STORAGE_KEYS.calendarEvents, []);
 
   const generation = useRef(0);
   const toastTimer = useRef<number | undefined>(undefined);
@@ -110,6 +119,18 @@ export default function App() {
 
   const patchMessage = (id: string, patch: (message: Message) => Message) => {
     setMessages(previous => previous.map(message => (message.id === id ? patch(message) : message)));
+  };
+
+  const notifyCompletion = (body: string) => {
+    if (!settings.notifications || typeof Notification === 'undefined' || Notification.permission !== 'granted' || !document.hidden) return;
+    try {
+      new Notification(tr('DigitalMate task complete', 'DigitalMate 任务完成'), {
+        body: body.slice(0, 140),
+        tag: 'digitalmate-task'
+      });
+    } catch {
+      // Notifications are optional; the in-app result is always available.
+    }
   };
 
   const send = async (raw: string) => {
@@ -198,6 +219,7 @@ export default function App() {
       streaming: false
     }));
     setBusy(false);
+    notifyCompletion(reply.text);
   };
 
   const stop = () => {
@@ -229,6 +251,8 @@ export default function App() {
     setHome(true);
     setTab('chat');
     setSheet(null);
+    setDetailItem(null);
+    setCalendarOpen(false);
     showToast(tr('Started a new chat.', '已开始新对话。'));
   };
 
@@ -243,11 +267,14 @@ export default function App() {
     setSkills(seed.seedSkills);
     setSaved([]);
     setRssCards([]);
+    setCalendarEvents([]);
     setBusy(false);
     setHome(true);
     setTab('chat');
     setSheet(null);
     setDetail(null);
+    setDetailItem(null);
+    setCalendarOpen(false);
     showToast(tr('Demo data cleared.', '演示数据已清除。'));
   };
 
@@ -260,6 +287,7 @@ export default function App() {
     setMessages([]);
     setArchived([]);
     setRssCards([]);
+    setCalendarEvents([]);
     setTopics([nextSeed.topicOptions[0], nextSeed.topicOptions[3]]);
     setSkills(previous =>
       previous.map(skill => {
@@ -272,10 +300,98 @@ export default function App() {
     setTab('chat');
     setSheet(null);
     setDetail(null);
+    setDetailItem(null);
+    setCalendarOpen(false);
     showToast(next === 'zh' ? '已切换到中文。' : 'Switched to English.');
   };
 
+  const addCalendarEvent = (event: CalendarEvent) => {    const next = [...calendarEvents, event];
+    setCalendarEvents(next);
+    setCalendarOpen(false);
+    setHome(false);
+    setTab('chat');
+    const surface = surfacesFor(lang).calendarSurface(next);
+    setMessages(previous => [
+      ...previous,
+      {
+        id: newId('a'),
+        role: 'assistant',
+        text: tr(
+          `Added **${event.title}** to the demo calendar. It is stored locally and is not synced to an account.`,
+          `已把 **${event.title}** 添加到演示日历。日程只保存在本地，不会同步到账号。`
+        ),
+        createdAt: Date.now(),
+        surface
+      }
+    ]);
+    showToast(tr('Event added to the demo calendar.', '已添加到演示日历。'));
+  };
+
+  const stopDemo = () => {
+    demoRun.current += 1;
+    generation.current += 1;
+    setDemoRunning(false);
+    setBusy(false);
+    setSheet(null);
+    showToast(tr('Guided demo stopped.', '已停止引导演示。'));
+  };
+
+  const startDemo = async () => {
+    if (demoRunning) return;
+    const run = ++demoRun.current;
+    setDemoRunning(true);
+    setSheet(null);
+    setDetail(null);
+    setDetailItem(null);
+    setCalendarOpen(false);
+    setHome(false);
+    setTab('chat');
+    setBusy(false);
+    setMessages([]);
+    setRssCards([]);
+    setCalendarEvents([]);
+    showToast(tr('Guided demo started.', '引导演示开始。'));
+
+    await sleep(350);
+    if (demoRun.current !== run) return;
+    await send(tr('Find trains from Beijing to Shanghai tomorrow evening', '帮我查明天傍晚北京到上海的高铁'));
+    if (demoRun.current !== run) return;
+    await sleep(650);
+
+    await send(tr('Show only trains', '只看高铁'));
+    if (demoRun.current !== run) return;
+    await sleep(650);
+
+    await send(tr('What’s on my calendar tomorrow?', '帮我查看明天的日程'));
+    if (demoRun.current !== run) return;
+    await sleep(650);
+
+    await send(tr('Find coffee shops near the Bantian Huawei campus in Shenzhen', '帮我搜索深圳坂田华为基地附近的咖啡店'));
+    if (demoRun.current !== run) return;
+    await sleep(900);
+
+    setTab('discover');
+    setTopics([seed.topicOptions[0], seed.topicOptions[4] ?? seed.topicOptions[0]]);
+    showToast(tr('Discovery: topics adjusted.', '发现流：已调整主题。'));
+    await sleep(2400);
+    if (demoRun.current !== run) return;
+
+    setTab('chat');
+    setHome(true);
+    setSheet('memory');
+    await sleep(2600);
+    if (demoRun.current !== run) return;
+
+    setSheet(null);
+    setDemoRunning(false);
+    showToast(tr('Guided demo complete.', '引导演示完成。'));
+  };
+
   const onAction = (action: A2uiAction) => {
+    if (action.id === 'create') {
+      setCalendarOpen(true);
+      return;
+    }
     if (action.prompt) {
       void send(action.prompt);
       return;
@@ -420,6 +536,7 @@ export default function App() {
                 messages={messages}
                 showThinking={settings.showThinking}
                 onAction={onAction}
+                onDetails={setDetailItem}
                 onFollowUp={prompt => void send(prompt)}
               />
             )
@@ -502,6 +619,13 @@ export default function App() {
           }}
         />
 
+        {demoRunning ? (
+          <button type="button" className="demo-pill" onClick={stopDemo}>
+            <span className="demo-pill-dot" />
+            {tr('Stop demo', '停止演示')}
+          </button>
+        ) : null}
+
         <Toast message={toast} />
 
         {sheet === 'history' ? (
@@ -527,6 +651,7 @@ export default function App() {
             onHistory={() => setSheet('history')}
             onSettings={() => setSheet('settings')}
             onNewChat={newChat}
+            onDemo={() => void startDemo()}
           />
         ) : null}
         {sheet === 'skills' ? (
@@ -584,6 +709,14 @@ export default function App() {
             }}
             onOpenRelated={setDetail}
           />
+        ) : null}
+
+        {detailItem ? (
+          <DetailsSheet detail={detailItem} onClose={() => setDetailItem(null)} onNotice={showToast} />
+        ) : null}
+
+        {calendarOpen ? (
+          <CalendarEventSheet onClose={() => setCalendarOpen(false)} onAdd={addCalendarEvent} />
         ) : null}
       </div>
       <div className="stage-caption">

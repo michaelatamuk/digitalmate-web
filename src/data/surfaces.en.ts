@@ -1,4 +1,4 @@
-import type { A2uiComponent, A2uiSurface } from '../types';
+import type { A2uiComponent, A2uiSurface, CalendarEvent } from '../types';
 
 let surfaceSeq = 0;
 
@@ -400,7 +400,7 @@ export function mailSurface(): A2uiSurface {
   );
 }
 
-export function calendarSurface(): A2uiSurface {
+export function calendarSurface(extraEvents: CalendarEvent[] = []): A2uiSurface {
   return makeSurface(
     'This week',
     [
@@ -426,7 +426,8 @@ export function calendarSurface(): A2uiSurface {
       schedule: [
         { time: '10:00', title: 'Design review · A2UI cards', meta: 'Meeting room 3A · 45 min', tone: 'accent' },
         { time: '14:00', title: 'Device regression · login and notifications', meta: 'Online · 60 min', tone: 'train' },
-        { time: '16:30', title: 'Discovery ranking experiment review', meta: 'With Data · 30 min', tone: 'flight' }
+        { time: '16:30', title: 'Discovery ranking experiment review', meta: 'With Data · 30 min', tone: 'flight' },
+        ...extraEvents
       ]
     },
     'From authorised Google Calendar'

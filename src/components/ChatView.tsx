@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { A2uiAction, Message } from '../types';
+import type { A2uiAction, ItemDetail, Message } from '../types';
 import { useI18n } from '../i18n/I18nContext';
 import { MessageBubble } from './MessageBubble';
 
@@ -7,11 +7,13 @@ export function ChatView({
   messages,
   showThinking,
   onAction,
+  onDetails,
   onFollowUp
 }: {
   messages: Message[];
   showThinking: boolean;
   onAction: (action: A2uiAction) => void;
+  onDetails: (detail: ItemDetail) => void;
   onFollowUp: (prompt: string) => void;
 }) {
   const { tr } = useI18n();
@@ -41,6 +43,7 @@ export function ChatView({
           message={message}
           showThinking={showThinking}
           onAction={onAction}
+          onDetails={onDetails}
           onFollowUp={onFollowUp}
         />
       ))}

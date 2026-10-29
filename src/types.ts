@@ -96,8 +96,20 @@ export interface Settings {
   cloudBackend: 'orbit' | 'local';
   notifications: boolean;
   reducedMotion: boolean;
-  autoPlay: boolean;
   showThinking: boolean;
+}
+
+export interface ItemDetail {
+  kind: 'train' | 'flight' | 'food';
+  item: Record<string, unknown>;
+}
+
+export interface CalendarEvent {
+  id: string;
+  time: string;
+  title: string;
+  meta: string;
+  tone?: string;
 }
 
 export interface MemoryProfile {

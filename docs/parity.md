@@ -9,6 +9,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Home shell, greeting, suggestions | ✅ | Mock data |
 | BeeBou mascot | ✅ | Home, avatar, thinking, about |
 | Streaming chat | 🟡 | Simulated locally |
+| Card detail sheets | ✅ | Travel, train and food |
+| Guided demo | ✅ | Scripted walkthrough |
 | Orbit rooms/sessions/task rows | ❌ | Single mock thread |
 | Stop / retry / task clear | 🟡 | Stop works; retry/clear absent |
 | Attachments and upload | 🟡 | Fake PDF chip only |
@@ -20,10 +22,12 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Skill detail / publish / OAuth | ❌ | Not implemented |
 | Memory profile | 🟡 | Static |
 | Memory edit / forget / evidence | ❌ | Not implemented |
+| Calendar read | ✅ | Mock schedule |
+| Calendar event create | 🟡 | Local browser state only |
 | Login / onboarding | ❌ | Skipped |
 | Account switching | ❌ | Single local demo account |
-| Settings / app update | 🟡 | Demo settings only |
-| Notifications / background tasks | ❌ | Toggle is cosmetic |
+| Settings / app update | 🟡 | Demo settings; browser notifications only |
+| Notifications / background tasks | 🟡 | Browser notification when hidden and permitted |
 | Home-screen widgets / atomic services | ❌ | Native only |
 
 ## A2UI and protocol
@@ -66,5 +70,6 @@ Missing examples: `FlightBoard`, `ToolConnectCard`, `StripeReceivingAccountCard`
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | ❌ | localStorage only |
 | Automated UI tests | ❌ | Build only |
+| Unit tests | ✅ | 9 tests for mock logic/localization |
 | Accessibility audit | ❌ | Not yet |
 | Deployment / PWA | ❌ | Not yet |

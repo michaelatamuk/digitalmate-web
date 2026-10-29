@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { A2uiAction, A2uiComponent, A2uiSurface } from '../../types';
+import type { A2uiAction, A2uiComponent, A2uiSurface, ItemDetail } from '../../types';
 import { renderMarkdown } from '../../lib/markdown';
 import { Icon } from '../Icons';
 import { useI18n } from '../../i18n/I18nContext';
@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/I18nContext';
 interface SurfaceProps {
   surface: A2uiSurface;
   onAction: (action: A2uiAction) => void;
+  onDetails?: (detail: ItemDetail) => void;
 }
 
 function resolvePath(data: unknown, path?: string): unknown {
@@ -58,6 +59,7 @@ function toneClass(tone?: string): string {
 interface RenderContext {
   surface: A2uiSurface;
   onAction: (action: A2uiAction) => void;
+  onDetails?: (detail: ItemDetail) => void;
   tr: (en: string, zh: string) => string;
 }
 
@@ -176,7 +178,18 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
             {items.map((item, index) => {
               const isTrain = item.kind === 'train';
               return (
-                <article className={`travel-card ${isTrain ? 'is-train' : 'is-flight'}`} key={`${key}-travel-${index}`}>
+                <article
+                  className={`travel-card ${isTrain ? 'is-train' : 'is-flight'} is-clickable`}
+                  key={`${key}-travel-${index}`}
+                  onClick={() => ctx.onDetails?.({ kind: isTrain ? 'train' : 'flight', item })}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      ctx.onDetails?.({ kind: isTrain ? 'train' : 'flight', item });
+                    }
+                  }}
+                >
                   <div className="travel-top">
                     <span className={`kind-pill ${isTrain ? 'is-train' : 'is-flight'}`}>
                       <Icon name={isTrain ? 'train' : 'plane'} size={15} />
@@ -205,12 +218,14 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
                     <button
                       type="button"
                       className="link-button"
-                      onClick={() =>
-                        ctx.onAction({
-                          id: `view-${item.code ?? index}`,
-                          label: tr('Details', '查看详情')
-                        })
-                      }
+                      onClick={event => {
+                        event.stopPropagation();
+                        if (ctx.onDetails) {
+                          ctx.onDetails({ kind: isTrain ? 'train' : 'flight', item });
+                        } else {
+                          ctx.onAction({ id: `view-${item.code ?? index}`, label: 'Details' });
+                        }
+                      }}
                     >
                       {tr('View', '查看')}
                       <Icon name="chevronRight" size={13} />
@@ -231,7 +246,16 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
           {component.title ? <div className="block-title">{component.title}</div> : null}
           <div className="travel-list">
             {items.map((item, index) => (
-              <article className="travel-card is-train" key={`${key}-train-${index}`}>
+              <article
+                className="travel-card is-train is-clickable"
+                key={`${key}-train-${index}`}
+                onClick={() => ctx.onDetails?.({ kind: 'train', item })}
+                role="button"
+                tabIndex={0}
+                onKeyDown={event => {
+                  if (event.key === 'Enter' || event.key === ' ') ctx.onDetails?.({ kind: 'train', item });
+                }}
+              >
                 <div className="travel-top">
                   <span className="kind-pill is-train">
                     <Icon name="train" size={15} />
@@ -274,7 +298,16 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
             {items.map((item, index) => {
               const tags = (item.sourceTags as string[]) ?? [];
               return (
-                <article className="food-card" key={`${key}-food-${index}`}>
+                <article
+                  className="food-card is-clickable"
+                  key={`${key}-food-${index}`}
+                  onClick={() => ctx.onDetails?.({ kind: 'food', item })}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') ctx.onDetails?.({ kind: 'food', item });
+                  }}
+                >
                   <div className="food-mark">
                     <Icon name="coffee" size={20} />
                   </div>
@@ -442,9 +475,9 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
   }
 }
 
-export function A2uiSurfaceView({ surface, onAction }: SurfaceProps) {
+export function A2uiSurfaceView({ surface, onAction, onDetails }: SurfaceProps) {
   const { tr } = useI18n();
   const root = surface.components[surface.root];
   if (!root) return null;
-  return <div className="a2ui-root">{renderComponent(root, { surface, onAction, tr }, 'root')}</div>;
+  return <div className="a2ui-root">{renderComponent(root, { surface, onAction, onDetails, tr }, 'root')}</div>;
 }

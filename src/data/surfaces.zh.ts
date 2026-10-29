@@ -1,4 +1,4 @@
-import type { A2uiComponent, A2uiSurface } from '../types';
+import type { A2uiComponent, A2uiSurface, CalendarEvent } from '../types';
 
 let surfaceSeq = 0;
 
@@ -401,7 +401,7 @@ export function mailSurface(): A2uiSurface {
   );
 }
 
-export function calendarSurface(): A2uiSurface {
+export function calendarSurface(extraEvents: CalendarEvent[] = []): A2uiSurface {
   return makeSurface(
     '本周日程',
     [
@@ -427,7 +427,8 @@ export function calendarSurface(): A2uiSurface {
       schedule: [
         { time: '10:00', title: '设计评审 · A2UI 卡片', meta: '会议室 3A · 45 分钟', tone: 'accent' },
         { time: '14:00', title: '真机回归 · 登录与通知', meta: '线上 · 60 分钟', tone: 'train' },
-        { time: '16:30', title: '发现流排序实验复盘', meta: '与 Data 组 · 30 分钟', tone: 'flight' }
+        { time: '16:30', title: '发现流排序实验复盘', meta: '与 Data 组 · 30 分钟', tone: 'flight' },
+        ...extraEvents
       ]
     },
     '来自已授权的 Google Calendar'

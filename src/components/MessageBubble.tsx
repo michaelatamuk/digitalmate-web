@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Message, ThinkingStep } from '../types';
+import type { ItemDetail, Message, ThinkingStep } from '../types';
 import { renderMarkdown } from '../lib/markdown';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { Icon } from './Icons';
@@ -89,10 +89,11 @@ interface MessageBubbleProps {
   message: Message;
   showThinking: boolean;
   onAction: (action: A2uiAction) => void;
+  onDetails: (detail: ItemDetail) => void;
   onFollowUp: (prompt: string) => void;
 }
 
-export function MessageBubble({ message, showThinking, onAction, onFollowUp }: MessageBubbleProps) {
+export function MessageBubble({ message, showThinking, onAction, onDetails, onFollowUp }: MessageBubbleProps) {
   const { tr, locale } = useI18n();
   if (message.role === 'user') {
     return (
@@ -126,7 +127,7 @@ export function MessageBubble({ message, showThinking, onAction, onFollowUp }: M
           </div>
         ) : null}
         {message.surface ? (
-          <A2uiSurfaceView surface={message.surface} onAction={onAction} />
+          <A2uiSurfaceView surface={message.surface} onAction={onAction} onDetails={onDetails} />
         ) : null}
         {message.followUps?.length && !message.streaming ? (
           <div className="follow-ups">

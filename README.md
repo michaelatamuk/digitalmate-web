@@ -18,8 +18,10 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - Mock-first: no real backend or account login yet
 - Full English and Simplified Chinese UI, switchable in **Settings → Language**
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
+- Card detail sheets, local calendar event creation and a guided demo mode
+- 9 unit tests for the mock engine, localized data and calendar surfaces
 - Responsive phone UI that runs in Chrome
-- `npm run build` and the GitHub Actions build are expected to pass
+- `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
 The next milestone is moving from the local mock engine to a protocol layer that can talk to
 a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
@@ -31,11 +33,14 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | --- | --- |
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
+| Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative surface renderer for 16 components and 8 scenarios |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, local RSS add |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |
-| Settings | Language, backend preference, notifications, trace, reduced motion, autoplay, reset |
+| Calendar | Local event creation with a confirmation sheet and updated schedule card |
+| Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
+| Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
 
 Scenarios currently include travel, food/coffee, social, mail, calendar, document summary,
@@ -57,6 +62,12 @@ npm run build
 npm run preview
 ```
 
+Tests:
+
+```bash
+npm test
+```
+
 ## Repository layout
 
 ```text
@@ -66,6 +77,8 @@ src/
     a2ui/                 A2UI surface renderer
     BeeBou.tsx            mascot component
     HomeView, ChatView, DiscoveryView
+    DetailsSheet.tsx      travel/train/food detail sheet
+    CalendarEventSheet.tsx local calendar event form
     Overlays.tsx          history, skills, settings, memory, detail
     Chrome.tsx            status bar, top bar, brand mark
   i18n/I18nContext.tsx    language context and tr(en, zh) helper
@@ -91,6 +104,8 @@ docs/
   protocol/a2ui.md        surface protocol and catalog coverage
 services/
   bridge/                 future auth + WebSocket proxy for the web client
+tests/
+  mockEngine.test.ts      mock replies, localized data and calendar surfaces
 ```
 
 ## Path to Jiuwen/Orbit and Android

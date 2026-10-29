@@ -6,9 +6,13 @@
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
 - [x] 16 A2UI-style components / 8 mock scenarios
+- [x] Travel/train/food detail sheets
+- [x] Local calendar event creation
+- [x] Guided demo mode
 - [x] Discovery feed, skills, memory, settings, history
+- [x] Unit tests for mock engine, localization and calendar surfaces
 - [x] Production build
-- [x] Public GitHub repository with CI build
+- [x] Public GitHub repository with CI build + tests
 
 ## Phase 1 — Protocol extraction
 
