@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    base: process.env.VITE_BASE ?? '/',
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version)
     },

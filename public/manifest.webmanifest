@@ -2,21 +2,21 @@
   "name": "DigitalMate Web",
   "short_name": "DigitalMate",
   "description": "Account-free bilingual companion demo with local data and optional Orbit bridge.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f7f3ee",
   "theme_color": "#f3e6dc",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"

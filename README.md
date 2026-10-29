@@ -210,6 +210,22 @@ mounted token file, or use `ORBIT_TOKEN` for temporary testing.
 
 Security notes and residual risks are documented in [docs/threat-model.md](docs/threat-model.md).
 
+## Public static deployment
+
+The **Deploy** workflow publishes `main` to GitHub Pages:
+
+```text
+https://michaelatamuk.github.io/digitalmate-web/
+```
+
+It builds with `VITE_BASE=/digitalmate-web/`, so the PWA, manifest and service worker work
+under the repository subpath. GitHub Pages is static: local mode, chat, attachments, PDF
+extraction, artifacts, memory, backup and PWA install all work, but `/api/rss` and
+`/api/orbit` are unavailable there. Use the Docker/preview server when you need RSS import or
+the optional Orbit bridge.
+
+To host under a different path, set `VITE_BASE` at build time.
+
 ## Repository layout
 
 ```text

@@ -78,5 +78,5 @@ No components from the tracked native list remain. Future native additions may s
 | Automated UI tests | ✅ | Playwright: chat, attachments/PDF, artifacts, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
 | Unit tests | ✅ | 73 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills and artifacts |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
-| Deployment / PWA | ✅ | Installable build, Dockerfile and compose self-hosting |
+| Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | 🟡 | PWA install works; Capacitor planned only for native features |

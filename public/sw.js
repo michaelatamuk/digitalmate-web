@@ -1,6 +1,14 @@
 /* DigitalMate Web service worker: account-free offline shell and runtime cache. */
-const CACHE = 'digitalmate-web-v1';
-const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg', '/bee/bee-idle-still.png'];
+const CACHE = 'digitalmate-web-v2';
+const scope = self.registration.scope;
+const shellPath = (path: string) => new URL(path, scope).href;
+const SHELL = [
+  shellPath('./'),
+  shellPath('index.html'),
+  shellPath('manifest.webmanifest'),
+  shellPath('icon.svg'),
+  shellPath('bee/bee-idle-still.png')
+];
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -46,10 +54,10 @@ self.addEventListener('fetch', event => {
       fetch(request)
         .then(response => {
           const copy = response.clone();
-          caches.open(CACHE).then(cache => cache.put('/index.html', copy)).catch(() => undefined);
+          caches.open(CACHE).then(cache => cache.put(shellPath('index.html'), copy)).catch(() => undefined);
           return response;
         })
-        .catch(() => caches.match('/index.html').then(cached => cached || caches.match('/')))
+        .catch(() => caches.match(shellPath('index.html')).then(cached => cached || caches.match(shellPath('./'))))
     );
     return;
   }
