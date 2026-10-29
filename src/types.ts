@@ -104,6 +104,7 @@ export interface FeedCard {
   summary: string;
   glyph: string;
   cover: string;
+  image?: string;
   readingTime: string;
   published: string;
   url: string;

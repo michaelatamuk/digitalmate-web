@@ -3750,6 +3750,19 @@ a {
   text-align: left;
 }
 
+.feed-cover-wrap {
+  position: relative;
+}
+
+.feed-cover-image {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .feed-title-button {
   padding: 0;
   border: none;
@@ -3989,6 +4002,14 @@ a {
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+.detail-cover-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .detail-cover::after {

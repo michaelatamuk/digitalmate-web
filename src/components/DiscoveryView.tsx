@@ -4,6 +4,7 @@ import type { DiscoveryFilters } from '../transport/discovery';
 import { Icon } from './Icons';
 import { seedFor } from '../data/seed';
 import { fetchRssFeed } from '../lib/rss';
+import { coverForCard } from '../lib/covers';
 import { useI18n } from '../i18n/I18nContext';
 
 interface DiscoveryProps {
@@ -238,16 +239,24 @@ export function DiscoveryView({
           {visible.map((card, index) => {
             const reaction = reactions[card.id];
             const isSaved = saved.includes(card.id);
+            const cover = coverForCard(card);
             return (
               <article
                 className="feed-card"
                 key={card.id}
                 style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
               >
-                <div className="feed-cover" style={{ background: card.cover }}>
-                  <span className="feed-glyph" aria-hidden="true">
-                    {card.glyph}
-                  </span>
+                <div className="feed-cover-wrap">
+                  <button
+                    type="button"
+                    className="feed-cover-button"
+                    onClick={() => onOpen(card)}
+                    aria-label={tr(`Open ${card.title}`, `打开 ${card.title}`)}
+                  >
+                    <div className="feed-cover" style={{ background: card.cover }}>
+                      <img className="feed-cover-image" src={cover} alt="" loading="lazy" />
+                    </div>
+                  </button>
                   <span className="feed-source-badge">{card.sourceLabel}</span>
                   <span className="feed-metric-badge">{card.metric}</span>
                 </div>

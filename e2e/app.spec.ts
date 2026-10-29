@@ -169,6 +169,16 @@ test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await expect(page.locator('.artifact-surface .a2ui-surface')).toBeVisible();
 });
 
+test('discover covers show images and open the story', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  const cover = page.locator('.feed-cover-image').first();
+  await expect(cover).toBeVisible();
+  await expect(cover).toHaveAttribute('src', /\/covers\/.+\.svg$/);
+  await page.locator('.feed-cover-button').first().click();
+  await expect(page.locator('.detail-layer')).toBeVisible();
+  await expect(page.locator('.detail-cover-image')).toBeVisible();
+});
+
 test('searches the local discovery feed', async ({ page }) => {
   await page.getByRole('button', { name: 'Discover' }).click();
   const cards = page.locator('.feed-card');
