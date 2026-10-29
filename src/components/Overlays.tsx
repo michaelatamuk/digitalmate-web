@@ -152,7 +152,8 @@ export function MoreSheet({
   onHistory,
   onSettings,
   onNewChat,
-  onDemo
+  onDemo,
+  onProtocol
 }: {
   onClose: () => void;
   onSkills: () => void;
@@ -161,10 +162,12 @@ export function MoreSheet({
   onSettings: () => void;
   onNewChat: () => void;
   onDemo: () => void;
+  onProtocol: () => void;
 }) {
   const { tr } = useI18n();
   const items = [
     { icon: 'play' as const, title: tr('Guided demo', '引导演示'), subtitle: tr('Run the 2-minute walkthrough automatically', '自动播放两分钟演示流程'), onClick: onDemo },
+    { icon: 'grid' as const, title: tr('A2UI protocol demo', 'A2UI 协议演示'), subtitle: tr('Render a surface parsed from JSONL envelopes', '渲染由 JSONL 信封解析出的界面'), onClick: onProtocol },
     { icon: 'spark' as const, title: tr('Skill center', '技能中心'), subtitle: tr('Install, enable and manage skills', '安装、启用和管理技能'), onClick: onSkills },
     { icon: 'heart' as const, title: tr('About you', '关于你'), subtitle: tr('Long-term memory and public profile', '长期记忆与公开画像'), onClick: onMemory },
     { icon: 'clock' as const, title: tr('History', '历史记录'), subtitle: tr('Return to a previous task', '回到之前完成的任务'), onClick: onHistory },

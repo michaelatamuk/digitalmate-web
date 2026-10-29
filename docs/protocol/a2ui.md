@@ -3,11 +3,39 @@
 A2UI is the declarative surface format used by DigitalMate for structured task results.
 It is an application-level UI protocol, not the network transport.
 
-## Current mock behaviour
+## Protocol layer
 
-The web app builds surface objects directly in `src/data/surfaces.en.ts` and
-`src/data/surfaces.zh.ts`, then renders them through `src/components/a2ui/A2uiSurfaceView.tsx`.
-It does not parse the JSONL wire format yet.
+The app still ships hand-built surface fixtures for the built-in scenarios, but it now also
+includes a real A2UI JSONL path:
+
+- `parseA2uiJsonl` validates one envelope per line and reports line-numbered errors.
+- `A2uiSurfaceStore` applies `createSurface` / `updateComponents` / `updateDataModel` /
+  `deleteSurface` immutably, keyed by `surfaceId`.
+- **More → A2UI protocol demo** builds a surface from JSONL envelopes and renders it with the
+  normal component catalog, including `HeroBanner`, `FlightBoard`, `List`, `ToolConnectCard`,
+  `ExpandableCard` and `SkeletonCard`.
+
+## Components currently rendered
+
+`SurfaceRoot`, `Column`, `Row`, `Text`, `InfoRows`, `ActionBar`, `ErrorNotice`,
+`ThinkingStream`, `TravelOptions`, `TrainOptions`, `FoodChoices`, `SocialHub`,
+`ConfirmPanel`, `GenericToolResults`, `MetricGrid`, `ScheduleStack`, `HeroBanner`,
+`FlightBoard`, `List`, `ToolConnectCard`, `ExpandableCard`, `SkeletonCard`, `MediaSlider`,
+`SceneTabs`, `MasonryGrid`.
+
+## Components still missing
+
+`StripeReceivingAccountCard`, `SegmentedRingChart`, `MultiSeriesLineChart`,
+`MatrixHeatmap`, `ThinkingCard` (the chat currently uses a custom thinking card).
+
+## Next implementation steps
+
+1. Move the built-in scenario fixtures onto the JSONL store instead of hand-built objects.
+2. Add partial-update throttling and coalescing.
+3. Add the remaining chart/data components.
+4. Connect the store to a real gateway stream behind `ChatTransport`.
+5. Add parser/store tests before connecting to a real gateway. *(done — see
+   `tests/a2uiProtocol.test.ts`)*
 
 ## Target wire format
 
@@ -22,28 +50,6 @@ Newline-delimited JSON, one envelope per line. Exactly one of:
 
 Components bind to a data model with JSON Pointer paths such as `/rows`, `/trains`,
 `/travelOptions`, `/foods`, `/socialHub/items`.
-
-## Components currently rendered
-
-`SurfaceRoot`, `Column`, `Row`, `Text`, `InfoRows`, `ActionBar`, `ErrorNotice`,
-`ThinkingStream`, `TravelOptions`, `TrainOptions`, `FoodChoices`, `SocialHub`,
-`ConfirmPanel`, `GenericToolResults`, `MetricGrid`, `ScheduleStack`.
-
-## Components still missing
-
-`FlightBoard`, `ToolConnectCard`, `StripeReceivingAccountCard`, `List`, `HeroBanner`,
-`MediaSlider`, `SceneTabs`, `MasonryGrid`, `SegmentedRingChart`, `MultiSeriesLineChart`,
-`MatrixHeatmap`, `ExpandableCard`, `SkeletonCard`, `ThinkingCard` (the chat currently uses a
-custom thinking card).
-
-## Next implementation steps
-
-1. Add `src/protocol/a2ui/` with types and a line scanner.
-2. Implement a surface store keyed by `surfaceId`.
-3. Apply component/data-model updates immutably.
-4. Add partial-update throttling.
-5. Reuse the existing renderer, replacing hand-built surface objects with parsed state.
-6. Add parser/store tests before connecting to a real gateway.
 
 ## References
 

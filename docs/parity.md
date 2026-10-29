@@ -34,16 +34,15 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 16 components |
-| Full component catalog | 🟡 | ~half of native catalog |
-| JSONL parsing / partial updates | ❌ | Surfaces are built as objects |
+| A2UI surface renderer | ✅ | 25 components |
+| Full component catalog | 🟡 | ~two-thirds of native catalog |
+| JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ❌ | Not implemented |
 | Data-model pointer semantics | 🟡 | Basic paths only |
 | Unknown component rejection | ✅ | Renders an error card |
 
-Missing examples: `FlightBoard`, `ToolConnectCard`, `StripeReceivingAccountCard`, `List`,
-`HeroBanner`, `MediaSlider`, `SceneTabs`, `MasonryGrid`, `SegmentedRingChart`,
-`MultiSeriesLineChart`, `MatrixHeatmap`, `ExpandableCard`, `SkeletonCard`.
+Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
+`MultiSeriesLineChart`, `MatrixHeatmap`, `ThinkingCard` (custom chat card today).
 
 ## Scenarios/tools
 
@@ -70,6 +69,6 @@ Missing examples: `FlightBoard`, `ToolConnectCard`, `StripeReceivingAccountCard`
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | ❌ | localStorage only |
 | Automated UI tests | ❌ | Build only |
-| Unit tests | ✅ | 9 tests for mock logic/localization |
+| Unit tests | ✅ | 18 tests for mock logic, localization, calendar and A2UI protocol |
 | Accessibility audit | ❌ | Not yet |
 | Deployment / PWA | ❌ | Not yet |

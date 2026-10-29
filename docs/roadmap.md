@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 16 A2UI-style components / 8 mock scenarios
+- [x] 25 A2UI-style components / 8 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -16,13 +16,15 @@
 
 ## Phase 1 — Protocol extraction
 
-- [ ] Move A2UI and transport contracts into `src/protocol`
+- [x] Move A2UI and transport contracts into `src/protocol`
 - [ ] Define `ChatTransport` and `DiscoveryTransport` interfaces
 - [ ] Keep `MockTransport` behind the same interface
-- [ ] Add an A2UI JSONL parser and surface store
-- [ ] Support `createSurface` / `updateComponents` / `updateDataModel`
+- [x] Add an A2UI JSONL parser and surface store
+- [x] Support `createSurface` / `updateComponents` / `updateDataModel`
+- [x] Support `deleteSurface` and line-numbered parse errors
 - [ ] Add partial-update and throttling behaviour
-- [ ] Add unit tests for parser/store/state reducer
+- [x] Add unit tests for parser/store/state reducer
+- [ ] Move built-in scenario fixtures onto the parsed store
 
 ## Phase 2 — Web bridge
 

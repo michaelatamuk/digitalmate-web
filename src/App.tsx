@@ -20,6 +20,7 @@ import { ChatView } from './components/ChatView';
 import { DiscoveryView } from './components/DiscoveryView';
 import { Composer } from './components/Composer';
 import { DetailsSheet } from './components/DetailsSheet';
+import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
@@ -387,6 +388,31 @@ export default function App() {
     showToast(tr('Guided demo complete.', '引导演示完成。'));
   };
 
+  const openProtocolDemo = () => {
+    const surface = protocolDemoSurface(lang);
+    setSheet(null);
+    setHome(false);
+    setTab('chat');
+    if (!surface) {
+      showToast(tr('Could not parse the protocol demo.', '无法解析协议演示。'));
+      return;
+    }
+    setMessages(previous => [
+      ...previous,
+      {
+        id: newId('a'),
+        role: 'assistant',
+        text: tr(
+          'This surface came from **newline-delimited JSON envelopes** and was rendered with the same A2UI component catalog as the chat cards.',
+          '这个界面来自 **换行分隔的 JSON 信封**，并使用与聊天卡片相同的 A2UI 组件目录渲染。'
+        ),
+        createdAt: Date.now(),
+        surface
+      }
+    ]);
+    showToast(tr('A2UI protocol demo rendered.', 'A2UI 协议演示已渲染。'));
+  };
+
   const onAction = (action: A2uiAction) => {
     if (action.id === 'create') {
       setCalendarOpen(true);
@@ -652,6 +678,7 @@ export default function App() {
             onSettings={() => setSheet('settings')}
             onNewChat={newChat}
             onDemo={() => void startDemo()}
+            onProtocol={openProtocolDemo}
           />
         ) : null}
         {sheet === 'skills' ? (

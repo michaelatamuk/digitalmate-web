@@ -446,6 +446,163 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
       );
     }
 
+    case 'HeroBanner':
+      return (
+        <div className="hero-banner" key={key}>
+          <span className="hero-kicker">{tr('A2UI surface', 'A2UI 界面')}</span>
+          <h3>{component.title}</h3>
+          {component.body ? <p>{component.body}</p> : null}
+          {component.actions?.length ? (
+            <div className="a2ui-actions">
+              {component.actions.map((action, index) => actionButton(action, ctx, `${key}-hero-${index}`))}
+            </div>
+          ) : null}
+        </div>
+      );
+
+    case 'FlightBoard': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="flight-board">
+            {items.map((item, index) => (
+              <div className="flight-row" key={`${key}-flight-${index}`}>
+                <span className="flight-code">{item.code}</span>
+                <div className="flight-route">
+                  <strong>{item.depart} <small>{item.from}</small></strong>
+                  <span>→</span>
+                  <strong>{item.arrive} <small>{item.to}</small></strong>
+                </div>
+                <div className="flight-side">
+                  <span className={`flight-status ${item.status?.toLowerCase().includes('delay') ? 'is-warn' : ''}`}>{item.status}</span>
+                  <span>{item.gate}</span>
+                  <span className="source-tag">{item.sourceTag}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'List': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="a2ui-list">
+            {items.map((item, index) => (
+              <div className="a2ui-list-row" key={`${key}-list-${index}`}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{item.subtitle}</span>
+                </div>
+                <em>{item.meta}</em>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'ToolConnectCard':
+      return (
+        <div className="tool-connect-card" key={key}>
+          <span className="tool-connect-icon">
+            <Icon name="globe" size={16} />
+          </span>
+          <div className="tool-connect-main">
+            <strong>{component.title}</strong>
+            <p>{component.body}</p>
+            {component.status ? <span className="tool-connect-status">{component.status}</span> : null}
+            {component.actions?.length ? (
+              <div className="a2ui-actions">
+                {component.actions.map((action, index) => actionButton(action, ctx, `${key}-tool-${index}`))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      );
+
+    case 'ExpandableCard': {
+      const rows = (resolvePath(surface.data, component.dataPath) ?? component.rows ?? []) as Array<Record<string, string>>;
+      return (
+        <details className="expandable-card" key={key}>
+          <summary>
+            <span>
+              <strong>{component.title}</strong>
+              {component.body ? <em>{component.body}</em> : null}
+            </span>
+            <Icon name="chevronDown" size={14} />
+          </summary>
+          <div className="info-rows">
+            {rows.map((row, index) => (
+              <div className="info-row" key={`${key}-expand-${index}`}>
+                <span>{row.label}</span>
+                <strong>{row.value}</strong>
+              </div>
+            ))}
+          </div>
+        </details>
+      );
+    }
+
+    case 'SkeletonCard':
+      return (
+        <div className="skeleton-card" key={key}>
+          <div className="skeleton-line is-short" />
+          <div className="skeleton-line" />
+          <div className="skeleton-line is-medium" />
+          {component.title ? <span>{component.title}</span> : null}
+        </div>
+      );
+
+    case 'MediaSlider': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="media-slider">
+            {items.map((item, index) => (
+              <div className={`media-tile media-tone-${(index % 3) + 1}`} key={`${key}-media-${index}`}>
+                <span className="media-kind">{item.kind}</span>
+                <strong>{item.title}</strong>
+                <em>{item.meta}</em>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'SceneTabs': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="scene-tabs" key={key}>
+          {items.map((item, index) => (
+            <span className={index === 0 ? 'is-active' : ''} key={`${key}-tab-${index}`}>
+              {item.label}
+            </span>
+          ))}
+        </div>
+      );
+    }
+
+    case 'MasonryGrid': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
+      return (
+        <div className="masonry-grid" key={key}>
+          {items.map((item, index) => (
+            <div className={`masonry-item tone-${item.tone ?? 'muted'}`} key={`${key}-masonry-${index}`}>
+              <strong>{item.title}</strong>
+              <span>{item.body}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
     case 'ThinkingStream': {
       const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, string>>;
       return (

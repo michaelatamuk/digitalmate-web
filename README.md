@@ -19,7 +19,8 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - Full English and Simplified Chinese UI, switchable in **Settings → Language**
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Card detail sheets, local calendar event creation and a guided demo mode
-- 9 unit tests for the mock engine, localized data and calendar surfaces
+- A2UI JSONL parser and surface store with a protocol-driven demo surface
+- 18 unit tests for the mock engine, protocol parser/store, localized data and calendar surfaces
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -34,7 +35,7 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative surface renderer for 16 components and 8 scenarios |
+| A2UI | Declarative renderer for 25 components, 8 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, local RSS add |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |
@@ -89,6 +90,11 @@ src/
     surfaces.ts           language selector for A2UI surfaces
     surfaces.en.ts        English surface fixtures
     surfaces.zh.ts        Chinese surface fixtures
+  protocol/a2ui/
+    types.ts              JSONL envelope types
+    parser.ts             line parser, component map and data-path updates
+    store.ts              surface store keyed by surfaceId
+    demo.ts               protocol-driven demo surface
   lib/
     mockEngine.ts         prompt → thinking / text / surface (both languages)
     markdown.tsx          small Markdown renderer
@@ -106,6 +112,7 @@ services/
   bridge/                 future auth + WebSocket proxy for the web client
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
+  a2uiProtocol.test.ts    JSONL parser, surface store and protocol demo
 ```
 
 ## Path to Jiuwen/Orbit and Android
