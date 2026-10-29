@@ -25,6 +25,10 @@ real Jiuwen/Orbit client without rewriting the UI.
 │  GET /api/rss · SSRF guard · RSS/Atom/RDF parser             │
 │  GET /api/orbit/health · POST /api/orbit/turn                │
 │  WSS upstream with server-side Bearer token                  │
+├──────────────────────────────────────────────────────────────┤
+│ Production PWA (no account required)                         │
+│  manifest + service worker · shell/assets cached             │
+│  offline reload · /api requests are never cached             │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -84,3 +88,5 @@ Android path.
 - Vendoring the native DigitalMate application or its HAP build.
 - Shipping Gateway/provider credentials in browser code.
 - Claiming real bookings, payments, sends or orders from the mock.
+- Requiring an account or login for local features. The Orbit bridge is optional and falls
+  back to the local mock; the production build also works offline from the PWA cache.

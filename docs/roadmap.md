@@ -62,6 +62,7 @@
 ## Phase 5 — Production hardening
 
 - [x] Automated UI tests and critical accessibility checks
+- [x] Installable PWA with offline shell
 - [ ] Wider accessibility audit and manual screen-reader pass
 - [ ] Deployment pipeline and environment configuration
 - [ ] Telemetry/crash reporting (privacy-reviewed)

@@ -46,6 +46,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
+| Offline / PWA | Installable production build; shell and assets cached, no API caching |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
@@ -121,6 +122,27 @@ npm run dev
 The fake gateway only implements `room.home`, `room.message` and `orbit.task.text`; it echoes
 the prompt and is intended for smoke tests, not as a protocol reference.
 
+## Offline and account-free use
+
+No sign-in is required at any point. Chats, calendar events, saved cards and RSS subscriptions
+are stored in the browser, and the app defaults to **Local mode**. The Orbit bridge is optional
+and automatically falls back to the local mock when it is unavailable.
+
+The production build is an installable PWA:
+
+```bash
+npm run build
+npm run preview
+npm run check:offline   # Playwright: reload the built app with the network disabled
+```
+
+`public/sw.js` caches the shell, hashed JS/CSS and assets after the first visit. It never
+intercepts `/api/` requests, so RSS and Orbit calls always go to the network when online. The
+service worker is registered only in production builds to avoid stale caches during development.
+
+In a supported browser, use the install button in **Settings → Account-free access** or the
+browser’s own “Install app” action.
+
 Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
 bridge is configured. If it is not, turns fall back to the local mock and say so.
 
@@ -187,6 +209,9 @@ src/
   types.ts                shared UI, A2UI, RSS and transport types
 public/
   bee/                    BeeBou assets
+  icon.svg                app icon
+  manifest.webmanifest    PWA manifest
+  sw.js                   offline shell and runtime cache
 docs/
   architecture.md         current layers and future Android/web split
   roadmap.md              mock → protocol → real backend → Android
@@ -206,6 +231,9 @@ tests/
   orbitTransport.test.ts  bridge config, SSE parsing and transport events
 e2e/
   app.spec.ts             Playwright UI, mobile, language and axe checks
+scripts/
+  fake-orbit.mjs          local fake Orbit gateway for bridge smoke tests
+  check-offline.mjs       production offline reload check
 ```
 
 ## Path to Jiuwen/Orbit and Android

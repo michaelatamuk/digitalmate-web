@@ -7,6 +7,11 @@ import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
 import { useI18n } from '../i18n/I18nContext';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 export function Sheet({
   title,
   subtitle,
@@ -349,6 +354,9 @@ export function SettingsSheet({
 }) {
   const { tr, lang } = useI18n();
   const [orbitStatus, setOrbitStatus] = useState<OrbitHealth | null>(null);
+  const [online, setOnline] = useState(() => navigator.onLine);
+  const [offlineReady, setOfflineReady] = useState(false);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   useEffect(() => {
     let active = true;
     orbitHealth()
@@ -360,6 +368,31 @@ export function SettingsSheet({
       });
     return () => {
       active = false;
+    };
+  }, []);
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    const onPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event as BeforeInstallPromptEvent);
+    };
+    const onInstalled = () => setInstallPrompt(null);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('beforeinstallprompt', onPrompt);
+    window.addEventListener('appinstalled', onInstalled);
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .getRegistration()
+        .then(registration => setOfflineReady(Boolean(registration?.active)))
+        .catch(() => setOfflineReady(false));
+    }
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('beforeinstallprompt', onPrompt);
+      window.removeEventListener('appinstalled', onInstalled);
     };
   }, []);
   return (
@@ -470,6 +503,55 @@ export function SettingsSheet({
           >
             <Icon name="refresh" size={14} />
             {tr('Reset bridge session', '重置桥接会话')}
+          </button>
+        ) : null}
+      </div>
+
+      <div className="settings-group">
+        <span className="settings-label">{tr('Account-free access', '免账号使用')}</span>
+        <div className={`orbit-status ${online ? 'is-live' : 'is-off'}`}>
+          <Icon name={online ? 'wifi' : 'info'} size={14} />
+          <span>
+            {online
+              ? tr(
+                  'Online · local mode always works without signing in.',
+                  '在线 · 本地模式无需登录，始终可用。'
+                )
+              : tr(
+                  'Offline · your local chats, calendar and settings still work.',
+                  '离线 · 本地对话、日历和设置仍然可用。'
+                )}
+          </span>
+        </div>
+        <p className="settings-note">
+          {tr(
+            'No account is required. Chats, calendar events, saved cards and RSS subscriptions stay in this browser.',
+            '无需账号。对话、日程、收藏卡片和 RSS 订阅都保存在当前浏览器。'
+          )}
+        </p>
+        <div className="offline-line">
+          <Icon name={offlineReady ? 'check' : 'download'} size={13} />
+          <span>
+            {offlineReady
+              ? tr('Offline cache is active.', '离线缓存已启用。')
+              : tr(
+                  'Offline cache activates after a production build and first visit.',
+                  '离线缓存会在生产构建并首次访问后启用。'
+                )}
+          </span>
+        </div>
+        {installPrompt ? (
+          <button
+            type="button"
+            className="secondary-action orbit-reset"
+            onClick={() => {
+              const prompt = installPrompt;
+              setInstallPrompt(null);
+              void prompt.prompt().catch(() => undefined);
+            }}
+          >
+            <Icon name="download" size={14} />
+            {tr('Install app', '安装应用')}
           </button>
         ) : null}
       </div>

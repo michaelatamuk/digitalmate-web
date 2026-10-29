@@ -4100,6 +4100,19 @@ a {
   margin-top: 7px;
 }
 
+.offline-line {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 8.5px;
+  color: var(--muted);
+}
+
+.offline-line svg {
+  flex-shrink: 0;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

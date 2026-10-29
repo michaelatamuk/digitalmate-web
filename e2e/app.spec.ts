@@ -56,6 +56,15 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
   await expect(page.locator('.skeleton-card')).toBeVisible();
 });
 
+test('is installable and advertises account-free offline access', async ({ page }) => {
+  await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await expect(page.getByText('Account-free access')).toBeVisible();
+  await expect(page.getByText(/No account is required/)).toBeVisible();
+  await expect(page.getByText(/Offline ·|Online ·/)).toBeVisible();
+});
+
 test('Orbit mode falls back to the mock when the bridge is not configured', async ({ page }) => {
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Settings/ }).click();

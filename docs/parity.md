@@ -24,10 +24,11 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Memory edit / forget / evidence | ❌ | Not implemented |
 | Calendar read | ✅ | Mock schedule |
 | Calendar event create | 🟡 | Local browser state only |
-| Login / onboarding | ❌ | Skipped |
-| Account switching | ❌ | Single local demo account |
+| Login / onboarding | ❌ | Not required — the app works fully without an account |
+| Account switching | ❌ | Not applicable; no account or login gate |
 | Settings / app update | 🟡 | Demo settings; browser notifications only |
 | Notifications / background tasks | 🟡 | Browser notification when hidden and permitted |
+| Offline use | ✅ | Production PWA shell cached; local data persists |
 | Home-screen widgets / atomic services | ❌ | Native only |
 
 ## A2UI and protocol
@@ -73,4 +74,4 @@ custom thinking card).
 | Automated UI tests | ✅ | Playwright: home, chat, language, protocol, RSS, Orbit fallback, mobile |
 | Unit tests | ✅ | 43 tests for mock logic, scenarios, A2UI, RSS, transport and sessions |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
-| Deployment / PWA | ❌ | Not yet |
+| Deployment / PWA | ✅ | Installable production build with offline shell |
