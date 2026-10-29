@@ -33,7 +33,8 @@ import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
-import { nativeNotification, nativeShare } from './lib/native';
+import { nativeNotification, nativeShare, isNativeApp, configureNativeShell } from './lib/native';
+import { App as CapacitorApp } from '@capacitor/app';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
@@ -106,6 +107,16 @@ export default function App() {
   const activeTaskId = useRef<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   const contentRef = useRef<HTMLElement>(null);
+  const nativeBackRef = useRef<() => void>(() => undefined);
+
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    void configureNativeShell();
+    const listener = CapacitorApp.addListener('backButton', () => nativeBackRef.current());
+    return () => {
+      void listener.then(handle => handle.remove());
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
@@ -807,10 +818,43 @@ export default function App() {
     ? allCards.filter(card => card.id !== detail.id && (card.topic === detail.topic || card.source === detail.source)).slice(0, 2)
     : [];
 
+  nativeBackRef.current = () => {
+    if (sheet) {
+      setSheet(null);
+      return;
+    }
+    if (detail) {
+      setDetail(null);
+      return;
+    }
+    if (detailItem) {
+      setDetailItem(null);
+      return;
+    }
+    if (previewAttachment) {
+      setPreviewAttachment(null);
+      return;
+    }
+    if (calendarOpen) {
+      setCalendarOpen(false);
+      return;
+    }
+    if (!home) {
+      setHome(true);
+      return;
+    }
+    if (tab !== 'chat') {
+      setTab('chat');
+      setHome(true);
+      return;
+    }
+    void CapacitorApp.exitApp();
+  };
+
   return (
     <I18nContext.Provider value={{ lang, setLang: changeLanguage, tr, locale: lang === 'zh' ? 'zh-CN' : 'en-US' }}>
       <AppErrorBoundary tr={tr} onReset={resetDemo}>
-      <div className={`stage ${settings.reducedMotion ? 'reduce-motion' : ''}`}>
+      <div className={`stage ${settings.reducedMotion ? 'reduce-motion' : ''} ${isNativeApp() ? 'is-native' : ''}`}>
       <a className="skip-link" href="#main-content">
         {tr('Skip to main content', '跳到主要内容')}
       </a>

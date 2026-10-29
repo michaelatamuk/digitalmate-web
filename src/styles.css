@@ -5549,6 +5549,35 @@ a {
   padding-left: 17px;
 }
 
+/* ---------- native shell ---------- */
+
+.stage.is-native {
+  min-height: 100dvh;
+  padding: 0;
+  background: var(--paper);
+}
+
+.stage.is-native .stage-glow,
+.stage.is-native .stage-caption,
+.stage.is-native .statusbar {
+  display: none;
+}
+
+.stage.is-native .app-frame {
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding-top: max(env(safe-area-inset-top), 32px);
+  padding-bottom: max(env(safe-area-inset-bottom), 12px);
+}
+
+.stage.is-native .screen-content {
+  padding-left: max(18px, env(safe-area-inset-left));
+  padding-right: max(18px, env(safe-area-inset-right));
+}
+
 /* ---------- accessibility ---------- */
 
 .skip-link {

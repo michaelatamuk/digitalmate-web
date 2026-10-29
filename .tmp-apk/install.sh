@@ -1,0 +1,1 @@
+pm install -r /data/local/tmp/digitalmate.apk

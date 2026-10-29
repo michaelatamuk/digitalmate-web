@@ -1,9 +1,20 @@
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 export function isNativeApp(): boolean {
   return Capacitor.isNativePlatform();
+}
+
+export async function configureNativeShell(): Promise<void> {
+  if (!isNativeApp()) return;
+  try {
+    await StatusBar.setStyle({ style: Style.Dark });
+    await StatusBar.setBackgroundColor({ color: '#f7f3ee' });
+  } catch {
+    // Status bar customization is best-effort.
+  }
 }
 
 /** Returns true when the native share sheet handled the text. */
