@@ -16,5 +16,12 @@ applicable copyright, trademark, or brand rights. Obtain permission from the
 rights holder or replace these assets before commercial use or redistribution
 in a context that implies official endorsement.
 
+Stock photos under public/covers/photos/ are used under the Unsplash License.
+See public/covers/photos/CREDITS.md for source links. Category illustrations
+under public/covers/*.svg and the project icon are original artwork.
+
+Real RSS/Atom article images are loaded from the publisher's feed at runtime
+and remain subject to the publisher's terms.
+
 This project is not affiliated with or endorsed by the DigitalMate
 maintainers, openJiuwen, or Huawei.

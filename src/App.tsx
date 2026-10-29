@@ -34,6 +34,7 @@ import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment,
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell } from './lib/native';
+import { installDiagnostics } from './lib/diagnostics';
 import { App as CapacitorApp } from '@capacitor/app';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
@@ -117,6 +118,8 @@ export default function App() {
       void listener.then(handle => handle.remove());
     };
   }, []);
+
+  useEffect(() => installDiagnostics(), []);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';

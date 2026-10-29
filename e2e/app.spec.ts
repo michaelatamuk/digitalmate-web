@@ -352,6 +352,34 @@ test('exports and restores a local backup without an account', async ({ page }) 
   );
 });
 
+test('keeps a local-only diagnostic log that can be exported and cleared', async ({ page }) => {
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await expect(page.getByText('Diagnostics', { exact: true })).toBeVisible();
+  await expect(page.getByText('No errors recorded.')).toBeVisible();
+
+  await page.evaluate(() => {
+    window.dispatchEvent(
+      new ErrorEvent('error', {
+        message: 'E2E diagnostic failure',
+        filename: 'https://example.com/private?token=secret'
+      })
+    );
+  });
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  await expect(page.getByText('1 local entry stored.')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export log' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^digitalmate-diagnostics-\d{4}-\d{2}-\d{2}\.json$/);
+
+  await page.getByRole('button', { name: 'Clear log' }).click();
+  await expect(page.getByText('No errors recorded.')).toBeVisible();
+});
+
 test('Orbit mode falls back to the mock when the bridge is not configured', async ({ page }) => {
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
@@ -398,6 +426,11 @@ test('core screens have no serious accessibility violations', async ({ page }) =
 
   await page.getByRole('button', { name: 'Discover' }).click();
   await scan('discover');
+  await page.locator('.feed-cover-button').first().click();
+  await expect(page.locator('.detail-layer')).toBeVisible();
+  await scan('discover detail');
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.locator('.detail-layer')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'More' }).click();
   await scan('more');

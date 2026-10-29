@@ -1,8 +1,8 @@
 # DigitalMate Web
 
-An independent, **bilingual (English / 简体中文)** web companion for the DigitalMate
-HarmonyOS agent app. It starts as a mock-first prototype and is structured to grow into a
-real Jiuwen/Orbit-connected client and, later, an Android app.
+An independent, **bilingual (English / 简体中文)** web and Android companion for the
+DigitalMate HarmonyOS agent app. It runs fully locally without an account and can
+optionally stream through a Jiuwen/Orbit bridge.
 
 > **This repository contains only the new web implementation.** The original DigitalMate
 > native app, its ArkTS modules, build system and test suites are not included.
@@ -17,19 +17,21 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 
 ## Status
 
-- Mock-first by default: local data, no account login required
+- Local mode by default: data stays on-device, no account login required
 - Full English and Simplified Chinese UI, switchable in **Settings → Language**
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
+- Discovery covers with bundled stock photos, real RSS article images and offline fallbacks
 - Card detail sheets, local calendar event creation and a guided demo mode
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
-- Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 89 unit tests plus 24 Playwright UI, mobile and accessibility checks
-- Responsive phone UI that runs in Chrome
-- `npm run build`, `npm test` and the GitHub Actions build are expected to pass
+- Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
+- Android Capacitor shell with widget, native share, notifications and safe-area handling
+- 99 unit tests plus 26 Playwright UI, mobile and accessibility checks
+- Local-only diagnostics, backup/restore and PWA offline support
 
-The remaining milestone is production authentication and deployment in front of a real
-Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
+The remaining product milestone is a physical-device regression pass and production
+authentication in front of a real Jiuwen/Orbit gateway. See
+[docs/roadmap.md](docs/roadmap.md), [docs/operations.md](docs/operations.md) and
 [docs/architecture.md](docs/architecture.md).
 
 ## Features
@@ -54,6 +56,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Media | Scene tabs and a media slider for podcasts and short video |
 | Offline / PWA | Installable build, offline shell and update check with app version |
 | Your data | Export/import a local JSON backup of chats, calendar, saved cards and settings |
+| Diagnostics | Optional local-only error log with sanitized messages, export and clear |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
@@ -308,11 +311,14 @@ docs/
   android.md              PWA-first / Capacitor-later decision
   android-build.md        APK build, widget, sharing and signing
   threat-model.md         local-first assets, boundaries and mitigations
+  operations.md           deployment, env config, origin checks and token rotation
+  accessibility.md        automated coverage and screen-reader checklist
+  branding.md             naming, BeeBou caveat and asset licensing
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
 services/
-  bridge/                 deployment notes for a future production bridge
+  bridge/                 standalone production static + API server
 server/
   rss.ts                  dev/preview /api/rss proxy, size/redirect/SSRF guards
   orbit.ts                /api/orbit health + SSE turn bridge, WSS upstream

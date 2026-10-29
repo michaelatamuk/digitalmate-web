@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Icon } from './Icons';
+import { recordDiagnostic } from '../lib/diagnostics';
 
 interface Props {
   children: ReactNode;
@@ -21,6 +22,7 @@ export class AppErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('DigitalMate UI error', error, info.componentStack);
+    recordDiagnostic('component', error.message, info.componentStack ?? undefined);
   }
 
   private reload = (): void => {

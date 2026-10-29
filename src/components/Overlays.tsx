@@ -9,6 +9,13 @@ import { artifactDownloadContent, artifactFilename, artifactSlides } from '../li
 import { parseMemoryProfile } from '../lib/memoryProfile';
 import { coverForCard, fallbackCoverForCard } from '../lib/covers';
 import { requestNativeNotificationPermission } from '../lib/native';
+import {
+  clearDiagnostics,
+  isDiagnosticsEnabled,
+  readDiagnostics,
+  serializeDiagnostics,
+  setDiagnosticsEnabled
+} from '../lib/diagnostics';
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
@@ -539,6 +546,8 @@ export function SettingsSheet({
   const [updateReady, setUpdateReady] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [diagnosticsOn, setDiagnosticsOn] = useState(() => isDiagnosticsEnabled());
+  const [diagnostics, setDiagnostics] = useState(() => readDiagnostics());
   const backupInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
@@ -667,6 +676,31 @@ export function SettingsSheet({
         )
       );
     }
+  };
+
+  const downloadDiagnostics = () => {
+    const entries = readDiagnostics();
+    if (entries.length === 0) return;
+    const blob = new Blob([serializeDiagnostics(entries)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `digitalmate-diagnostics-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setDiagnostics(entries);
+    onNotice(
+      tr(
+        `Exported ${entries.length} local diagnostic entries.`,
+        `已导出 ${entries.length} 条本地诊断记录。`
+      )
+    );
+  };
+
+  const clearDiagnosticLog = () => {
+    clearDiagnostics();
+    setDiagnostics([]);
+    onNotice(tr('Local diagnostic log cleared.', '本地诊断日志已清除。'));
   };
 
   return (
@@ -937,6 +971,62 @@ export function SettingsSheet({
       </div>
 
       <div className="settings-group">
+        <span className="settings-label">{tr('Diagnostics', '诊断')}</span>
+        <Toggle
+          label={tr('Local error log', '本地错误日志')}
+          description={tr(
+            'Keep the last 20 app errors on this device. Nothing is uploaded.',
+            '在本设备保留最近 20 条应用错误，不会上传任何内容。'
+          )}
+          checked={diagnosticsOn}
+          onChange={value => {
+            setDiagnosticsOn(value);
+            setDiagnosticsEnabled(value);
+            if (value) setDiagnostics(readDiagnostics());
+          }}
+        />
+        <div className="offline-line">
+          <Icon name="info" size={13} />
+          <span>
+            {diagnostics.length === 0
+              ? tr('No errors recorded.', '暂无错误记录。')
+              : diagnostics.length === 1
+                ? tr('1 local entry stored.', '已保存 1 条本地记录。')
+                : tr(
+                    `${diagnostics.length} local entries stored.`,
+                    `已保存 ${diagnostics.length} 条本地记录。`
+                  )}
+          </span>
+        </div>
+        <div className="settings-actions">
+          <button
+            type="button"
+            className="secondary-action"
+            disabled={diagnostics.length === 0}
+            onClick={downloadDiagnostics}
+          >
+            <Icon name="download" size={14} />
+            {tr('Export log', '导出日志')}
+          </button>
+          <button
+            type="button"
+            className="secondary-action"
+            disabled={diagnostics.length === 0}
+            onClick={clearDiagnosticLog}
+          >
+            <Icon name="trash" size={14} />
+            {tr('Clear log', '清除日志')}
+          </button>
+        </div>
+        <p className="settings-note">
+          {tr(
+            'Messages are sanitized to remove URLs, query tokens and bearer credentials. Export the JSON file only when you choose to share a bug report.',
+            '记录会移除 URL、查询令牌和 Bearer 凭证。仅在您主动提交问题报告时导出 JSON 文件。'
+          )}
+        </p>
+      </div>
+
+      <div className="settings-group">
         <span className="settings-label">{tr('Local data', '本地数据')}</span>
         <div className="data-row">
           <div>
@@ -955,7 +1045,7 @@ export function SettingsSheet({
           <span className="about-mark"><BeeBou size={32} still className="is-mini" decorative /></span>
           <div>
             <strong>DigitalMate Web</strong>
-            <span>{tr('v0.1.0 · mock-first', 'v0.1.0 · 本地演示')}</span>
+            <span>{tr(`v${__APP_VERSION__} · account-free`, `v${__APP_VERSION__} · 免账号`)}</span>
           </div>
         </div>
         <p>

@@ -23,3 +23,24 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t digitalmate-web:test .
+      - name: Smoke-test the production container
+        run: |
+          docker run -d --name digitalmate -p 4173:4173 digitalmate-web:test
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/healthz > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/healthz
+          curl -fsS http://127.0.0.1:4173/ | grep -qi '<title>DigitalMate</title>'
+          curl -fsSI http://127.0.0.1:4173/covers/photos/ai.jpg | grep -qi 'content-type: image/jpeg'
+          curl -fsSI http://127.0.0.1:4173/ | grep -qi 'content-security-policy'
+          curl -fsSI http://127.0.0.1:4173/ | grep -qi 'x-content-type-options: nosniff'
+      - name: Container logs
+        if: always()
+        run: docker logs digitalmate

@@ -2,6 +2,12 @@ node_modules
 dist
 .git
 .github
+.tmp-apk*
+android
+coverage
+docs
+e2e
+tests
 test-results
 playwright-report
 *.log

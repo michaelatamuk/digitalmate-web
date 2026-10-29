@@ -27,6 +27,51 @@ export interface OrbitHealth {
   tokenSource?: 'env' | 'file';
 }
 
+/** Explicit browser/native origins allowed to reach the bridge. */
+export function readAllowedOrigins(env: NodeJS.ProcessEnv = process.env): string[] {
+  return (env.ORBIT_ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map(value => value.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Production configuration warnings. These are logged by the bridge at
+ * startup; they never include secret values and are not exposed over HTTP.
+ */
+export function bridgeConfigWarnings(
+  config: OrbitConfig | null,
+  env: NodeJS.ProcessEnv = process.env
+): string[] {
+  const warnings: string[] = [];
+  if (!config) {
+    if (env.NODE_ENV === 'production') {
+      warnings.push('Orbit is unconfigured; the app will stay in local mode.');
+    }
+    return warnings;
+  }
+  if (config.token.length < 24) {
+    warnings.push('ORBIT_TOKEN is shorter than 24 characters; rotate it to a longer secret.');
+  }
+  for (const name of ['token', 'access_token', 'key', 'secret']) {
+    if (config.url.searchParams.has(name)) {
+      warnings.push(
+        `Gateway URL contains a "${name}" query parameter; prefer ORBIT_TOKEN_FILE so secrets stay out of URLs and logs.`
+      );
+      break;
+    }
+  }
+  if (config.url.protocol === 'ws:') {
+    warnings.push('Gateway uses insecure ws://; use wss:// outside local testing.');
+  }
+  if (readAllowedOrigins(env).length === 0) {
+    warnings.push(
+      'ORBIT_ALLOWED_ORIGINS is empty; native or separately hosted clients will be rejected by the origin check.'
+    );
+  }
+  return warnings;
+}
+
 type BridgeEvent =
   | { type: 'thinking'; step: string; steps: string[]; index: number; total: number }
   | { type: 'text'; text: string }
@@ -417,16 +462,32 @@ async function streamTurn(
   await closed;
 }
 
-export function isSameOrigin(request: IncomingMessage): boolean {
+export function isSameOrigin(
+  request: IncomingMessage,
+  allowedOrigins: string[] = readAllowedOrigins()
+): boolean {
   const origin = request.headers.origin;
   if (!origin) return true;
+  if (origin === 'null') return allowedOrigins.includes('null');
+
+  let parsed: URL;
   try {
-    const parsed = new URL(origin);
-    const host = request.headers['x-forwarded-host'] ?? request.headers.host;
-    return Boolean(host) && parsed.host === host;
+    parsed = new URL(origin);
   } catch {
     return false;
   }
+
+  if (allowedOrigins.includes(origin) || allowedOrigins.includes(parsed.origin)) return true;
+
+  const host = request.headers['x-forwarded-host'] ?? request.headers.host;
+  if (!host || parsed.host !== host) return false;
+
+  const forwardedProto = String(request.headers['x-forwarded-proto'] ?? '')
+    .split(',')[0]
+    .trim();
+  if (forwardedProto && parsed.protocol !== `${forwardedProto}:`) return false;
+
+  return true;
 }
 
 export async function handleOrbitRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {

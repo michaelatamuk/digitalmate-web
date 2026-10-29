@@ -2,7 +2,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname, join, resolve, sep } from 'node:path';
-import { handleOrbitRequest } from '../../server/orbit';
+import { handleOrbitRequest, bridgeConfigWarnings, readOrbitConfig } from '../../server/orbit';
 import { handleRssRequest } from '../../server/rss';
 
 const root = resolve(process.cwd(), 'dist');
@@ -18,11 +18,47 @@ const MIME: Record<string, string> = {
   '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif',
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
+  '.wasm': 'application/wasm',
+  '.txt': 'text/plain; charset=utf-8',
   '.map': 'application/json; charset=utf-8'
 };
+
+const CONTENT_SECURITY_POLICY = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https: wss:",
+  "worker-src 'self' blob:",
+  "media-src 'self' https:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'"
+].join('; ');
+
+function applySecurityHeaders(request: IncomingMessage, response: ServerResponse): void {
+  response.setHeader('content-security-policy', CONTENT_SECURITY_POLICY);
+  response.setHeader('x-content-type-options', 'nosniff');
+  response.setHeader('x-frame-options', 'DENY');
+  response.setHeader('referrer-policy', 'no-referrer');
+  response.setHeader('permissions-policy', 'camera=(), microphone=(), geolocation=(), payment=()');
+  response.setHeader('cross-origin-opener-policy', 'same-origin');
+  const forwardedProto = String(request.headers['x-forwarded-proto'] ?? '')
+    .split(',')[0]
+    .trim();
+  if (forwardedProto === 'https') {
+    response.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
+  }
+}
 
 function notFound(response: ServerResponse): void {
   response.statusCode = 404;
@@ -47,8 +83,17 @@ function sendFile(request: IncomingMessage, response: ServerResponse, filePath: 
 }
 
 const server = createServer(async (request, response) => {
+  applySecurityHeaders(request, response);
   try {
     const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
+
+    if (url.pathname === '/healthz') {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/json; charset=utf-8');
+      response.setHeader('cache-control', 'no-store');
+      response.end(JSON.stringify({ ok: true, app: 'digitalmate-web' }));
+      return;
+    }
 
     if (url.pathname === '/api/rss') {
       await handleRssRequest(request, response);
@@ -96,4 +141,24 @@ const server = createServer(async (request, response) => {
 server.listen(port, host, () => {
   console.log(`DigitalMate bridge listening on http://${host}:${port}`);
   console.log(`Static root: ${root}`);
+  const config = readOrbitConfig();
+  console.log(`Orbit mode: ${config ? `live (${config.url.host})` : 'unconfigured (local mode)'}`);
+  for (const warning of bridgeConfigWarnings(config)) {
+    console.warn(`[config] ${warning}`);
+  }
 });
+
+const shutdown = (signal: string) => {
+  console.log(`Received ${signal}; draining connections.`);
+  const force = setTimeout(() => process.exit(0), 10_000);
+  if (typeof (force as { unref?: () => void }).unref === 'function') {
+    (force as unknown as { unref: () => void }).unref();
+  }
+  server.close(() => {
+    clearTimeout(force);
+    process.exit(0);
+  });
+};
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));

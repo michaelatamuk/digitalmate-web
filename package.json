@@ -1,9 +1,9 @@
 {
   "name": "digitalmate-web",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Mock-first web companion for the DigitalMate HarmonyOS app.",
+  "description": "Account-free bilingual web and Android companion for the DigitalMate app.",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc --noEmit && vite build",

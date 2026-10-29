@@ -78,9 +78,10 @@
 - [x] Dockerfile and compose file for self-hosting
 - [x] GitHub Pages deploy workflow for the static/PWA build
 - [x] Local JSON backup and restore
-- [ ] Wider accessibility audit and manual screen-reader pass
-- [ ] Deployment pipeline and environment configuration
-- [ ] Telemetry/crash reporting (privacy-reviewed)
-- [ ] Branding and asset licensing finalised
+- [x] Wider automated accessibility coverage across Home, Chat, Discover, More, Skills and Settings (see `docs/accessibility.md`)
+- [ ] Manual screen-reader pass on a physical device
+- [x] Deployment pipeline and environment configuration: container smoke job, `/healthz`, env template and operations runbook (`docs/operations.md`)
+- [x] Privacy-reviewed local-only diagnostics with sanitized messages, export and clear (`src/lib/diagnostics.ts`)
+- [x] Branding and asset licensing finalised (`docs/branding.md`, photo credits, NOTICE)
 - [x] Threat model documented in `docs/threat-model.md`
-- [ ] Credential rotation and production origin checks
+- [x] Credential rotation runbook, origin allowlist and production config warnings
