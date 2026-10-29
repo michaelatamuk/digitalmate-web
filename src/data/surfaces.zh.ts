@@ -469,6 +469,171 @@ export function documentSurface(): A2uiSurface {
   );
 }
 
+export function hotelSurface(): A2uiSurface {
+  return makeSurface(
+    '酒店方案',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '深圳 · 南山', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'hotels', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: '入住条件', dataPath: '/summary' },
+      { id: 'hotels', component: 'HotelOptions', title: '明天入住 · 2 晚', dataPath: '/hotels' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: '未进行预订',
+        body: '我可以比较房型和来源，但预订与支付需要你在服务商页面完成。房价会实时变化。',
+        actions: [
+          { id: 'hotel-cheaper', label: '看更便宜的酒店', prompt: '看看深圳南山更便宜的酒店', variant: 'secondary' },
+          { id: 'hotel-refundable', label: '只看可免费取消', prompt: '看看深圳可免费取消的酒店', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: '入住', value: '明天 · 10 月 30 日' },
+        { label: '晚数', value: '2 晚' },
+        { label: '住客', value: '1 位成人 · 1 间房' },
+        { label: '筛选', value: '4.5 分以上 · 可免费取消' },
+        { label: '来源', value: '携程 · Booking' }
+      ],
+      hotels: [
+        {
+          name: '深圳湾万豪酒店',
+          area: '南山 · 1.2 公里',
+          rating: '4.7',
+          price: '¥1,180 / 晚',
+          distance: '步行 12 分钟',
+          tags: ['可免费取消', '含早餐'],
+          sourceTag: '携程'
+        },
+        {
+          name: '深圳湾亚朵酒店',
+          area: '南山 · 2.4 公里',
+          rating: '4.6',
+          price: '¥620 / 晚',
+          distance: '驾车 8 分钟',
+          tags: ['可免费取消', '健身房'],
+          sourceTag: 'Booking'
+        },
+        {
+          name: '深圳东门凯悦嘉轩',
+          area: '罗湖 · 9.8 公里',
+          rating: '4.5',
+          price: '¥780 / 晚',
+          distance: '驾车 25 分钟',
+          tags: ['含早餐', '延迟退房'],
+          sourceTag: '携程'
+        }
+      ]
+    },
+    '本地演示 · 不预订、不支付'
+  );
+}
+
+export function rideSurface(): A2uiSurface {
+  return makeSurface(
+    '打车方案',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '前往深圳宝安机场', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'rides', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: '行程信息', dataPath: '/summary' },
+      { id: 'rides', component: 'RideOptions', title: '明天 17:30 上车', dataPath: '/rides' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: '下单仍在服务商完成',
+        body: '价格为服务商接口返回的预估值。我不会替你叫车，也不会扣款。',
+        actions: [
+          { id: 'ride-later', label: '晚 30 分钟出发', prompt: '看看晚 30 分钟去机场的车', variant: 'secondary' },
+          { id: 'ride-pool', label: '看拼车', prompt: '看看去深圳机场的拼车', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: '出发', value: '坂田华为基地' },
+        { label: '到达', value: '深圳宝安机场' },
+        { label: '上车', value: '明天 · 17:30' },
+        { label: '乘车', value: '1 位乘客 · 2 件行李' },
+        { label: '路况', value: '畅通 · 预计 42 分钟' }
+      ],
+      rides: [
+        { provider: '滴滴快车', car: '经济型', eta: '3 分钟后到达', price: '¥86–102', distance: '42 分钟 · 38 公里', sourceTag: '滴滴' },
+        { provider: '滴滴专车', car: '舒适型', eta: '5 分钟后到达', price: '¥128–150', distance: '41 分钟 · 38 公里', sourceTag: '滴滴' },
+        { provider: '出租车', car: '打表', eta: '8 分钟后到达', price: '≈ ¥110', distance: '44 分钟 · 39 公里', sourceTag: '本地出租' }
+      ]
+    },
+    '本地演示 · 不会叫车'
+  );
+}
+
+export function paymentSurface(): A2uiSurface {
+  return makeSurface(
+    '支付确认',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '订单确认', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'payment', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: '订单摘要', dataPath: '/summary' },
+      { id: 'payment', component: 'PaymentCard', dataPath: '/payment' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: '支付未提交',
+        body: '这是演示数据生成的支付确认卡。真实客户端会要求显式确认，并绑定服务商返回的 orderId。',
+        actions: [
+          { id: 'payment-cancel', label: '取消订单', prompt: '取消演示订单', variant: 'ghost' },
+          { id: 'payment-method', label: '更换支付方式', prompt: '更换这个订单的支付方式', variant: 'secondary' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: '商家', value: '瑞幸咖啡 · 华为基地店' },
+        { label: '订单', value: '2 件商品 · 15:10 取餐' },
+        { label: '小计', value: '¥32.00' },
+        { label: '优惠', value: '− ¥6.00' },
+        { label: '合计', value: '¥26.00' }
+      ],
+      payment: {
+        title: '确认支付',
+        merchant: '瑞幸咖啡',
+        amount: '¥26.00',
+        method: '钱包 · 余额 ¥120.00',
+        status: '等待确认',
+        note: '在你于服务商页面确认之前，不会产生任何扣款。'
+      }
+    },
+    '本地演示 · 不会扣款'
+  );
+}
+
+export function mediaSurface(): A2uiSurface {
+  return makeSurface(
+    '媒体精选',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: '今日媒体', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['tabs', 'media', 'note'] },
+      { id: 'tabs', component: 'SceneTabs', dataPath: '/tabs' },
+      { id: 'media', component: 'MediaSlider', title: '通勤精选', dataPath: '/media' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: '媒体条目为演示数据。真实客户端会串流已授权的播客和视频，并在本地保留播放进度。'
+      }
+    ],
+    {
+      tabs: [{ label: '为你推荐' }, { label: '播客' }, { label: '短视频' }, { label: '已收藏' }],
+      media: [
+        { kind: '播客', title: '如何设计安全失败的智能体界面', meta: '32 分钟 · 科技周刊' },
+        { kind: '视频', title: '五分钟看懂 A2UI', meta: '5 分钟 · DigitalMate' },
+        { kind: '播客', title: '本地优先应用的落地', meta: '48 分钟 · 离线俱乐部' },
+        { kind: '视频', title: '4K 深圳通勤', meta: '3 分钟 · 城市笔记' }
+      ]
+    },
+    '本地演示 · 不串流媒体'
+  );
+}
+
 export function genericSurface(title: string, rows: { title: string; subtitle: string; meta: string; status?: string }[]): A2uiSurface {
   return makeSurface(
     title,

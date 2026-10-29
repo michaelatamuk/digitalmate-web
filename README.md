@@ -20,7 +20,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Card detail sheets, local calendar event creation and a guided demo mode
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
-- 18 unit tests for the mock engine, protocol parser/store, localized data and calendar surfaces
+- 23 unit tests for the mock engine, protocol parser/store, scenarios and localized data
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -35,17 +35,19 @@ a Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
 | Chat | Streaming mock replies, execution trace, markdown, follow-up chips |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
-| A2UI | Declarative renderer for 25 components, 8 scenarios and a JSONL protocol demo |
+| A2UI | Declarative renderer for 28 components, 12 scenarios and a JSONL protocol demo |
 | Discovery | Topic/source filters, reactions, saved cards, detail reader, local RSS add |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Memory | Static “About you” profile with MBTI, tags and sections |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
+| Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
+| Media | Scene tabs and a media slider for podcasts and short video |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
 | Settings | Language, backend preference, notifications, trace, reduced motion, reset |
 | History | Archived conversations when starting a new chat |
 
-Scenarios currently include travel, food/coffee, social, mail, calendar, document summary,
-weather and generic tool results.
+Scenarios currently include travel, hotel, ride, payment review, media, food/coffee, social,
+mail, calendar, document summary, weather and generic tool results.
 
 ## Quick start
 

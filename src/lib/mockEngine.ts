@@ -298,6 +298,73 @@ export function replyFor(prompt: string, lang: Language, calendarEvents: Calenda
     };
   }
 
+  if (/hotel|stay|check-in|check in|booking a room|酒店|住宿|订房|入住/.test(lower)) {
+    return {
+      thinking: [
+        tr('Parse city, dates and guests', '解析城市、日期与住客'),
+        tr('Query Trip.com and Booking', '查询携程与 Booking'),
+        tr('Deduplicate and compare rooms', '去重并比较房型'),
+        tr('Generate stay cards', '生成住宿卡片')
+      ],
+      text: tr(
+        'I found three stays in Nanshan for two nights. Prices are per night before taxes and change frequently; the reservation must be completed on the provider site.',
+        '南山找到 3 家可住 2 晚的酒店。价格为未含税前单晚价，会实时变化；预订需要在服务商页面完成。'
+      ),
+      surface: S.hotelSurface(),
+      followUps: tr('Show cheaper stays|Free cancellation only|Find coffee nearby', '看更便宜的酒店|只看可免费取消|附近有什么咖啡店').split('|')
+    };
+  }
+
+  if (/ride|taxi|didi|airport transfer|打车|网约车|出租车|拼车|去机场/.test(lower)) {
+    return {
+      thinking: [
+        tr('Parse pickup and destination', '解析上车点与目的地'),
+        tr('Query ride providers', '查询打车服务商'),
+        tr('Compare fare estimates', '比较预估价格'),
+        tr('Generate ride cards', '生成打车卡片')
+      ],
+      text: tr(
+        'I compared three ride options to Shenzhen Bao’an Airport. Fares are estimates; the ride is placed in the provider app, not here.',
+        '对比了 3 种前往深圳宝安机场的打车方案。价格均为预估值；叫车需要在服务商 App 内完成。'
+      ),
+      surface: S.rideSurface(),
+      followUps: tr('Leave 30 min later|Show shared rides', '晚 30 分钟出发|看拼车').split('|')
+    };
+  }
+
+  if (/payment|pay for|checkout|结账|支付|付款|扣款/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read the pending order', '读取待支付订单'),
+        tr('Recompute totals and discounts', '重新核对金额与优惠'),
+        tr('Prepare a confirmation card', '准备确认卡片'),
+        tr('Stop before submitting', '提交前停止')
+      ],
+      text: tr(
+        'This is a payment review for a demo order. Nothing has been charged, and the real client requires explicit confirmation bound to the provider orderId.',
+        '这是演示订单的支付确认。当前没有产生任何扣款；真实客户端会要求显式确认，并绑定服务商返回的 orderId。'
+      ),
+      surface: S.paymentSurface(),
+      followUps: tr('Change payment method|Cancel order', '更换支付方式|取消订单').split('|')
+    };
+  }
+
+  if (/podcast|media|video|listen|短剧|播客|音频|视频|媒体/.test(lower)) {
+    return {
+      thinking: [
+        tr('Read interests and saved media', '读取兴趣与已收藏媒体'),
+        tr('Rank by commute length', '按通勤时长排序'),
+        tr('Generate media cards', '生成媒体卡片')
+      ],
+      text: tr(
+        'Here are four media items picked for your commute. They are demo fixtures; playback and downloaded files are not real.',
+        '按你的通勤场景挑了 4 条媒体内容。这些是演示数据，不会真实播放或下载。'
+      ),
+      surface: S.mediaSurface(),
+      followUps: tr('Only podcasts|Show saved media', '只看播客|看已收藏媒体').split('|')
+    };
+  }
+
   if (/train|flight|travel|trip|itinerary|beijing|shanghai|evening|afternoon|高铁|车次|火车|北京|上海|出行|行程|航班|飞机|换到下午/.test(lower)) {
     return {
       thinking: [

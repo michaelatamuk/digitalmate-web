@@ -67,6 +67,50 @@ describe('calendar surfaces', () => {
   });
 });
 
+describe('extended scenarios', () => {
+  it('returns hotel options with refundable tags', () => {
+    const reply = replyFor('Find a hotel in Shenzhen for two nights', 'en');
+    expect(reply.surface?.title).toBe('Hotel options');
+    const hotels = reply.surface?.data.hotels as Array<Record<string, unknown>>;
+    expect(hotels.length).toBeGreaterThan(0);
+    expect(hotels.some(hotel => (hotel.tags as string[]).includes('Free cancellation'))).toBe(true);
+    expect(reply.surface?.components.hotels.component).toBe('HotelOptions');
+  });
+
+  it('returns ride estimates without placing a ride', () => {
+    const reply = replyFor('Book a taxi to Shenzhen airport', 'en');
+    expect(reply.surface?.title).toBe('Ride options');
+    const rides = reply.surface?.data.rides as Array<Record<string, string>>;
+    expect(rides.map(ride => ride.provider)).toContain('DiDi Express');
+    expect(reply.text.toLowerCase()).toContain('estimates');
+  });
+
+  it('returns a payment review that has not charged anything', () => {
+    const reply = replyFor('Check the payment for my order', 'en');
+    expect(reply.surface?.title).toBe('Payment check');
+    expect(reply.surface?.components.payment.component).toBe('PaymentCard');
+    expect(reply.surface?.data.payment).toMatchObject({ amount: '¥26.00', status: 'Awaiting confirmation' });
+  });
+
+  it('localizes the new scenarios for Chinese prompts', () => {
+    const hotel = replyFor('帮我订深圳的酒店', 'zh');
+    const ride = replyFor('帮我叫车去机场', 'zh');
+    const payment = replyFor('查看订单支付', 'zh');
+    const media = replyFor('推荐一些播客', 'zh');
+    expect(hotel.surface?.title).toBe('酒店方案');
+    expect(ride.surface?.title).toBe('打车方案');
+    expect(payment.surface?.title).toBe('支付确认');
+    expect(media.surface?.title).toBe('媒体精选');
+  });
+
+  it('returns a media slider surface', () => {
+    const reply = replyFor('Recommend a podcast for my commute', 'en');
+    expect(reply.surface?.title).toBe('Media highlights');
+    expect(reply.surface?.components.media.component).toBe('MediaSlider');
+    expect(reply.surface?.data.media).toHaveLength(4);
+  });
+});
+
 describe('localized seed data', () => {
   it('switches discovery topics and card content', () => {
     expect(seedFor('en').topicOptions[0]).toBe('AI & Tech');

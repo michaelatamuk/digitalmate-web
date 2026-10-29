@@ -5,7 +5,7 @@
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
 - [x] BeeBou mascot and assistant states
-- [x] 25 A2UI-style components / 8 mock scenarios
+- [x] 28 A2UI-style components / 12 mock scenarios
 - [x] Travel/train/food detail sheets
 - [x] Local calendar event creation
 - [x] Guided demo mode
@@ -43,7 +43,7 @@
 - [ ] Approval cards and connection/quota states
 - [ ] Skill detail, publish and OAuth setup
 - [ ] Memory editing and public profile import
-- [ ] Missing A2UI components and scenarios
+- [ ] Remaining chart components and deeper scenario states
 - [ ] Mobile viewport and accessibility audit
 
 ## Phase 4 — Android

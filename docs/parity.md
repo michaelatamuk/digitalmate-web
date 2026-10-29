@@ -34,7 +34,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 
 | Item | Web | Notes |
 | --- | --- | --- |
-| A2UI surface renderer | ✅ | 25 components |
+| A2UI surface renderer | ✅ | 28 components |
 | Full component catalog | 🟡 | ~two-thirds of native catalog |
 | JSONL parsing / partial updates | ✅ | `src/protocol/a2ui` parser + store |
 | Layout merger / throttle | ❌ | Not implemented |
@@ -55,7 +55,7 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 | Calendar | 🟡 | Read-only mock |
 | Document summary | ✅ | Local text mock |
 | Weather | ✅ | Mock |
-| Hotel / ride / payments / media | ❌ | Not implemented |
+| Hotel / ride / payments / media | ✅ | Mock comparison and review cards |
 | Gmail send / calendar write | ❌ | Not implemented |
 | Firecrawl / shopping / DeepSearch | ❌ | Not implemented |
 | DailyBrief / BIM / multi-task | ❌ | Not implemented |
@@ -69,6 +69,6 @@ Missing examples: `StripeReceivingAccountCard`, `SegmentedRingChart`,
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | ❌ | localStorage only |
 | Automated UI tests | ❌ | Build only |
-| Unit tests | ✅ | 18 tests for mock logic, localization, calendar and A2UI protocol |
+| Unit tests | ✅ | 23 tests for mock logic, localization, scenarios and A2UI protocol |
 | Accessibility audit | ❌ | Not yet |
 | Deployment / PWA | ❌ | Not yet |

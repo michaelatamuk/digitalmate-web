@@ -446,6 +446,106 @@ function renderComponent(component: A2uiComponent, ctx: RenderContext, key: stri
       );
     }
 
+    case 'HotelOptions': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="hotel-list">
+            {items.map((item, index) => {
+              const tags = (item.tags as string[]) ?? [];
+              return (
+                <article className="hotel-card" key={`${key}-hotel-${index}`}>
+                  <div className="hotel-mark">
+                    <Icon name="hotel" size={17} />
+                  </div>
+                  <div className="hotel-main">
+                    <div className="hotel-title-line">
+                      <strong>{textOf(item.name)}</strong>
+                      <span className="hotel-price">{textOf(item.price)}</span>
+                    </div>
+                    <div className="hotel-meta">
+                      <span>{textOf(item.area)}</span>
+                      <span>·</span>
+                      <span>{textOf(item.rating)} ★</span>
+                      <span>·</span>
+                      <span>{textOf(item.distance)}</span>
+                    </div>
+                    <div className="tag-row">
+                      {tags.map(tag => (
+                        <span className="mini-tag" key={`${key}-${index}-${tag}`}>
+                          {tag}
+                        </span>
+                      ))}
+                      <span className="source-tag">{textOf(item.sourceTag)}</span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    case 'RideOptions': {
+      const items = (resolvePath(surface.data, component.dataPath) ?? []) as Array<Record<string, unknown>>;
+      return (
+        <div className="options-block" key={key}>
+          {component.title ? <div className="block-title">{component.title}</div> : null}
+          <div className="ride-list">
+            {items.map((item, index) => (
+              <article className="ride-card" key={`${key}-ride-${index}`}>
+                <span className="ride-mark">
+                  <Icon name="car" size={17} />
+                </span>
+                <div className="ride-main">
+                  <strong>{textOf(item.provider)}</strong>
+                  <span>
+                    {textOf(item.car)} · {textOf(item.eta)}
+                  </span>
+                  <span className="ride-distance">{textOf(item.distance)}</span>
+                </div>
+                <div className="ride-side">
+                  <em>{textOf(item.price)}</em>
+                  <span className="source-tag">{textOf(item.sourceTag)}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case 'PaymentCard': {
+      const item = (resolvePath(surface.data, component.dataPath) ?? {}) as Record<string, unknown>;
+      return (
+        <div className="payment-card" key={key}>
+          <div className="payment-top">
+            <span className="payment-mark">
+              <Icon name="lock" size={15} />
+            </span>
+            <div>
+              <strong>{textOf(item.title) || tr('Confirm payment', '确认支付')}</strong>
+              <span>{textOf(item.merchant)}</span>
+            </div>
+            <em>{textOf(item.amount)}</em>
+          </div>
+          <div className="payment-rows">
+            <div>
+              <span>{tr('Payment method', '支付方式')}</span>
+              <strong>{textOf(item.method)}</strong>
+            </div>
+            <div>
+              <span>{tr('Status', '状态')}</span>
+              <strong className="is-warn">{textOf(item.status)}</strong>
+            </div>
+          </div>
+          {item.note ? <p className="payment-note">{textOf(item.note)}</p> : null}
+        </div>
+      );
+    }
+
     case 'HeroBanner':
       return (
         <div className="hero-banner" key={key}>

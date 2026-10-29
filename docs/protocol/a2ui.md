@@ -21,7 +21,7 @@ includes a real A2UI JSONL path:
 `ThinkingStream`, `TravelOptions`, `TrainOptions`, `FoodChoices`, `SocialHub`,
 `ConfirmPanel`, `GenericToolResults`, `MetricGrid`, `ScheduleStack`, `HeroBanner`,
 `FlightBoard`, `List`, `ToolConnectCard`, `ExpandableCard`, `SkeletonCard`, `MediaSlider`,
-`SceneTabs`, `MasonryGrid`.
+`SceneTabs`, `MasonryGrid`, `HotelOptions`, `RideOptions`, `PaymentCard`.
 
 ## Components still missing
 

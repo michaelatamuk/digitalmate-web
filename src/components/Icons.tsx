@@ -45,6 +45,8 @@ export type IconName =
   | 'lock'
   | 'download'
   | 'grid'
+  | 'hotel'
+  | 'car'
   | 'volume';
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -359,6 +361,22 @@ export function Icon({ name, size = 22, filled = false, ...rest }: IconProps) {
           <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
           <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
           <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+        </svg>
+      );
+    case 'hotel':
+      return (
+        <svg {...common}>
+          <path d="M4 20V5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5V20M16 10h2.5A1.5 1.5 0 0 1 20 11.5V20M2.5 20h19" />
+          <path d="M7.5 8h2M7.5 12h2M7.5 16h2M12 8h1M12 12h1M12 16h1" />
+        </svg>
+      );
+    case 'car':
+      return (
+        <svg {...common}>
+          <path d="M4.5 16.5h15M5 16.5v-4l2-5h10l2 5v4" />
+          <path d="M5 12.5h14M7.5 16.5v2M16.5 16.5v2" />
+          <circle cx="8" cy="14.2" r="0.9" />
+          <circle cx="16" cy="14.2" r="0.9" />
         </svg>
       );
     case 'volume':

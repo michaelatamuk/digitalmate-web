@@ -468,6 +468,171 @@ export function documentSurface(): A2uiSurface {
   );
 }
 
+export function hotelSurface(): A2uiSurface {
+  return makeSurface(
+    'Hotel options',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Shenzhen · Nanshan', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'hotels', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: 'Stay criteria', dataPath: '/summary' },
+      { id: 'hotels', component: 'HotelOptions', title: 'Tomorrow · 2 nights', dataPath: '/hotels' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: 'Nothing is booked',
+        body: 'I can compare rooms and sources, but a reservation and payment must be completed on the provider site. Room prices change frequently.',
+        actions: [
+          { id: 'hotel-cheaper', label: 'Show cheaper stays', prompt: 'Show cheaper hotels in Shenzhen Nanshan', variant: 'secondary' },
+          { id: 'hotel-refundable', label: 'Free cancellation only', prompt: 'Show hotels with free cancellation in Shenzhen', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: 'Check-in', value: 'Tomorrow · Oct 30' },
+        { label: 'Nights', value: '2' },
+        { label: 'Guests', value: '1 adult · 1 room' },
+        { label: 'Filter', value: '4.5+ · free cancellation' },
+        { label: 'Sources', value: 'Trip.com · Booking' }
+      ],
+      hotels: [
+        {
+          name: 'Shenzhen Bay Marriott',
+          area: 'Nanshan · 1.2 km',
+          rating: '4.7',
+          price: '¥1,180 / night',
+          distance: '12 min walk',
+          tags: ['Free cancellation', 'Breakfast included'],
+          sourceTag: 'Trip.com'
+        },
+        {
+          name: 'Atour Hotel Shenzhen Bay',
+          area: 'Nanshan · 2.4 km',
+          rating: '4.6',
+          price: '¥620 / night',
+          distance: '8 min drive',
+          tags: ['Free cancellation', 'Gym'],
+          sourceTag: 'Booking'
+        },
+        {
+          name: 'Hyatt Place Shenzhen Dongmen',
+          area: 'Luohu · 9.8 km',
+          rating: '4.5',
+          price: '¥780 / night',
+          distance: '25 min drive',
+          tags: ['Breakfast included', 'Late checkout'],
+          sourceTag: 'Trip.com'
+        }
+      ]
+    },
+    'Local demo · no reservation or payment'
+  );
+}
+
+export function rideSurface(): A2uiSurface {
+  return makeSurface(
+    'Ride options',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'To Shenzhen Bao’an Airport', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'rides', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: 'Trip details', dataPath: '/summary' },
+      { id: 'rides', component: 'RideOptions', title: 'Pickup tomorrow 17:30', dataPath: '/rides' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: 'Booking stays with the provider',
+        body: 'Fares are estimates from the provider API. I do not place the ride or charge a payment method.',
+        actions: [
+          { id: 'ride-later', label: 'Leave 30 min later', prompt: 'Show rides to the airport leaving 30 minutes later', variant: 'secondary' },
+          { id: 'ride-pool', label: 'Show shared rides', prompt: 'Show shared rides to Shenzhen airport', variant: 'ghost' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: 'From', value: 'Bantian Huawei Campus' },
+        { label: 'To', value: 'Shenzhen Bao’an Airport' },
+        { label: 'Pickup', value: 'Tomorrow · 17:30' },
+        { label: 'Ride', value: '1 passenger · 2 bags' },
+        { label: 'Traffic', value: 'Light · 42 min estimated' }
+      ],
+      rides: [
+        { provider: 'DiDi Express', car: 'Economy', eta: '3 min away', price: '¥86–102', distance: '42 min · 38 km', sourceTag: 'DiDi' },
+        { provider: 'DiDi Premier', car: 'Comfort', eta: '5 min away', price: '¥128–150', distance: '41 min · 38 km', sourceTag: 'DiDi' },
+        { provider: 'Taxi', car: 'Metered', eta: '8 min away', price: '≈ ¥110', distance: '44 min · 39 km', sourceTag: 'Local taxi' }
+      ]
+    },
+    'Local demo · no ride is placed'
+  );
+}
+
+export function paymentSurface(): A2uiSurface {
+  return makeSurface(
+    'Payment check',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Order review', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['summary', 'payment', 'boundary'] },
+      { id: 'summary', component: 'InfoRows', title: 'Order summary', dataPath: '/summary' },
+      { id: 'payment', component: 'PaymentCard', dataPath: '/payment' },
+      {
+        id: 'boundary',
+        component: 'ConfirmPanel',
+        title: 'Payment not submitted',
+        body: 'This is a payment review card from demo data. A real client requires an explicit confirmation bound to a provider orderId.',
+        actions: [
+          { id: 'payment-cancel', label: 'Cancel order', prompt: 'Cancel the demo order', variant: 'ghost' },
+          { id: 'payment-method', label: 'Change payment method', prompt: 'Change the payment method for this order', variant: 'secondary' }
+        ]
+      }
+    ],
+    {
+      summary: [
+        { label: 'Merchant', value: 'Luckin Coffee · Huawei Campus' },
+        { label: 'Order', value: '2 items · pickup 15:10' },
+        { label: 'Subtotal', value: '¥32.00' },
+        { label: 'Discount', value: '− ¥6.00' },
+        { label: 'Total', value: '¥26.00' }
+      ],
+      payment: {
+        title: 'Confirm payment',
+        merchant: 'Luckin Coffee',
+        amount: '¥26.00',
+        method: 'Wallet · balance ¥120.00',
+        status: 'Awaiting confirmation',
+        note: 'Nothing is charged until you confirm on the provider page.'
+      }
+    },
+    'Local demo · no charge is made'
+  );
+}
+
+export function mediaSurface(): A2uiSurface {
+  return makeSurface(
+    'Media highlights',
+    [
+      { id: 'root', component: 'SurfaceRoot', child: 'body', title: 'Today’s media', status: 'ready' },
+      { id: 'body', component: 'Column', children: ['tabs', 'media', 'note'] },
+      { id: 'tabs', component: 'SceneTabs', dataPath: '/tabs' },
+      { id: 'media', component: 'MediaSlider', title: 'Picked for your commute', dataPath: '/media' },
+      {
+        id: 'note',
+        component: 'Text',
+        text: 'Media items are demo fixtures. The real client streams authorised podcasts and videos and keeps playback state locally.'
+      }
+    ],
+    {
+      tabs: [{ label: 'For you' }, { label: 'Podcasts' }, { label: 'Short video' }, { label: 'Saved' }],
+      media: [
+        { kind: 'Podcast', title: 'Designing agent interfaces that fail safely', meta: '32 min · Tech Weekly' },
+        { kind: 'Video', title: 'A2UI in five minutes', meta: '5 min · DigitalMate' },
+        { kind: 'Podcast', title: 'Shipping local-first apps', meta: '48 min · Offline Club' },
+        { kind: 'Video', title: 'Shenzhen commute in 4K', meta: '3 min · City Notes' }
+      ]
+    },
+    'Local demo · no media streams'
+  );
+}
+
 export function genericSurface(title: string, rows: { title: string; subtitle: string; meta: string; status?: string }[]): A2uiSurface {
   return makeSurface(
     title,
