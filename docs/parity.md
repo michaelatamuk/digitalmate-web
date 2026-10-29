@@ -28,7 +28,8 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Account switching | ❌ | Not applicable; no account or login gate |
 | Settings / app update | 🟡 | Demo settings, version display and PWA update check |
 | Notifications / background tasks | 🟡 | Browser notification when hidden and permitted |
-| Offline use | ✅ | Production PWA shell cached; local data persists |
+| Offline use | ✅ | Offline banner, cached PWA shell and local data |
+| Error resilience | ✅ | App error boundary with reload and local reset |
 | Local backup | ✅ | Export/import JSON in Settings; validated and scoped to app keys |
 | Home-screen widgets / atomic services | ❌ | Native only |
 
@@ -72,7 +73,8 @@ No components from the tracked native list remain. Future native additions may s
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, attachments/PDF, sharing, retry/clear, memory, skills, discovery search, language, protocol, RSS, backup, Orbit fallback, mobile |
+| Automated UI tests | ✅ | Playwright: chat, attachments/PDF, sharing, retry/clear, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
 | Unit tests | ✅ | 67 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
 | Deployment / PWA | ✅ | Installable build, Dockerfile and compose self-hosting |
+| Android shell | 🟡 | PWA install works; Capacitor planned only for native features |

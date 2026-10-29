@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 67 unit tests plus 18 Playwright UI, mobile and accessibility checks
+- 67 unit tests plus 19 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -207,6 +207,8 @@ Then open `http://127.0.0.1:4173`. The default container needs **no account and 
 environment variables**. To use the optional Orbit bridge, provide `ORBIT_GATEWAY_URL` and a
 mounted token file, or use `ORBIT_TOKEN` for temporary testing.
 
+Security notes and residual risks are documented in [docs/threat-model.md](docs/threat-model.md).
+
 ## Repository layout
 
 ```text
@@ -257,6 +259,8 @@ public/
 docs/
   architecture.md         current layers and future Android/web split
   roadmap.md              mock → protocol → real backend → Android
+  android.md              PWA-first / Capacitor-later decision
+  threat-model.md         local-first assets, boundaries and mitigations
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage

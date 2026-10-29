@@ -26,6 +26,7 @@ import { DiscoveryView } from './components/DiscoveryView';
 import { Composer } from './components/Composer';
 import { DetailsSheet } from './components/DetailsSheet';
 import { AttachmentSheet } from './components/AttachmentSheet';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { mergeSkills } from './lib/skillBundle';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
@@ -76,6 +77,7 @@ export default function App() {
   const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [online, setOnline] = useState(() => navigator.onLine);
   const [feedSeed, setFeedSeed] = useState(0);
   const [demoRunning, setDemoRunning] = useState(false);
   const demoRun = useRef(0);
@@ -100,6 +102,17 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
   }, [lang]);
+
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+    window.addEventListener('online', goOnline);
+    window.addEventListener('offline', goOffline);
+    return () => {
+      window.removeEventListener('online', goOnline);
+      window.removeEventListener('offline', goOffline);
+    };
+  }, []);
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: 'auto' });
@@ -696,10 +709,17 @@ export default function App() {
 
   return (
     <I18nContext.Provider value={{ lang, setLang: changeLanguage, tr, locale: lang === 'zh' ? 'zh-CN' : 'en-US' }}>
+      <AppErrorBoundary tr={tr} onReset={resetDemo}>
       <div className={`stage ${settings.reducedMotion ? 'reduce-motion' : ''}`}>
       <a className="skip-link" href="#main-content">
         {tr('Skip to main content', '跳到主要内容')}
       </a>
+      {!online ? (
+        <div className="offline-banner" role="status">
+          <Icon name="wifi" size={13} />
+          {tr('Offline · local mode still works', '离线 · 本地模式仍然可用')}
+        </div>
+      ) : null}
       <div className="stage-glow stage-glow-a" />
       <div className="stage-glow stage-glow-b" />
       <div className="app-frame" data-lang={lang}>
@@ -992,6 +1012,7 @@ export default function App() {
         {tr('DigitalMate Web · mock-first companion', 'DigitalMate Web · 本地演示版')}
       </div>
       </div>
+      </AppErrorBoundary>
     </I18nContext.Provider>
   );
 }

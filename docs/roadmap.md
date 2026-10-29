@@ -62,9 +62,10 @@
 
 ## Phase 4 — Android
 
-- [ ] Decide Capacitor / React Native / native Kotlin / KMP
-- [ ] Reuse or port protocol contracts
-- [ ] Native login and WSS transport
+- [x] Decide PWA-first with Capacitor as the later native shell (see `docs/android.md`)
+- [ ] Scaffold Capacitor only when native notifications/widgets are required
+- [ ] Keep local mode account-free in the native build
+- [ ] Point `VITE_API_BASE` at an optional hosted bridge for RSS/Orbit
 - [ ] Native notifications, widgets and sharing
 - [ ] Device regression and signing
 
@@ -79,4 +80,5 @@
 - [ ] Deployment pipeline and environment configuration
 - [ ] Telemetry/crash reporting (privacy-reviewed)
 - [ ] Branding and asset licensing finalised
-- [ ] Threat model and credential rotation
+- [x] Threat model documented in `docs/threat-model.md`
+- [ ] Credential rotation and production origin checks

@@ -162,6 +162,14 @@ test('shares a saved article from the detail view', async ({ page }) => {
   expect(shared).toContain(title);
 });
 
+test('shows an offline banner while local mode stays usable', async ({ page }) => {
+  await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  await expect(page.locator('.offline-banner')).toContainText(/Offline/);
+  await expect(composer(page)).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await expect(page.locator('.offline-banner')).toHaveCount(0);
+});
+
 test('is installable and advertises account-free offline access', async ({ page }) => {
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
   await page.getByRole('button', { name: 'More' }).click();
