@@ -327,7 +327,11 @@ test('home and settings have no critical accessibility violations', async ({ pag
 
   await page.getByRole('button', { name: 'More' }).click();
   await page.getByRole('button', { name: /Settings/ }).click();
+  await expect(page.locator('.sheet-panel')).toBeFocused();
   await expect(page.locator('.sheet-layer')).toBeVisible();
   const settings = await new AxeBuilder({ page }).include('.sheet-layer').analyze();
   expect(settings.violations.filter(violation => violation.impact === 'critical')).toEqual([]);
+
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.sheet-layer')).toHaveCount(0);
 });

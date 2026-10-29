@@ -1,0 +1,11 @@
+services:
+  digitalmate:
+    build: .
+    ports:
+      - "4173:4173"
+    environment:
+      # Optional Orbit bridge. Leave unset for the fully local, account-free mode.
+      ORBIT_GATEWAY_URL: ${ORBIT_GATEWAY_URL:-}
+      ORBIT_TOKEN_FILE: ${ORBIT_TOKEN_FILE:-}
+      ORBIT_BINDING_ID: ${ORBIT_BINDING_ID:-default}
+    restart: unless-stopped

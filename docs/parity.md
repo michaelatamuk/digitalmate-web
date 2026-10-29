@@ -75,4 +75,4 @@ No components from the tracked native list remain. Future native additions may s
 | Automated UI tests | ✅ | Playwright: chat, attachments/PDF, sharing, retry/clear, memory, skills, discovery search, language, protocol, RSS, backup, Orbit fallback, mobile |
 | Unit tests | ✅ | 67 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments and skills |
 | Accessibility audit | ✅ | axe critical checks for home and settings |
-| Deployment / PWA | ✅ | Installable production build with offline shell |
+| Deployment / PWA | ✅ | Installable build, Dockerfile and compose self-hosting |

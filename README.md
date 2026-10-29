@@ -194,6 +194,19 @@ The bridge is intentionally conservative: `wss://` only unless `ORBIT_ALLOW_INSE
 It currently uses a fresh upstream socket per turn; reconnect reconciliation and snapshot
 recovery are still roadmap items. Sessions expire after 30 minutes.
 
+## Self-hosting
+
+The production build is a static SPA plus the local `/api/rss` and optional `/api/orbit`
+middleware. `vite preview` serves both.
+
+```bash
+docker compose up --build
+```
+
+Then open `http://127.0.0.1:4173`. The default container needs **no account and no
+environment variables**. To use the optional Orbit bridge, provide `ORBIT_GATEWAY_URL` and a
+mounted token file, or use `ORBIT_TOKEN` for temporary testing.
+
 ## Repository layout
 
 ```text

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { FeedCard, Language, MemoryProfile, Message, Reaction, Settings, Skill } from '../types';
 import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
@@ -28,14 +28,67 @@ export function Sheet({
   wide?: boolean;
 }) {
   const { tr } = useI18n();
+  const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const panel = panelRef.current;
+    panel?.focus();
+
+    const focusable = () =>
+      Array.from(
+        panel?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        ) ?? []
+      ).filter(element => element.offsetParent !== null);
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (document.activeElement === panel) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+        return;
+      }
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      previous?.focus();
+    };
+  }, []);
+
   return (
-    <div className="sheet-layer" role="dialog" aria-modal="true" aria-label={title}>
-      <button type="button" className="sheet-backdrop" onClick={onClose} aria-label={tr('Close', '关闭')} />
-      <section className={`sheet-panel ${wide ? 'is-wide' : ''}`}>
+    <div className="sheet-layer" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <button type="button" className="sheet-backdrop" onClick={onClose} aria-label={tr('Close', '关闭')} tabIndex={-1} />
+      <section
+        className={`sheet-panel ${wide ? 'is-wide' : ''}`}
+        ref={panelRef}
+        tabIndex={-1}
+      >
         <div className="sheet-grabber" />
         <header className="sheet-head">
           <div>
-            <h2>{title}</h2>
+            <h2 id={titleId}>{title}</h2>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label={tr('Close', '关闭')}>
@@ -280,7 +333,12 @@ export function SkillsSheet({
     <Sheet title={tr('Skill center', '技能中心')} subtitle={tr(`${installedCount} installed · ${skills.length} available`, `${installedCount} 个已安装 · ${skills.length} 个可用`)} onClose={onClose} wide>
       <div className="search-field">
         <Icon name="search" size={17} />
-        <input value={query} onChange={event => setQuery(event.target.value)} placeholder={tr('Search skills or capabilities', '搜索技能或能力')} />
+        <input
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder={tr('Search skills or capabilities', '搜索技能或能力')}
+          aria-label={tr('Search skills', '搜索技能')}
+        />
       </div>
       <div className="filter-row">
         {categories.map(item => (

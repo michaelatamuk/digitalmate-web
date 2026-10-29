@@ -697,6 +697,9 @@ export default function App() {
   return (
     <I18nContext.Provider value={{ lang, setLang: changeLanguage, tr, locale: lang === 'zh' ? 'zh-CN' : 'en-US' }}>
       <div className={`stage ${settings.reducedMotion ? 'reduce-motion' : ''}`}>
+      <a className="skip-link" href="#main-content">
+        {tr('Skip to main content', '跳到主要内容')}
+      </a>
       <div className="stage-glow stage-glow-a" />
       <div className="stage-glow stage-glow-b" />
       <div className="app-frame" data-lang={lang}>
@@ -761,7 +764,7 @@ export default function App() {
           />
         )}
 
-        <main ref={contentRef} className={`screen-content ${tab === 'chat' && home ? 'is-home' : ''} ${tab === 'discover' ? 'is-discovery' : ''}`}>
+        <main id="main-content" tabIndex={-1} ref={contentRef} className={`screen-content ${tab === 'chat' && home ? 'is-home' : ''} ${tab === 'discover' ? 'is-discovery' : ''}`}>
           {tab === 'chat' ? (
             home ? (
               <HomeView
