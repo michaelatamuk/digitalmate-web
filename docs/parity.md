@@ -33,7 +33,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Offline use | ✅ | Offline banner, cached PWA shell and local data |
 | Error resilience | ✅ | App error boundary with reload and local reset |
 | Local backup | ✅ | Export/import JSON in Settings; validated and scoped to app keys |
-| Home-screen widgets / atomic services | ❌ | Native only |
+| Home-screen widgets / atomic services | 🟡 | Android widget with refresh; Quick Settings tile and shortcuts approximate atomic services |
 
 ## A2UI and protocol
 
@@ -79,8 +79,8 @@ No components from the tracked native list remain. Future native additions may s
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile |
-| Unit tests | ✅ | 89 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts and profiles |
+| Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, covers, natural-language topics, sources, labs, welcome, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile and axe |
+| Unit tests | ✅ | 105 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts, profiles and discovery |
 | Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills and settings |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | ✅ | Capacitor 8 shell, widget, share and notifications |

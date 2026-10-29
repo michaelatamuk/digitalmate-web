@@ -134,6 +134,27 @@ function audioOf(record: Record<string, unknown>, base: string): string | undefi
   return undefined;
 }
 
+function imagesOf(record: Record<string, unknown>, rawHtml: string, base: string): string[] {
+  const images = new Set<string>();
+  const first = imageOf(record, rawHtml, base);
+  if (first) images.add(first);
+  const pattern = /<img[^>]+src=["']([^"']+)["']/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(rawHtml)) !== null && images.size < 6) {
+    images.add(normalize(match[1], base));
+  }
+  for (const value of [record['media:content'], record['media:thumbnail']]) {
+    for (const item of asArray<unknown>(value)) {
+      if (item && typeof item === 'object') {
+        const media = item as Record<string, unknown>;
+        const url = text(media['@_url']) || text(media['@_href']);
+        if (url && looksLikeImage(url, text(media['@_type']))) images.add(normalize(url, base));
+      }
+    }
+  }
+  return Array.from(images).slice(0, 6);
+}
+
 function itemOf(value: unknown, base: string): RssItem | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as Record<string, unknown>;
@@ -148,6 +169,7 @@ function itemOf(value: unknown, base: string): RssItem | null {
   );
   const summary = plainSummary(rawSummary);
   const image = imageOf(record, rawSummary, base);
+  const images = imagesOf(record, rawSummary, base);
   const audio = audioOf(record, base);
   const published =
     text(record.pubDate) ||
@@ -168,6 +190,7 @@ function itemOf(value: unknown, base: string): RssItem | null {
     published,
     author,
     ...(image ? { image } : {}),
+    ...(images.length > 0 ? { images } : {}),
     ...(audio ? { audio } : {})
   };
 }

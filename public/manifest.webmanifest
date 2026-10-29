@@ -8,6 +8,15 @@
   "orientation": "portrait",
   "background_color": "#f7f3ee",
   "theme_color": "#f3e6dc",
+  "share_target": {
+    "action": "./",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
   "icons": [
     {
       "src": "icon.svg",

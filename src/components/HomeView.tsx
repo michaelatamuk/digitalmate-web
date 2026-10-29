@@ -20,7 +20,9 @@ export function HomeView({
   personaName,
   personaAvatar,
   personaPrompts,
-  onOpenPersona
+  onOpenPersona,
+  recentTasks,
+  onOpenTasks
 }: {
   messages: Message[];
   reducedMotion: boolean;
@@ -31,6 +33,8 @@ export function HomeView({
   personaAvatar?: string;
   personaPrompts?: string[];
   onOpenPersona?: () => void;
+  recentTasks?: Array<{ id: string; title: string; status: string }>;
+  onOpenTasks?: () => void;
 }) {
   const { lang, tr, locale } = useI18n();
   const [now, setNow] = useState(() => new Date());
@@ -118,6 +122,26 @@ export function HomeView({
           </span>
           <Icon name="chevronRight" size={18} />
         </button>
+      ) : null}
+
+      {recentTasks && recentTasks.length > 0 ? (
+        <div className="recent-tasks">
+          <div className="section-label">
+            <span>{tr('Recent tasks', '最近任务')}</span>
+            <button type="button" onClick={onOpenTasks}>
+              {tr('View all', '查看全部')}
+              <Icon name="chevronRight" size={12} />
+            </button>
+          </div>
+          <div className="recent-task-row">
+            {recentTasks.slice(0, 3).map(task => (
+              <button type="button" className="recent-task" key={task.id} onClick={onOpenTasks}>
+                <span className={`task-dot is-${task.status}`} />
+                {task.title}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       <div className="home-suggestions">

@@ -33,8 +33,9 @@ import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment, validateAttachment, MAX_ATTACHMENTS } from './lib/attachments';
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
-import { nativeNotification, nativeShare, isNativeApp, configureNativeShell } from './lib/native';
+import { nativeNotification, nativeShare, isNativeApp, configureNativeShell, consumeSharedText, onNativeNotificationTap, consumeLaunchTab } from './lib/native';
 import { installDiagnostics } from './lib/diagnostics';
+import { dedupeCards } from './lib/discoveryExperience';
 import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
 import type { CapabilityOption, ModelOption, PersonaId, ProjectOption } from './data/personas';
 import { CapabilitiesSheet, ModelSheet, PersonaSheet, ProjectSheet, modelLabel } from './components/ComposerSheets';
@@ -188,6 +189,50 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const apply = (text: string) => {
+      if (cancelled || !text.trim()) return;
+      setComposer(text.trim());
+      setHome(false);
+      setTab('chat');
+      showToast(tr('Shared text added to the composer.', '已把分享内容放入输入框。'));
+    };
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get('text') || params.get('url') || '';
+    if (shared) apply(shared);
+    void consumeSharedText().then(apply);
+    return () => {
+      cancelled = true;
+    };
+    // Shared content is consumed once per launch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => onNativeNotificationTap(() => setSheet('tasks')), []);
+
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const apply = (tab: string) => {
+      if (tab === 'discover') {
+        setTab('discover');
+        setHome(false);
+      } else if (tab === 'chat') {
+        setTab('chat');
+        setHome(true);
+      }
+    };
+    void consumeLaunchTab().then(apply);
+    const listener = CapacitorApp.addListener('resume', () => {
+      void consumeLaunchTab().then(apply);
+    });
+    return () => {
+      void listener.then(handle => handle.remove());
+    };
+    // The native shell delivers a tab once per launch/resume.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     if (messages.some(message => message.streaming)) return;
     const timer = window.setTimeout(() => writeStorage(STORAGE_KEYS.messages, messages), 220);
     return () => window.clearTimeout(timer);
@@ -198,13 +243,13 @@ export default function App() {
     [feedSeed, rssCards, seed.seedCards]
   );
   const [allCards, setAllCards] = useState<FeedCard[]>(() =>
-    rotateCards([...rssCards, ...seed.seedCards], feedSeed)
+    dedupeCards(rotateCards([...rssCards, ...seed.seedCards], feedSeed))
   );
 
   useEffect(() => {
     let active = true;
     void discoveryTransport.load().then(cards => {
-      if (active) setAllCards(cards);
+      if (active) setAllCards(dedupeCards(cards));
     });
     return () => {
       active = false;
@@ -870,6 +915,7 @@ export default function App() {
         glyph: item.title.slice(0, 1).toUpperCase(),
         cover: palette[index % palette.length],
         image: item.image,
+        ...(item.images ? { images: item.images } : {}),
         kind: item.audio ? 'audio' : 'article',
         ...(item.audio ? { audioUrl: item.audio } : {}),
         readingTime: tr(`${minutes} min read`, `${minutes} 分钟阅读`),
@@ -984,7 +1030,11 @@ export default function App() {
             <TopBar
               left={<IconButton icon="back" label={tr('Back to home', '返回首页')} onClick={() => setHome(true)} />}
               title={tr('Chat', '对话')}
-              subtitle={busy ? tr('Working on task', '正在执行任务') : tr('Local demo · A2UI', '本地演示 · A2UI')}
+              subtitle={
+                busy
+                  ? tr('Working on task', '正在执行任务')
+                  : tr(`Local demo · ${activePersonaName}`, `本地演示 · ${activePersonaName}`)
+              }
               right={
                 <>
                   <IconButton icon="spark" label={tr('New chat', '新对话')} onClick={newChat} />
@@ -1033,6 +1083,8 @@ export default function App() {
                 personaAvatar={activePersonaDefinition.avatar}
                 personaPrompts={personaSuggestions(activePersona, lang)}
                 onOpenPersona={() => setSheet('persona')}
+                recentTasks={tasks.slice(0, 3).map(task => ({ id: task.id, title: task.title, status: task.status }))}
+                onOpenTasks={() => setSheet('tasks')}
               />
             ) : (
               <ChatView
@@ -1254,6 +1306,10 @@ export default function App() {
             onLanguageChange={changeLanguage}
             savedCount={saved.length}
             messageCount={messages.length + archived.length}
+            onOpenPersona={() => setSheet('persona')}
+            onOpenModel={() => setSheet('model')}
+            onOpenProject={() => setSheet('project')}
+            onOpenCapabilities={() => setSheet('capabilities')}
           />
         ) : null}
         {sheet === 'persona' ? (
@@ -1308,6 +1364,7 @@ export default function App() {
         {sheet === 'memory' ? (
           <MemorySheet
             profile={memory}
+            personaName={activePersonaName}
             onSave={profile => {
               setMemory(profile);
               showToast(tr('Memory saved locally.', '记忆已保存到本地。'));

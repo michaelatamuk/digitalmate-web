@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Share } from '@capacitor/share';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -36,8 +36,7 @@ export async function requestNativeNotificationPermission(): Promise<boolean | n
 }
 
 /** Returns true when a native local notification was scheduled. */
-export async function nativeNotification(title: string, body: string): Promise<boolean> {
-  if (!isNativeApp()) return false;
+export async function nativeNotification(title: string, body: string): Promise<boolean> {  if (!isNativeApp()) return false;
   const permission = await LocalNotifications.checkPermissions();
   if (permission.display !== 'granted') return false;
   await LocalNotifications.schedule({
@@ -51,4 +50,46 @@ export async function nativeNotification(title: string, body: string): Promise<b
     ]
   });
   return true;
+}
+
+const SharedText = registerPlugin<{ getSharedText: () => Promise<{ text: string }> }>('SharedText');
+
+/** Read text received from Android's share sheet, then clear it. */
+export async function consumeSharedText(): Promise<string> {
+  if (!isNativeApp()) return '';
+  try {
+    const result = await SharedText.getSharedText();
+    return typeof result.text === 'string' ? result.text : '';
+  } catch {
+    return '';
+  }
+}
+
+/** Call the handler when the user taps a local notification. */
+export function onNativeNotificationTap(handler: () => void): () => void {
+  if (!isNativeApp()) return () => undefined;
+  let remove = () => undefined as void;
+  void LocalNotifications.addListener('localNotificationActionPerformed', () => handler()).then(
+    listener => {
+      remove = () => {
+        void listener.remove();
+      };
+    }
+  );
+  return () => remove();
+}
+
+const SharedTextPluginRef = SharedText;
+
+/** Read a tab requested by a widget, shortcut or Quick Settings tile. */
+export async function consumeLaunchTab(): Promise<string> {
+  if (!isNativeApp()) return '';
+  try {
+    const result = await (SharedTextPluginRef as unknown as {
+      getLaunchTab: () => Promise<{ tab: string }>;
+    }).getLaunchTab();
+    return typeof result.tab === 'string' ? result.tab : '';
+  } catch {
+    return '';
+  }
 }

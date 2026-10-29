@@ -1,7 +1,7 @@
 {
   "name": "digitalmate-web",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "description": "Account-free bilingual web and Android companion for the DigitalMate app.",
   "scripts": {
@@ -9,6 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "lint": "tsc --noEmit",
+    "check:size": "node scripts/check-size.mjs",
     "start": "tsx services/bridge/index.ts",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",

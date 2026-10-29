@@ -6566,3 +6566,36 @@ a {
   align-self: flex-start;
   margin-top: 4px;
 }
+
+.detail-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 14px 0;
+}
+
+.detail-gallery img {
+  width: 100%;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: rgba(120, 96, 82, 0.08);
+}
+
+.detail-progress {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 3px;
+  border-radius: 999px;
+  background: #99604c;
+  transition: width 120ms linear;
+}
+
+.recent-tasks { margin-top: 16px; }
+.recent-task-row { display: flex; gap: 6px; overflow-x: auto; padding-top: 6px; scrollbar-width: none; }
+.recent-task-row::-webkit-scrollbar { display: none; }
+.recent-task { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; max-width: 220px; padding: 6px 10px; border: 1px solid rgba(120,96,82,0.14); border-radius: 999px; background: rgba(255,255,255,0.66); color: var(--ink-muted, #6f625a); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.task-dot { width: 6px; height: 6px; border-radius: 50%; background: #b07a45; }
+.task-dot.is-done { background: #5d7f73; }
+.task-dot.is-error, .task-dot.is-stopped { background: #a05a5a; }

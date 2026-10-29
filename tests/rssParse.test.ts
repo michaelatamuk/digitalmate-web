@@ -102,6 +102,7 @@ describe('RSS / Atom parser', () => {
     expect(feed.items[0].image).toBe('https://example.com/media.jpg');
     expect(feed.items[1].image).toBe('https://example.com/enclosure.png');
     expect(feed.items[2].image).toBe('https://example.com/inline.webp');
+    expect(feed.items[2].images).toContain('https://example.com/inline.webp');
   });
 
   it('extracts podcast audio from enclosures', () => {

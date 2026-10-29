@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="new_chat"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_new_chat_short"
+        android:shortcutLongLabel="@string/shortcut_new_chat">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.michaelatamuk.digitalmate"
+            android:targetClass="com.michaelatamuk.digitalmate.MainActivity" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="discover"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_discover_short"
+        android:shortcutLongLabel="@string/shortcut_discover">
+        <intent
+            android:action="android.intent.action.MAIN"
+            android:targetPackage="com.michaelatamuk.digitalmate"
+            android:targetClass="com.michaelatamuk.digitalmate.MainActivity">
+            <extra android:name="digitalmate_tab" android:value="discover" />
+        </intent>
+    </shortcut>
+</shortcuts>

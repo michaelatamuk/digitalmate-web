@@ -4,6 +4,7 @@ import { Icon } from './Icons';
 import { BeeBou } from './BeeBou';
 import { renderMarkdown } from '../lib/markdown';
 import { collectBackup, formatBytes, restoreBackup, serializeBackup, summarizeBackup } from '../lib/backup';
+import { STORAGE_KEYS } from '../lib/storage';
 import { createSkillBundle, parseSkillBundle, serializeSkillBundle } from '../lib/skillBundle';
 import { artifactDownloadContent, artifactFilename, artifactSlides } from '../lib/artifacts';
 import { parseMemoryProfile } from '../lib/memoryProfile';
@@ -534,7 +535,11 @@ export function SettingsSheet({
   onNotice,
   onLanguageChange,
   savedCount,
-  messageCount
+  messageCount,
+  onOpenPersona,
+  onOpenModel,
+  onOpenProject,
+  onOpenCapabilities
 }: {
   settings: Settings;
   onChange: (settings: Settings) => void;
@@ -544,6 +549,10 @@ export function SettingsSheet({
   onLanguageChange: (language: Language) => void;
   savedCount: number;
   messageCount: number;
+  onOpenPersona: () => void;
+  onOpenModel: () => void;
+  onOpenProject: () => void;
+  onOpenCapabilities: () => void;
 }) {
   const { tr, lang } = useI18n();
   const [orbitStatus, setOrbitStatus] = useState<OrbitHealth | null>(null);
@@ -773,6 +782,31 @@ export function SettingsSheet({
         </div>
         <p className="settings-note">
           {tr('Switching language resets the current conversation and discovery feed so everything uses the selected language.', '切换语言会重置当前对话和发现流，确保所有内容使用所选语言。')}
+        </p>
+      </div>
+
+      <div className="settings-group">
+        <span className="settings-label">{tr('Workspace', '工作区')}</span>
+        <div className="settings-actions">
+          <button type="button" className="secondary-action" onClick={onOpenPersona}>
+            <Icon name="user" size={14} />
+            {tr('Companion', '分身')}
+          </button>
+          <button type="button" className="secondary-action" onClick={onOpenModel}>
+            <Icon name="spark" size={14} />
+            {tr('Model', '模型')}
+          </button>
+          <button type="button" className="secondary-action" onClick={onOpenProject}>
+            <Icon name="grid" size={14} />
+            {tr('Project', '项目')}
+          </button>
+          <button type="button" className="secondary-action" onClick={onOpenCapabilities}>
+            <Icon name="plus" size={14} />
+            {tr('Tools', '工具')}
+          </button>
+        </div>
+        <p className="settings-note">
+          {tr('These are the same local choices shown above the composer.', '这些选项与输入框上方的本地选择相同。')}
         </p>
       </div>
 
@@ -1133,6 +1167,28 @@ export function SettingsSheet({
             {tr('Clear and reset', '清除并重置')}
           </button>
         </div>
+        <div className="settings-actions">
+          {[
+            { label: tr('Clear saved cards', '清除收藏'), key: STORAGE_KEYS.savedCards },
+            { label: tr('Clear RSS feeds', '清除 RSS'), key: STORAGE_KEYS.rssCards },
+            { label: tr('Clear read state', '清除已读'), key: STORAGE_KEYS.readCards },
+            { label: tr('Clear tasks', '清除任务'), key: STORAGE_KEYS.tasks }
+          ].map(item => (
+            <button
+              type="button"
+              className="secondary-action"
+              key={item.key}
+              onClick={() => {
+                if (!window.confirm(tr('Remove this local dataset?', '确定清除这份本地数据？'))) return;
+                window.localStorage.removeItem(item.key);
+                window.location.reload();
+              }}
+            >
+              <Icon name="trash" size={13} />
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="about-card">
@@ -1171,13 +1227,15 @@ export function MemorySheet({
   onSave,
   onForget,
   onClose,
-  onNotice
+  onNotice,
+  personaName
 }: {
   profile: MemoryProfile;
   onSave: (profile: MemoryProfile) => void;
   onForget: () => void;
   onClose: () => void;
   onNotice: (message: string) => void;
+  personaName?: string;
 }) {
   const { tr, lang } = useI18n();
   const [editing, setEditing] = useState(false);
@@ -1232,7 +1290,11 @@ export function MemorySheet({
   return (
     <Sheet
       title={tr('About you', '关于你')}
-      subtitle={tr('Long-term memory · local only, no account', '长期记忆 · 仅本地，无需账号')}
+      subtitle={
+        personaName
+          ? tr(`Long-term memory · ${personaName}`, `长期记忆 · ${personaName}`)
+          : tr('Long-term memory · local only, no account', '长期记忆 · 仅本地，无需账号')
+      }
       onClose={onClose}
       wide
     >
@@ -1791,6 +1853,7 @@ export function DetailView({
 }) {
   const { tr } = useI18n();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 0, behavior: 'auto' });
@@ -1812,7 +1875,12 @@ export function DetailView({
           <Icon name="bookmark" size={19} filled={saved} />
         </button>
       </header>
-      <div className="detail-scroll" ref={scrollRef}>
+      <div className="detail-scroll" ref={scrollRef} onScroll={event => {
+        const element = event.currentTarget;
+        const max = element.scrollHeight - element.clientHeight;
+        setProgress(max > 0 ? Math.min(100, (element.scrollTop / max) * 100) : 100);
+      }}>
+        <div className="detail-progress" style={{ width: `${progress}%` }} />
         <div className="detail-cover" style={{ background: card.cover }}>
           <img
             className="detail-cover-image"
@@ -1845,6 +1913,18 @@ export function DetailView({
           <div className="detail-content">
             {renderMarkdown(card.body.map(paragraph => paragraph).join('\n\n'))}
           </div>
+          {card.images && card.images.length > 1 ? (
+            <div className="detail-gallery">
+              {card.images.map((image, index) => (
+                <img
+                  key={`${card.id}-image-${index}`}
+                  src={image}
+                  alt={tr(`Article image ${index + 1}`, `文章图片 ${index + 1}`)}
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          ) : null}
           {card.audioUrl ? (
             <div className="detail-media">
               <span className="detail-media-label">
@@ -1901,7 +1981,11 @@ export function DetailView({
               {tr('Share', '分享')}
             </button>
             <a className="primary-action" href={card.url} target="_blank" rel="noreferrer">
-              {tr('Open original', '打开原文')}
+              {cardKind(card) === 'video'
+                ? tr('Open video', '打开视频')
+                : cardKind(card) === 'audio'
+                  ? tr('Open episode', '打开音频')
+                  : tr('Open original', '打开原文')}
               <Icon name="external" size={15} />
             </a>
           </div>

@@ -35,12 +35,14 @@ function makePdf(text: string): Buffer {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => {
-    window.localStorage.clear();
-    window.localStorage.setItem('digitalmate.web.v2.welcomeSeen.v1', 'true');
+  await page.addInitScript(() => {
+    if (!window.sessionStorage.getItem('dm-e2e-initialized')) {
+      window.localStorage.clear();
+      window.localStorage.setItem('digitalmate.web.v2.welcomeSeen.v1', 'true');
+      window.sessionStorage.setItem('dm-e2e-initialized', '1');
+    }
   });
-  await page.reload();
+  await page.goto('/');
 });
 
 test('home renders the shell and composer', async ({ page }) => {
@@ -191,6 +193,12 @@ test('opens local lab demos without side effects', async ({ page }) => {
   await expect(page.getByText('BIM dashboard')).toBeVisible();
   await page.getByRole('button', { name: /BIM dashboard/ }).click();
   await expect(page.getByText('82 kWh')).toBeVisible();
+  const scan = await new AxeBuilder({ page }).include('.sheet-layer').analyze();
+  expect(
+    scan.violations
+      .filter(violation => violation.impact === 'critical' || violation.impact === 'serious')
+      .map(violation => violation.id)
+  ).toEqual([]);
   await page.getByRole('button', { name: /All labs/ }).click();
   await page.getByRole('button', { name: /Checkout review/ }).click();
   await page.getByRole('button', { name: 'Review payment (demo)' }).click();
@@ -202,12 +210,15 @@ test('switches companion, model, project and tools locally', async ({ page }) =>
   await page.getByRole('button', { name: /Companion: Default companion/ }).click();
   await expect(page.getByText('Choose a companion')).toBeVisible();
   await page.getByRole('button', { name: /Food companion/ }).click();
-  await page.locator('.sheet-head .icon-button').click();
+  await expect(page.locator('.persona-row.is-active')).toContainText('Food companion');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.sheet-layer')).toHaveCount(0);
   await expect(page.locator('.context-chip.is-persona')).toContainText('Food companion');
 
   await page.locator('.context-chip').nth(1).click();
   await page.getByRole('button', { name: /Local · Fast/ }).click();
-  await page.locator('.sheet-head .icon-button').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.sheet-layer')).toHaveCount(0);
   await expect(page.locator('.context-chip').nth(1)).toContainText('Local · Fast');
 
   await page.locator('.context-toggle').click();
@@ -333,7 +344,7 @@ test('is installable and advertises account-free offline access', async ({ page 
 });
 
 test('previews and sends a local attachment without uploading', async ({ page }) => {
-  await page.locator('.composer-wrap input[type="file"]').setInputFiles({
+  await page.locator('.composer-wrap input[type="file"]:not([capture])').setInputFiles({
     name: 'notes.txt',
     mimeType: 'text/plain',
     buffer: Buffer.from('Local attachment preview works.')
@@ -351,7 +362,7 @@ test('previews and sends a local attachment without uploading', async ({ page })
 });
 
 test('extracts searchable text from a local PDF', async ({ page }) => {
-  await page.locator('.composer-wrap input[type="file"]').setInputFiles({
+  await page.locator('.composer-wrap input[type="file"]:not([capture])').setInputFiles({
     name: 'report.pdf',
     mimeType: 'application/pdf',
     buffer: makePdf('DigitalMate PDF test')

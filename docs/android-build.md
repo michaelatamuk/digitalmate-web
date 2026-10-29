@@ -75,10 +75,27 @@ cd android
 The Gradle file only applies the release signing config when `ANDROID_KEYSTORE_PATH` is set.
 Never commit a keystore or passwords.
 
-## Widget
+## Widget, shortcuts and Quick Settings
 
-Long-press the Android home screen → Widgets → DigitalMate. The widget is intentionally
-static and account-free; tapping it opens the app.
+Long-press the Android home screen → Widgets → DigitalMate. The widget is
+intentionally static and account-free; tapping it opens the app and the refresh
+action updates the widget.
+
+The app also registers:
+
+- App shortcuts for **New chat** and **Discover**
+- A Quick Settings tile (`DigitalMateTileService`)
+- A share-sheet target for `text/plain`; shared text is placed in the composer
+- Notification-tap routing back to the task list
+
+The tile and shortcuts are Android approximations of HarmonyOS atomic services.
+
+## Updates
+
+The web Settings screen checks the latest GitHub release and links to the APK
+or release page. The Android manifest requests `REQUEST_INSTALL_PACKAGES` so a
+downloaded APK can be installed through the system installer. A store-managed
+update flow is still future work.
 
 ## Remaining physical verification
 

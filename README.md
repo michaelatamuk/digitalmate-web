@@ -26,8 +26,9 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
-- 99 unit tests plus 26 Playwright UI, mobile and accessibility checks
-- Local-only diagnostics, backup/restore and PWA offline support
+- 105 unit tests plus 32 Playwright UI, mobile and accessibility checks
+- Companions, voice input, deep search toggle, labs demos and local-only diagnostics
+- Local backup/restore and PWA offline support
 
 The remaining product milestone is a physical-device regression pass and production
 authentication in front of a real Jiuwen/Orbit gateway. See
@@ -38,19 +39,21 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 
 | Area | Current behaviour |
 | --- | --- |
-| Home | Live clock, greeting, BeeBou welcome mascot, suggestions, continue-last-chat |
-| Chat | Transport streaming, task rows, execution trace, copy/share/retry/clear |
+| Home | Live clock, greeting, persona suggestions, BeeBou welcome mascot, continue-last-chat |
+| Companions | Seven local personas with notes, tone and suggested tasks |
+| Chat | Transport streaming, task rows, execution trace, copy/share/retry/clear, voice input and optional TTS |
 | Task shell | Local session/task rows with status, detail and retry |
 | Approvals | Approval cards, quota states and explicit failure surfaces |
 | Artifacts | Save replies with A2UI surfaces, slides view, browse, preview and download |
-| Attachments | Local picker, text/image preview, PDF text extraction; nothing uploaded |
+| Attachments | Multi-file queue with reorder, camera capture, text/image preview and PDF text extraction |
 | Transport | Mock chat + local discovery transports; optional Orbit bridge |
 | Orbit bridge | Delegated token, WSS/SSE stream, A2UI surfaces, retry and snapshots |
 | Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 36 components, 17 scenarios and a JSONL protocol demo |
-| Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
+| Discovery | Search, mixed media cards, natural-language topic edits, source toggles, reactions, saved cards, read state, share and RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
+| Labs | Local BIM, multi-task, deep search, train, map, ride, checkout, social and payment demos |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
@@ -58,7 +61,7 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 | Your data | Export/import a local JSON backup of chats, calendar, saved cards and settings |
 | Diagnostics | Optional local-only error log with sanitized messages, export and clear |
 | Guided demo | One-click scripted walkthrough of travel, calendar, food, discovery and memory |
-| Settings | Language, backend preference, notifications, trace, reduced motion, reset |
+| Settings | Language, backend preference, notifications, trace, reduced motion, TTS, GitHub update check and reset |
 | History | Archived conversations when starting a new chat |
 
 Scenarios currently include travel, hotel, ride, payment review, media, daily brief, weekly insights, shopping, food/coffee, social,

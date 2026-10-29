@@ -16,6 +16,20 @@ export function cardKind(card: Pick<FeedCard, 'kind' | 'source' | 'audioUrl'>): 
   return 'article';
 }
 
+export function dedupeCards(cards: FeedCard[]): FeedCard[] {
+  const seen = new Set<string>();
+  const output: FeedCard[] = [];
+  for (const card of cards) {
+    const url = card.url.trim().toLowerCase();
+    const specificUrl = url && !/^https?:\/\/[^/]+\/?$/.test(url) && !/^https?:\/\/[^/]+\/?\?/.test(url);
+    const key = specificUrl ? `url:${url}` : `title:${card.title.trim().toLowerCase()}`;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    output.push(card);
+  }
+  return output;
+}
+
 export function rankCards(
   cards: FeedCard[],
   reactions: Record<string, Reaction>,

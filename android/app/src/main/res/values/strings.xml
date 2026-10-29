@@ -6,4 +6,9 @@
     <string name="custom_url_scheme">com.michaelatamuk.digitalmate</string>
     <string name="widget_title">DigitalMate</string>
     <string name="widget_body">Local chats · no account</string>
+    <string name="widget_refresh">↻ Refresh</string>
+    <string name="shortcut_new_chat">New chat</string>
+    <string name="shortcut_discover">Discover</string>
+    <string name="shortcut_new_chat_short">Chat</string>
+    <string name="shortcut_discover_short">Discover</string>
 </resources>

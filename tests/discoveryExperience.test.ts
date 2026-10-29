@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardKind, parseTopicIntent, rankCards } from '../src/lib/discoveryExperience';
+import { cardKind, dedupeCards, parseTopicIntent, rankCards } from '../src/lib/discoveryExperience';
 import type { FeedCard } from '../src/types';
 
 const card = (id: string, source = 'rss', extra: Partial<FeedCard> = {}): FeedCard => ({
@@ -33,6 +33,16 @@ describe('discovery experience', () => {
     const cards = [card('a'), card('b'), card('c'), card('d')];
     const ranked = rankCards(cards, { a: 'dislike', c: 'like', d: 'save' }, ['d']);
     expect(ranked.map(item => item.id)).toEqual(['c', 'd', 'b', 'a']);
+  });
+
+  it('deduplicates by URL or title', () => {
+    const cards = [
+      card('a', 'rss', { url: 'https://example.com/x' }),
+      card('b', 'rss', { url: 'https://example.com/x' }),
+      card('c', 'rss', { url: '', title: 'Same title' }),
+      card('d', 'rss', { url: '', title: 'Same title' })
+    ];
+    expect(dedupeCards(cards).map(item => item.id)).toEqual(['a', 'c']);
   });
 
   it('parses natural-language topic edits', () => {
