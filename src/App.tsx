@@ -38,6 +38,8 @@ import { installDiagnostics } from './lib/diagnostics';
 import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
 import type { CapabilityOption, ModelOption, PersonaId, ProjectOption } from './data/personas';
 import { CapabilitiesSheet, ModelSheet, PersonaSheet, ProjectSheet, modelLabel } from './components/ComposerSheets';
+import { LabsSheet } from './components/LabsSheet';
+import { WelcomeDeck } from './components/WelcomeDeck';
 import { speakText, stopSpeaking } from './lib/voice';
 import { App as CapacitorApp } from '@capacitor/app';
 import { protocolDemoSurface } from './protocol/a2ui/demo';
@@ -95,6 +97,7 @@ export default function App() {
     'calendar'
   ]);
   const [deepSearch, setDeepSearch] = usePersistentState<boolean>(STORAGE_KEYS.deepSearch, false);
+  const [welcomeSeen, setWelcomeSeen] = usePersistentState<boolean>(STORAGE_KEYS.welcomeSeen, false);
   const [sheet, setSheet] = useState<SheetName>(null);
   const [detail, setDetail] = useState<FeedCard | null>(null);
   const [detailItem, setDetailItem] = useState<ItemDetail | null>(null);
@@ -946,6 +949,7 @@ export default function App() {
       <a className="skip-link" href="#main-content">
         {tr('Skip to main content', '跳到主要内容')}
       </a>
+      {!welcomeSeen ? <WelcomeDeck onDone={() => setWelcomeSeen(true)} /> : null}
       {!online ? (
         <div className="offline-banner" role="status">
           <Icon name="wifi" size={13} />
@@ -1213,8 +1217,10 @@ export default function App() {
             onProtocol={openProtocolDemo}
             onArtifacts={() => setSheet('artifacts')}
             onTasks={() => setSheet('tasks')}
+            onLabs={() => setSheet('labs')}
           />
         ) : null}
+        {sheet === 'labs' ? <LabsSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
         {sheet === 'skills' ? (
           <SkillsSheet
             skills={skills}

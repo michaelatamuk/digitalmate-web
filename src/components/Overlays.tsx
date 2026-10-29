@@ -20,6 +20,8 @@ import {
 import { A2uiSurfaceView } from './a2ui/A2uiSurfaceView';
 import { orbitHealth, resetOrbitSession } from '../transport/orbit';
 import type { OrbitHealth } from '../transport/orbit';
+import { checkLatestRelease, isNewerVersion } from '../lib/update';
+import type { ReleaseInfo } from '../lib/update';
 import { useI18n } from '../i18n/I18nContext';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -230,7 +232,8 @@ export function MoreSheet({
   onDemo,
   onProtocol,
   onArtifacts,
-  onTasks
+  onTasks,
+  onLabs
 }: {
   onClose: () => void;
   onSkills: () => void;
@@ -242,6 +245,7 @@ export function MoreSheet({
   onProtocol: () => void;
   onArtifacts: () => void;
   onTasks: () => void;
+  onLabs: () => void;
 }) {
   const { tr } = useI18n();
   const items = [
@@ -249,6 +253,7 @@ export function MoreSheet({
     { icon: 'grid' as const, title: tr('A2UI protocol demo', 'A2UI 协议演示'), subtitle: tr('Render a surface parsed from JSONL envelopes', '渲染由 JSONL 信封解析出的界面'), onClick: onProtocol },
     { icon: 'clock' as const, title: tr('Sessions & tasks', '会话与任务'), subtitle: tr('Local task rows with retry and details', '本地任务行，可重试与查看详情'), onClick: onTasks },
     { icon: 'bookmark' as const, title: tr('Artifacts', '成果'), subtitle: tr('Saved replies with local preview and export', '已保存的回复，可本地预览与导出'), onClick: onArtifacts },
+    { icon: 'grid' as const, title: tr('Labs', '实验室'), subtitle: tr('BIM, multi-task, maps and demo flows', 'BIM、多任务、地图与演示流程'), onClick: onLabs },
     { icon: 'spark' as const, title: tr('Skill center', '技能中心'), subtitle: tr('Install, enable and manage skills', '安装、启用和管理技能'), onClick: onSkills },
     { icon: 'heart' as const, title: tr('About you', '关于你'), subtitle: tr('Long-term memory and public profile', '长期记忆与公开画像'), onClick: onMemory },
     { icon: 'clock' as const, title: tr('History', '历史记录'), subtitle: tr('Return to a previous task', '回到之前完成的任务'), onClick: onHistory },
@@ -549,6 +554,9 @@ export function SettingsSheet({
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [diagnosticsOn, setDiagnosticsOn] = useState(() => isDiagnosticsEnabled());
   const [diagnostics, setDiagnostics] = useState(() => readDiagnostics());
+  const [release, setRelease] = useState<ReleaseInfo | null | undefined>(undefined);
+  const [releaseBusy, setReleaseBusy] = useState(false);
+  const [releaseError, setReleaseError] = useState('');
   const backupInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
@@ -638,6 +646,33 @@ export function SettingsSheet({
       onNotice(tr('Could not check for updates.', '无法检查更新。'));
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  const storageBytes = (() => {
+    try {
+      let total = 0;
+      for (let index = 0; index < window.localStorage.length; index += 1) {
+        const key = window.localStorage.key(index);
+        if (!key) continue;
+        total += key.length + (window.localStorage.getItem(key)?.length ?? 0);
+      }
+      return total * 2;
+    } catch {
+      return 0;
+    }
+  })();
+
+  const checkRelease = async () => {    setReleaseBusy(true);
+    setReleaseError('');
+    try {
+      const latest = await checkLatestRelease();
+      setRelease(latest);
+      if (!latest) setReleaseError(tr('No public release was found yet.', '还没有找到公开版本。'));
+    } catch {
+      setReleaseError(tr('Could not reach the release server.', '无法连接版本服务器。'));
+    } finally {
+      setReleaseBusy(false);
     }
   };
 
@@ -888,6 +923,50 @@ export function SettingsSheet({
       </div>
 
       <div className="settings-group">
+        <span className="settings-label">{tr('App updates', '应用更新')}</span>
+        <p className="settings-note">
+          {tr(
+            `Current version ${__APP_VERSION__}. The web build checks its offline cache; the Android build can also check GitHub releases.`,
+            `当前版本 ${__APP_VERSION__}。网页构建会检查离线缓存；Android 构建还可以检查 GitHub 版本。`
+          )}
+        </p>
+        <div className="settings-actions">
+          <button type="button" className="secondary-action" disabled={releaseBusy} onClick={() => void checkRelease()}>
+            <Icon name="refresh" size={14} />
+            {releaseBusy ? tr('Checking…', '检查中…') : tr('Check GitHub release', '检查 GitHub 版本')}
+          </button>
+          {release?.url ? (
+            <a className="secondary-action" href={release.url} target="_blank" rel="noreferrer">
+              <Icon name="external" size={14} />
+              {tr('Release notes', '版本说明')}
+            </a>
+          ) : null}
+        </div>
+        {releaseError ? <p className="settings-note">{releaseError}</p> : null}
+        {release ? (
+          isNewerVersion(release.version, __APP_VERSION__) ? (
+            <div className="release-card">
+              <strong>{tr(`Version ${release.version} is available`, `有可用版本 ${release.version}`)}</strong>
+              {release.notes ? <em>{release.notes}</em> : null}
+              <a
+                className="primary-action"
+                href={release.apkUrl ?? release.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Icon name="download" size={15} />
+                {release.apkUrl ? tr('Download APK', '下载 APK') : tr('Open release', '打开发布页')}
+              </a>
+            </div>
+          ) : (
+            <p className="settings-note">
+              {tr(`You are on the latest release (${release.version}).`, `已是最新版本（${release.version}）。`)}
+            </p>
+          )
+        ) : null}
+      </div>
+
+      <div className="settings-group">
         <span className="settings-label">{tr('Your data', '你的数据')}</span>
         <p className="settings-note">
           {tr(
@@ -1003,6 +1082,15 @@ export function SettingsSheet({
                     `${diagnostics.length} local entries stored.`,
                     `已保存 ${diagnostics.length} 条本地记录。`
                   )}
+          </span>
+        </div>
+        <div className="offline-line">
+          <Icon name="info" size={13} />
+          <span>
+            {tr(
+              `${Math.max(1, Math.round(storageBytes / 1024))} KB stored · ${import.meta.env.PROD ? 'production' : 'development'} · ${navigator.onLine ? 'online' : 'offline'}`,
+              `已存储 ${Math.max(1, Math.round(storageBytes / 1024))} KB · ${import.meta.env.PROD ? '生产' : '开发'} · ${navigator.onLine ? '在线' : '离线'}`
+            )}
           </span>
         </div>
         <div className="settings-actions">

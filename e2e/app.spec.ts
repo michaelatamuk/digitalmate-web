@@ -35,8 +35,12 @@ function makePdf(text: string): Buffer {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => window.localStorage.clear());
   await page.goto('/');
+  await page.evaluate(() => {
+    window.localStorage.clear();
+    window.localStorage.setItem('digitalmate.web.v2.welcomeSeen.v1', 'true');
+  });
+  await page.reload();
 });
 
 test('home renders the shell and composer', async ({ page }) => {
@@ -167,6 +171,30 @@ test('saves a reply as a local artifact and previews it', async ({ page }) => {
   await expect(page.locator('.artifact-preview')).toContainText('coffee');
   await expect(page.locator('.artifact-preview')).toContainText('sources');
   await expect(page.locator('.artifact-surface .a2ui-surface')).toBeVisible();
+});
+
+test('shows the welcome deck on a first visit', async ({ page }) => {
+  await page.evaluate(() => window.localStorage.removeItem('digitalmate.web.v2.welcomeSeen.v1'));
+  await page.reload();
+  await expect(page.getByText('Start with a real task')).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Tune your discovery feed')).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Account-free by design')).toBeVisible();
+  await page.getByRole('button', { name: 'Start using DigitalMate' }).click();
+  await expect(page.locator('.welcome-layer')).toHaveCount(0);
+});
+
+test('opens local lab demos without side effects', async ({ page }) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Labs/ }).click();
+  await expect(page.getByText('BIM dashboard')).toBeVisible();
+  await page.getByRole('button', { name: /BIM dashboard/ }).click();
+  await expect(page.getByText('82 kWh')).toBeVisible();
+  await page.getByRole('button', { name: /All labs/ }).click();
+  await page.getByRole('button', { name: /Checkout review/ }).click();
+  await page.getByRole('button', { name: 'Review payment (demo)' }).click();
+  await expect(page.getByText(/payment is not available|不提供支付/)).toBeVisible();
 });
 
 test('switches companion, model, project and tools locally', async ({ page }) => {
