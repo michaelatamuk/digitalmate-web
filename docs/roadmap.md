@@ -1,6 +1,10 @@
 # Roadmap
 
-## Phase 0 — Standalone mock (current)
+Legend: `[x]` done · `[ ]` planned · **(S)** small · **(M)** medium · **(L)** large.
+“Local” means it works without an account or backend; “bridge” means it needs the
+optional Orbit bridge or another service.
+
+## Phase 0 — Standalone mock (complete)
 
 - [x] React + Vite + TypeScript app
 - [x] English and Chinese UI with persisted language choice
@@ -68,7 +72,12 @@
 - [x] Point `VITE_API_BASE` at an optional hosted bridge for RSS/Orbit
 - [x] Native notifications, widget and sharing
 - [x] Automated debug APK build and release signing configuration
-- [ ] Physical device regression (notifications, share sheet, widget, keyboard, back button)
+- [x] Version 0.3.0 installed and verified on the test device
+- [ ] Physical device regression: notifications permission and delivery (M)
+- [ ] Physical device regression: native share sheet (S)
+- [ ] Physical device regression: widget placement and refresh (S)
+- [ ] Physical device regression: keyboard + safe areas (S)
+- [ ] Physical device regression: back gesture from detail sheets, discovery and chat (S)
 
 ## Phase 5 — Production hardening
 
@@ -79,9 +88,146 @@
 - [x] GitHub Pages deploy workflow for the static/PWA build
 - [x] Local JSON backup and restore
 - [x] Wider automated accessibility coverage across Home, Chat, Discover, More, Skills and Settings (see `docs/accessibility.md`)
-- [ ] Manual screen-reader pass on a physical device
+- [ ] Manual screen-reader pass on a physical device (M)
 - [x] Deployment pipeline and environment configuration: container smoke job, `/healthz`, env template and operations runbook (`docs/operations.md`)
 - [x] Privacy-reviewed local-only diagnostics with sanitized messages, export and clear (`src/lib/diagnostics.ts`)
 - [x] Branding and asset licensing finalised (`docs/branding.md`, photo credits, NOTICE)
 - [x] Threat model documented in `docs/threat-model.md`
 - [x] Credential rotation runbook, origin allowlist and production config warnings
+
+## Phase 6 — UX parity with the original app
+
+This phase covers user-visible behaviour only. Items marked “bridge” cannot be
+completed without a real service, but their UI/fallbacks can be built locally.
+
+### 6.1 Defaults and content alignment
+
+- [x] Use the general companion as the default behaviour with no skill preselected
+- [x] Keep a chosen skill selected across sends and store it on the task record
+- [x] Default Discover to **All topics**, matching the original’s mixed feed
+- [x] Clear topic filters on reset and language switch
+- [x] Add a Robotics demo article so every topic chip has content (EN + ZH)
+- [x] Prefer topic stock photos over source photos; keep real RSS images first
+- [ ] One-time migration from the old “AI & Tech + HarmonyOS” stored filter (S)
+- [ ] Rename “General assistant” to the upstream “Default companion / 默认分身” (S)
+- [ ] Keep skill labels/descriptions translated with the persona catalog (S)
+
+### 6.2 Assistant, personas and composer
+
+- [ ] Add the seven upstream personas: default, food, travel, work, entertainment, game, shopping (M)
+- [ ] Persona picker in the composer, replacing the flat skill pill row (M)
+- [ ] Per-persona soul, skills and memory files stored locally (M)
+- [ ] Persona-aware mock responses and suggested prompts (M)
+- [ ] Persona-aware home greeting and suggestion cards (S)
+- [ ] Persona status/“using for this task” chip in chat (S)
+- [ ] Persona editor screen for soul, skills and memory (M)
+- [ ] Integrate persona switching with About You / memory sheet (S)
+- [ ] Model picker in the composer (local mock list; bridge models later) (M)
+- [ ] Project-directory picker using Capacitor Filesystem / File System Access API (M)
+- [ ] Capability + MCP picker UI with local validation (execution is bridge-only) (M)
+- [ ] Deep-search toggle and local progress panel (M)
+- [ ] Multi-file queue with reorder/remove and per-file status (M)
+- [ ] Rich image preview and camera capture for attachments (M)
+- [ ] Propagate the selected skill/persona to `ChatTransport`, not only the task row (M)
+- [ ] Persist composer selections per session (M)
+
+### 6.3 Voice and media
+
+- [ ] Hold-to-talk voice input with level meter, cancel and transcript editing (M)
+- [ ] Web Speech API fallback where supported (S)
+- [ ] Android native speech-recognition plugin and microphone permission (M)
+- [ ] Voice topic editing on Discover (“more robotics and open source”) (M)
+- [ ] Text-to-speech for assistant replies with stop/rate controls (S)
+- [ ] Podcast/audio playback from RSS enclosures (S)
+- [ ] Background audio + media notification on Android (L)
+- [ ] YouTube/Bilibili external-app opening on Android (S)
+- [ ] Embedded YouTube/Bilibili playback on web where CSP and network allow (M)
+
+### 6.4 Discovery experience
+
+- [ ] Mixed card kinds: video, article, discussion and audio (M)
+- [ ] Article reader with inline images, galleries and reading progress (M)
+- [ ] Discussion/thread cards with reply previews (M)
+- [ ] Natural-language topic editing with a local rules parser (S)
+- [ ] Preference learning from likes, saves and reactions, with local re-ranking (M)
+- [ ] Preference-tag editor: add, remove and reorder interests (M)
+- [ ] Source management: enable/disable sources and show source status (M)
+- [ ] Deduplication and “continue where you left off” read state (M)
+- [ ] Feed pagination/infinite scroll with local inventory (M)
+- [ ] PWA share target so links can be sent into Discover (M)
+- [ ] Android share-intent filters for links and text (M)
+- [ ] Graceful fallback when a media URL cannot be embedded or played (S)
+
+### 6.5 Home, settings and utility screens
+
+- [ ] Startup splash and welcome card deck (S)
+- [ ] Resume a specific recent task, not only the last chat (M)
+- [ ] In-app update card: check GitHub APK version, download and launch installer (M)
+- [ ] Expanded diagnostics panel with build info, storage usage and connection state (S)
+- [ ] Settings sections for models, MCP services, projects and sources (M)
+- [ ] Optional bridge/connection status panel without any account (S)
+- [ ] App update dialog and changelog display (S)
+- [ ] Local data management page with per-dataset clear actions (M)
+
+### 6.6 Experimental and demo screens
+
+- [ ] BIM dashboard and detail demo with local sample data (L)
+- [ ] Multi-task page with local lanes, artifacts and retry (L)
+- [ ] Deep-search panel with staged progress and source list (M)
+- [ ] Train presale flow as a mock UI, clearly marked non-transactional (M)
+- [ ] Food store map + location picker using OSM/MapLibre (M)
+- [ ] Ride driver map, ETA and status mock (M)
+- [ ] Checkout overlay mock with no real payment path (M)
+- [ ] Social hub read-only/mock view (M)
+- [ ] Full-screen receiving-account/payment demo, clearly non-transactional (S)
+- [ ] App-wide empty/loading/error states for every new screen (S)
+
+### 6.7 Android/native additions
+
+- [ ] Android speech recognition + TTS integration (M)
+- [ ] MapLibre/Google Maps integration for food and ride demos (M)
+- [ ] APK update check, download and `REQUEST_INSTALL_PACKAGES` flow (M)
+- [ ] Native splash screen matching the web splash (S)
+- [ ] Widget refresh button and deep links into chat/discover (M)
+- [ ] App shortcuts and a Quick Settings tile approximating atomic services (M)
+- [ ] Camera/file picker plugins for attachments (M)
+- [ ] Notification tap routing to the relevant task (M)
+- [ ] Background audio service and media notification (L)
+- [ ] Keyboard, safe-area and back-gesture E2E coverage on device (M)
+
+## Phase 7 — Engineering follow-up
+
+- [ ] Push the local defaults commit (`770031a`) and let Pages deploy (S)
+- [ ] Run the full Playwright suite after the defaults change (S)
+- [ ] Rebuild, version-bump and install the Android APK with the new UX (S)
+- [ ] Add E2E coverage for personas, voice, discovery ranking and new screens (L)
+- [ ] Extend axe coverage to every new sheet and demo screen (M)
+- [ ] Update `docs/parity.md` statuses and test counts (S)
+- [ ] Upgrade CI actions off deprecated Node 20 versions (S)
+- [ ] Add lint/format scripts and run them in CI (M)
+- [ ] Implement reconnect reconciliation and snapshot recovery for Orbit turns (L)
+- [ ] Run the container smoke test locally, not only in CI (S)
+- [ ] Review dependency licenses before any commercial distribution (S)
+- [ ] Add performance budgets for bundle size and feed images (M)
+- [ ] Keep README screenshots and feature table in sync with the roadmap (S)
+
+## Not planned (with reasons)
+
+- **HarmonyOS atomic services** — platform-specific; Android can only approximate with widgets, shortcuts and tiles.
+- **Real MCP/tool execution** — requires a server-side runtime; the UI and local validation can ship first.
+- **Huawei/AGC account login** — conflicts with the account-free product direction.
+- **Real payments, receiving accounts, checkout or orders** — regulated and out of scope; demos stay clearly non-transactional.
+- **Real multi-platform discovery without a proxy** — YouTube/X/Reddit and similar sources need API keys or a server proxy.
+- **Full cloud session restore** — requires Orbit or another session service.
+- **Real train, food or ride booking** — requires official provider APIs and legal agreements.
+- **Background cloud tasks** — requires a server that keeps tasks alive after the app closes.
+
+## Recommended order
+
+1. **Personas + composer pickers** (6.2) — largest parity gap, fully local.
+2. **Voice input + TTS** (6.3) — second largest, needs one native plugin.
+3. **Discovery topic editing + preference ranking + mixed media** (6.4).
+4. **Home splash/welcome deck and app update card** (6.5) — quick wins.
+5. **Physical Android regression and manual screen-reader pass** (Phase 4/5).
+6. **Experimental screens and maps** (6.6) only after the core UX is stable.
+7. **Engineering follow-up** (Phase 7) continuously alongside the above.
