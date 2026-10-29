@@ -1042,6 +1042,7 @@ export function DetailView({
   onClose,
   onReact,
   onSave,
+  onShare,
   onOpenRelated
 }: {
   card: FeedCard;
@@ -1051,6 +1052,7 @@ export function DetailView({
   onClose: () => void;
   onReact: (reaction: Reaction) => void;
   onSave: () => void;
+  onShare: () => void;
   onOpenRelated: (card: FeedCard) => void;
 }) {
   const { tr } = useI18n();
@@ -1117,6 +1119,10 @@ export function DetailView({
             <button type="button" className="secondary-action" onClick={onSave}>
               <Icon name="bookmark" size={16} filled={saved} />
               {saved ? tr('Saved', '已收藏') : tr('Save', '收藏')}
+            </button>
+            <button type="button" className="secondary-action" onClick={onShare}>
+              <Icon name="share" size={16} />
+              {tr('Share', '分享')}
             </button>
             <a className="primary-action" href={card.url} target="_blank" rel="noreferrer">
               {tr('Open original', '打开原文')}

@@ -56,6 +56,42 @@ test('protocol demo renders JSONL-driven components', async ({ page }) => {
   await expect(page.locator('.skeleton-card')).toBeVisible();
 });
 
+test('searches the local discovery feed', async ({ page }) => {
+  await page.getByRole('button', { name: 'Discover' }).click();
+  const cards = page.locator('.feed-card');
+  const initial = await cards.count();
+  expect(initial).toBeGreaterThan(1);
+  const firstTitle = await page.locator('.feed-card h2').first().innerText();
+
+  await page.getByRole('textbox', { name: 'Search feed' }).fill(firstTitle);
+  await expect(cards).toHaveCount(1);
+  await expect(page.locator('.feed-card h2').first()).toHaveText(firstTitle);
+
+  await page.getByRole('button', { name: 'Clear search' }).first().click();
+  await expect(cards).toHaveCount(initial);
+});
+
+test('shares a saved article from the detail view', async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { __shared: string | null }).__shared = null;
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async (data: { text?: string }) => {
+        (window as unknown as { __shared: string | null }).__shared = data.text ?? '';
+      }
+    });
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Discover' }).click();
+  const title = await page.locator('.feed-card h2').first().innerText();
+  await page.locator('.feed-card').first().click();
+  await page.locator('.detail-actions').getByRole('button', { name: 'Share' }).click();
+  const shared = await page.evaluate(
+    () => (window as unknown as { __shared: string | null }).__shared
+  );
+  expect(shared).toContain(title);
+});
+
 test('is installable and advertises account-free offline access', async ({ page }) => {
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
   await page.getByRole('button', { name: 'More' }).click();

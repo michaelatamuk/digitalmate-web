@@ -22,7 +22,7 @@ real Jiuwen/Orbit-connected client and, later, an Android app.
 - A2UI JSONL parser and surface store with a protocol-driven demo surface
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser
-- 52 unit tests plus 14 Playwright UI, mobile and accessibility checks
+- 52 unit tests plus 16 Playwright UI, mobile and accessibility checks
 - Responsive phone UI that runs in Chrome
 - `npm run build`, `npm test` and the GitHub Actions build are expected to pass
 
@@ -42,7 +42,7 @@ Jiuwen/Orbit gateway. See [docs/roadmap.md](docs/roadmap.md) and
 | Memory | Editable local profile with evidence notes; forget everything |
 | Card details | Travel, train and food cards open a detail sheet with source and copy actions |
 | A2UI | Declarative renderer for 31 components, 13 scenarios and a JSONL protocol demo |
-| Discovery | Topic/source filters, reactions, saved cards, detail reader, real RSS/Atom import |
+| Discovery | Local search, topic/source filters, reactions, saved cards, share, RSS import |
 | Skills | Install, enable, disable and uninstall demo skills |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |

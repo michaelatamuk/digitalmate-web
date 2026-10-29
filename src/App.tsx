@@ -961,6 +961,7 @@ export default function App() {
               toggleSave(detail.id);
               showToast(saved.includes(detail.id) ? tr('Removed from saved.', '已取消收藏。') : tr('Saved locally.', '已收藏到本地。'));
             }}
+            onShare={() => void shareText(`${detail.title}\n\n${detail.summary}\n${detail.url}`)}
             onOpenRelated={setDetail}
           />
         ) : null}

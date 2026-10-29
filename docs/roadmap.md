@@ -42,6 +42,7 @@
 
 ## Phase 3 — Feature parity
 
+- [x] Discovery local search and article/reply sharing
 - [ ] Orbit room/session/task shell
 - [x] Stop, retry, copy, share and clear a message exchange
 - [ ] Long-press and per-task detail rows

@@ -39,6 +39,25 @@ export class MockChatTransport implements ChatTransport {
   ): Promise<void> {
     const reply = replyFor(request.text, request.lang, this.calendarEvents);
 
+    if (this.timingScale <= 0) {
+      if (signal.aborted) return;
+      reply.thinking.forEach((step, index) => {
+        onEvent({
+          type: 'thinking',
+          step,
+          steps: reply.thinking,
+          index,
+          total: reply.thinking.length
+        });
+      });
+      if (signal.aborted) return;
+      onEvent({ type: 'text', text: reply.text });
+      if (reply.surface) onEvent({ type: 'surface', surface: reply.surface });
+      if (reply.followUps) onEvent({ type: 'followUps', followUps: reply.followUps });
+      onEvent({ type: 'done' });
+      return;
+    }
+
     if (!(await wait(280 * this.timingScale, signal))) return;
 
     for (let index = 0; index < reply.thinking.length; index += 1) {

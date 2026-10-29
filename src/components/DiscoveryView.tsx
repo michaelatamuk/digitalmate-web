@@ -37,18 +37,24 @@ export function DiscoveryView({
   const { lang, tr } = useI18n();
   const { discoverySources, topicOptions } = seedFor(lang);
   const [activeSource, setActiveSource] = useState('all');
+  const [query, setQuery] = useState('');
   const [rssOpen, setRssOpen] = useState(false);
   const [rssName, setRssName] = useState('');
   const [rssUrl, setRssUrl] = useState('');
   const [rssBusy, setRssBusy] = useState(false);
 
   const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase();
     return cards.filter(card => {
       if (activeSource !== 'all' && card.source !== activeSource) return false;
       if (topics.length > 0 && !topics.includes(card.topic)) return false;
-      return true;
+      if (!needle) return true;
+      const haystack = [card.title, card.summary, card.sourceLabel, card.topic, ...card.tags]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(needle);
     });
-  }, [activeSource, cards, topics]);
+  }, [activeSource, cards, query, topics]);
 
   const sourceCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -124,6 +130,20 @@ export function DiscoveryView({
             '点击主题调整推荐。演示版会立即过滤本地库存；真实版本会把反馈写入兴趣记忆并触发补货。'
           )}
         </p>
+        <div className="search-field">
+          <Icon name="search" size={16} />
+          <input
+            value={query}
+            onChange={event => setQuery(event.target.value)}
+            placeholder={tr('Search titles, sources and tags', '搜索标题、来源和标签')}
+            aria-label={tr('Search feed', '搜索发现流')}
+          />
+          {query ? (
+            <button type="button" className="icon-button" aria-label={tr('Clear search', '清除搜索')} onClick={() => setQuery('')}>
+              <Icon name="close" size={14} />
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="source-strip" role="tablist" aria-label={tr('Content sources', '内容来源')}>
@@ -182,19 +202,42 @@ export function DiscoveryView({
       ) : null}
 
       <div className="feed-meta">
-        <span>{tr(`${visible.length} items · local inventory`, `${visible.length} 条内容 · 本地库存`)}</span>
+        <span>
+          {query.trim()
+            ? tr(`${visible.length} results for “${query.trim()}”`, `“${query.trim()}” 的 ${visible.length} 条结果`)
+            : tr(`${visible.length} items · local inventory`, `${visible.length} 条内容 · 本地库存`)}
+        </span>
         <span>{tr(`${new Set(visible.map(card => card.source)).size} sources enabled`, `已启用 ${new Set(visible.map(card => card.source)).size} 个来源`)}</span>
       </div>
 
       {visible.length === 0 ? (
         <div className="empty-state">
           <div className="empty-orb">
-            <Icon name="compass" size={26} />
+            <Icon name={query.trim() ? 'search' : 'compass'} size={26} />
           </div>
-          <strong>{tr('No content for this combination', '这个组合还没有内容')}</strong>
-          <p>{tr('Try another source or clear the topic filters.', '换一个来源，或者清除主题过滤。')}</p>
-          <button type="button" className="primary-action" onClick={() => { setActiveSource('all'); onClearTopics(); }}>
-            {tr('View all', '查看全部')}
+          <strong>
+            {query.trim()
+              ? tr('No local matches', '本地没有匹配内容')
+              : tr('No content for this combination', '这个组合还没有内容')}
+          </strong>
+          <p>
+            {query.trim()
+              ? tr('Try a shorter search or clear the source and topic filters.', '试试更短的关键词，或清除来源与主题过滤。')
+              : tr('Try another source or clear the topic filters.', '换一个来源，或者清除主题过滤。')}
+          </p>
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => {
+              if (query.trim()) {
+                setQuery('');
+                return;
+              }
+              setActiveSource('all');
+              onClearTopics();
+            }}
+          >
+            {query.trim() ? tr('Clear search', '清除搜索') : tr('View all', '查看全部')}
           </button>
         </div>
       ) : (
