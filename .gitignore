@@ -18,3 +18,17 @@ Thumbs.db
 .tmp-apk-new/
 
 .tmp-apk*/
+
+# Other agent harness workspace/memory files (not part of DigitalMate)
+/AGENT.md
+/HEARTBEAT.md
+/IDENTITY.md
+/SOUL.md
+/USER.md
+/agents/
+/coding_memory/
+/context/
+/memory/
+/messages/
+/skills/
+/todo/
