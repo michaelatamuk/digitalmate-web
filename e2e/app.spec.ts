@@ -553,6 +553,10 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });
   await page.locator('.hive-question textarea').fill('Keep it as a draft');
+  // Answer drafts survive a lane switch: they belong to the question, not the composer.
+  await page.getByRole('tab', { name: /Ledger/ }).click();
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await expect(page.locator('.hive-question textarea')).toHaveValue('Keep it as a draft');
   await page.getByRole('button', { name: 'Send answer' }).click();
   await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Done', {
     timeout: 10_000
@@ -599,8 +603,26 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await expect(page.locator('.hive-task-row').first()).toBeVisible();
 });
 
-test('core screens have no serious accessibility violations', async ({ page }) => {
-  test.setTimeout(120_000);
+test('stops a Bee only after confirming', async ({ page }) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await page.getByRole('tab', { name: /Ledger/ }).click();
+  await page.locator('.hive-composer textarea').fill('Draft an email to Carol about the contract');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });
+
+  // Stop is destructive: the first press asks, and cancelling leaves the Bee waiting.
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  await expect(page.getByText('Stop this task?')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep working' }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Needs you');
+
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  await page.getByRole('button', { name: 'Stop task' }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Stopped');
+});
+
+test('core screens have no serious accessibility violations', async ({ page }) => {  test.setTimeout(120_000);
   const scan = async (label: string) => {
     const result = await new AxeBuilder({ page }).analyze();
     const issues = result.violations

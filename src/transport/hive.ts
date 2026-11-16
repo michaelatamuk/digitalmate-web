@@ -52,6 +52,8 @@ export interface HiveTransport {
   send: (input: HiveSendInput) => Promise<string>;
   control: (taskId: string, action: 'steer' | 'queue' | 'preempt', text: string) => Promise<void>;
   answer: (taskId: string, questionId: string, text: string) => Promise<void>;
+  /** Keeps the unsent answer with its question; no network call is implied. */
+  saveAnswerDraft: (taskId: string, questionId: string, text: string) => void;
   stop: (taskId: string) => Promise<void>;
   eraseArtifact: (artifactId: string) => void;
   markActivityRead: (laneId: string) => void;
@@ -334,6 +336,7 @@ export class MockHiveTransport implements HiveTransport {
       throw new Error('This question can no longer be answered.');
     }
     task.question.answer = answer;
+    task.question.draft = undefined;
     task.status = 'running';
     task.step = 'Using your answer';
     task.steering.push(answer);
@@ -355,6 +358,15 @@ export class MockHiveTransport implements HiveTransport {
     const task = this.tasks.find(item => item.id === taskId);
     if (!task) return;
     this.stopTask(task.laneId, 'Stopped by you.');
+  }
+
+  saveAnswerDraft(taskId: string, questionId: string, text: string): void {
+    const task = this.tasks.find(item => item.id === taskId);
+    if (!task || !task.question || task.question.id !== questionId || task.question.answer) return;
+    task.question.draft = text;
+    // No emit: the field is controlled by this value and re-rendering on each keystroke would fight
+    // the cursor. Persisting keeps the draft across a reload or a lane switch.
+    this.persist();
   }
 
   eraseArtifact(artifactId: string): void {

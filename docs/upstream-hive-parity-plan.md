@@ -145,6 +145,20 @@ Shipped:
 - Tests: mock dedupe by operation id, bridge retry reusing the id, no retry offered for a 409, and
   an E2E pass that types in Forge, switches to Ledger, returns and finds the draft intact
 
+## Implementation slice 10 (2026-11-16): Stop confirmation and answer drafts
+
+Shipped:
+
+- Stop is now two steps inside the task header (`Stop` → `Stop this task?` with **Keep working** /
+  **Stop task**); cancelling leaves the Bee waiting, confirming stops it
+- Answer drafts live on the question (`HiveQuestion.draft`), are written through
+  `saveAnswerDraft()`, and clear when the answer is sent; a local echo keeps typing smooth
+- Fixed a real bug found by the new E2E: the lane-switch handler still cleared the answer on every
+  switch, so the question field always came back empty. Composer drafts were unaffected, which is
+  why the earlier per-lane draft test passed
+- Tests: answer draft lifecycle in the mock, an E2E that types an answer, switches lanes, returns
+  and finds it, and an E2E that cancels then confirms a Stop
+
 Still to do in the Hive slice:
 
 - server-side `/api/hive/*` implementation, run/task mapping and dedupe (contract frozen)

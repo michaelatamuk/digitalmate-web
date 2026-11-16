@@ -52,7 +52,8 @@ export function HiveSheet({
   // Drafts and attachments are kept per lane, so switching Bees never discards unsent work.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [attachmentsByLane, setAttachmentsByLane] = useState<Record<string, string[]>>({});
-  const [answer, setAnswer] = useState('');
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [confirmStopId, setConfirmStopId] = useState('');
   const [busy, setBusy] = useState(false);
   const [openArtifact, setOpenArtifact] = useState('');
   const [view, setView] = useState<'tasks' | 'activity' | 'memory'>('tasks');
@@ -94,6 +95,17 @@ export function HiveSheet({
     snapshot.tasks.find(task => task.id === snapshot.selectedTaskId) ??
     openTask ??
     (lane ? latestTask(snapshot.tasks, lane.id) : undefined);
+  // Answer drafts are kept in two places: the local echo keeps typing smooth, and the question's
+  // draft field makes the text survive a lane switch or a reload.
+  const answerKey = selectedTask?.question?.id ?? '';
+  const answer = answerKey
+    ? (answers[answerKey] ?? selectedTask?.question?.draft ?? '')
+    : '';
+  const setAnswer = (value: string): void => {
+    if (!answerKey || !selectedTask?.question) return;
+    setAnswers(current => ({ ...current, [answerKey]: value }));
+    hive.saveAnswerDraft(selectedTask.id, answerKey, value);
+  };
   const laneMessages = snapshot.messages
     .filter(message => message.laneId === lane?.id)
     .slice(-6);
@@ -193,7 +205,11 @@ export function HiveSheet({
       () => hive.answer(selectedTask.id, question.id, answer),
       tr('Answer sent.', '答复已发送。')
     );
-    setAnswer('');
+    setAnswers(current => {
+      const next = { ...current };
+      delete next[question.id];
+      return next;
+    });
   };
 
   return (
@@ -276,7 +292,6 @@ export function HiveSheet({
                 key={item.id}
                 onClick={() => {
                   hive.selectLane(item.id);
-                  setAnswer('');
                   setView('tasks');
                 }}
               >
@@ -302,7 +317,6 @@ export function HiveSheet({
               className={`hive-lane ${lane?.id === 'beebou' ? 'is-active' : ''}`}
               onClick={() => {
                 hive.selectLane('beebou');
-                setAnswer('');
               }}
             >
               <span className="hive-avatar" style={{ background: '#a06b58' }}>✦</span>
@@ -517,14 +531,37 @@ export function HiveSheet({
                         <h3>{selectedTask.title}</h3>
                       </div>
                       {selectedTask.status === 'running' || selectedTask.status === 'waiting_user' ? (
-                        <button
-                          type="button"
-                          className="secondary-action"
-                          onClick={() => act(() => hive.stop(selectedTask.id), tr('Stopped.', '已停止。'))}
-                        >
-                          <Icon name="close" size={13} />
-                          {tr('Stop', '停止')}
-                        </button>
+                        confirmStopId === selectedTask.id ? (
+                          <div className="hive-stop-confirm">
+                            <span>{tr('Stop this task?', '停止这个任务？')}</span>
+                            <button
+                              type="button"
+                              className="hive-link"
+                              onClick={() => setConfirmStopId('')}
+                            >
+                              {tr('Keep working', '继续执行')}
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-action"
+                              onClick={() => {
+                                setConfirmStopId('');
+                                void act(() => hive.stop(selectedTask.id), tr('Stopped.', '已停止。'));
+                              }}
+                            >
+                              {tr('Stop task', '停止任务')}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="secondary-action"
+                            onClick={() => setConfirmStopId(selectedTask.id)}
+                          >
+                            <Icon name="close" size={13} />
+                            {tr('Stop', '停止')}
+                          </button>
+                        )
                       ) : null}
                     </div>
                     <p className="hive-step"><span className="live-dot" />{selectedTask.step}</p>

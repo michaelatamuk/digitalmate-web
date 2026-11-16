@@ -25,6 +25,7 @@ to guess state after a command.
 | POST | `/api/hive/send` | `{ laneId, text, attachments? }` | `{ taskId, snapshot }` |
 | POST | `/api/hive/control` | `{ taskId, action: "steer" \| "queue" \| "preempt", text }` | `{ snapshot }` |
 | POST | `/api/hive/answer` | `{ taskId, questionId, text }` | `{ snapshot }` |
+| POST | `/api/hive/answer/draft` | `{ taskId, questionId, text }` | `{ snapshot }` (may be ignored) |
 | POST | `/api/hive/stop` | `{ taskId }` | `{ snapshot }` |
 | POST | `/api/hive/artifact/erase` | `{ artifactId }` | `{ snapshot }` |
 | POST | `/api/hive/memory/cutoff` | `{ laneId, before }` (`before: 0` clears) | `{ snapshot }` |

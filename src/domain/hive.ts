@@ -28,6 +28,8 @@ export interface HiveQuestion {
   question: string;
   answerable: boolean;
   answer?: string;
+  /** Unsent answer text, kept with the question so a lane switch never loses it. */
+  draft?: string;
 }
 
 export interface HiveArtifact {

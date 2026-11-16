@@ -205,6 +205,12 @@ export class BridgeHiveTransport implements HiveTransport {
     await this.post('/api/hive/answer', { taskId, questionId, text, operationId: newOperationId() });
   }
 
+  saveAnswerDraft(taskId: string, questionId: string, text: string): void {
+    // Drafts stay client-side until sent: typing must not spam the bridge.
+    void this.post('/api/hive/answer/draft', { taskId, questionId, text, operationId: newOperationId() })
+      .catch(() => {});
+  }
+
   async stop(taskId: string): Promise<void> {
     await this.post('/api/hive/stop', { taskId, operationId: newOperationId() });
   }

@@ -222,8 +222,7 @@ describe('Hive local transport', () => {
     expect(target.snapshot().tasks.length).toBeGreaterThan(0);
   });
 
-  it('deduplicates a retried send by operation id', async () => {
-    const hive = new MockHiveTransport(0);
+  it('deduplicates a retried send by operation id', async () => {    const hive = new MockHiveTransport(0);
     const first = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-1' });
     const retried = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-1' });
     expect(retried).toBe(first);
@@ -232,5 +231,18 @@ describe('Hive local transport', () => {
     const other = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-2' });
     expect(other).not.toBe(first);
     expect(hive.snapshot().tasks.filter(task => task.operationId === 'op-1').length).toBe(1);
+  });
+
+  it('keeps an answer draft with its question until the question is answered', async () => {
+    const hive = new MockHiveTransport(0);
+    const taskId = await hive.send({ laneId: 'scout', text: 'Draft an email to Bob' });
+    const question = hive.snapshot().tasks.find(task => task.id === taskId)!.question!;
+
+    hive.saveAnswerDraft(taskId, question.id, 'Keep it as a draft');
+    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.question?.draft).toBe('Keep it as a draft');
+
+    await hive.answer(taskId, question.id, 'Keep it as a draft');
+    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.question?.draft).toBeUndefined();
+    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.question?.answer).toBe('Keep it as a draft');
   });
 });

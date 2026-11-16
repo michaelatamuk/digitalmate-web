@@ -7214,3 +7214,17 @@ a {
   color: #8a4444;
   font-size: 10px;
 }
+
+.hive-stop-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: rgba(160, 90, 90, 0.08);
+  color: #8a4444;
+  font-size: 11px;
+}
+.hive-stop-confirm .secondary-action { min-height: 28px; padding: 3px 10px; font-size: 11px; }
