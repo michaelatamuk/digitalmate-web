@@ -7193,3 +7193,11 @@ a {
   font-size: 11px;
   line-height: 1.5;
 }
+
+.hive-diagnostics {
+  margin: -2px 0 0;
+  color: var(--ink-muted, #6f625a);
+  font-size: 9px;
+  text-align: right;
+  opacity: 0.75;
+}

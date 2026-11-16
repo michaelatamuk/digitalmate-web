@@ -1,7 +1,8 @@
 import type { HiveBackup, HiveEvent, HiveSendInput, HiveSnapshot } from '../domain/hive';
 import { emptyHiveSnapshot, readHiveSnapshot } from '../domain/hive';
 import type { HiveTransport, HiveTransportStatus } from './hive';
-import { MockHiveTransport } from './hive';
+import { HIVE_FEATURES, MockHiveTransport } from './hive';
+import type { HiveFeature } from './hive';
 
 /**
  * Contract between the web app and the Hive bridge.
@@ -23,6 +24,56 @@ import { MockHiveTransport } from './hive';
 export interface HiveBridgeConfig {
   baseUrl: string;
   token?: string;
+}
+
+/** Contract version this client speaks; a bridge may advertise a newer one and be refused. */
+export const HIVE_BRIDGE_VERSION = 1;
+
+export type HiveBridgeErrorKind =
+  | 'unavailable'
+  | 'timeout'
+  | 'conflict'
+  | 'stale'
+  | 'unsupported'
+  | 'unauthorized'
+  | 'incompatible'
+  | 'unknown';
+
+export class HiveTransportError extends Error {
+  constructor(
+    readonly kind: HiveBridgeErrorKind,
+    message: string,
+    readonly status?: number
+  ) {
+    super(message);
+    this.name = 'HiveTransportError';
+  }
+}
+
+function classifyStatus(status: number): HiveBridgeErrorKind {
+  if (status === 401 || status === 403) return 'unauthorized';
+  if (status === 409) return 'conflict';
+  if (status === 410 || status === 412) return 'stale';
+  if (status === 404 || status === 405 || status === 501) return 'unsupported';
+  if (status >= 500) return 'unavailable';
+  return 'unknown';
+}
+
+function statusMessage(kind: HiveBridgeErrorKind, status: number): string {
+  switch (kind) {
+    case 'unauthorized':
+      return 'The Hive bridge rejected this session. Check the access token.';
+    case 'conflict':
+      return 'That task changed on the bridge. Refresh and try again.';
+    case 'stale':
+      return 'That target is out of date. Refresh and try again.';
+    case 'unsupported':
+      return 'This Hive bridge does not support that action.';
+    case 'unavailable':
+      return `The Hive bridge is unavailable (HTTP ${status}).`;
+    default:
+      return `The Hive bridge rejected the request (HTTP ${status}).`;
+  }
 }
 
 interface EventSourceLike {
@@ -51,6 +102,9 @@ export class BridgeHiveTransport implements HiveTransport {
   private stream: EventSourceLike | null = null;
   private started = false;
   private disposed = false;
+  private version: number | undefined = undefined;
+  private capabilities: Set<HiveFeature> | null = null;
+  private negotiated = false;
   private readonly fetchImpl: typeof fetch;
   private readonly eventSourceFactory: (url: string) => EventSourceLike;
   private readonly timeoutMs: number;
@@ -78,6 +132,15 @@ export class BridgeHiveTransport implements HiveTransport {
 
   status(): HiveTransportStatus {
     return this.statusValue;
+  }
+
+  /**
+   * Until a bridge has advertised its capabilities the baseline is assumed, so a bridge that does
+   * not implement `/api/hive/capabilities` still works.
+   */
+  supports(feature: HiveFeature): boolean {
+    if (!this.capabilities) return true;
+    return this.capabilities.has(feature);
   }
 
   retry(): void {
@@ -172,20 +235,67 @@ export class BridgeHiveTransport implements HiveTransport {
   private async connect(): Promise<void> {
     this.setStatus({ mode: 'bridge', state: 'connecting', message: '' });
     try {
+      await this.negotiate();
       const response = await this.request('/api/hive/snapshot', { method: 'GET' });
       const snapshot = readHiveSnapshot(response);
       if (!snapshot) throw new Error('The Hive bridge returned an unreadable snapshot.');
       this.snapshotValue = snapshot;
-      this.setStatus({ mode: 'bridge', state: 'ready', message: '' });
+      this.setStatus({
+        mode: 'bridge',
+        state: 'ready',
+        message: '',
+        version: this.version,
+        negotiated: this.negotiated,
+        features: this.capabilities ? HIVE_FEATURES.filter(feature => this.capabilities!.has(feature)) : [...HIVE_FEATURES]
+      });
       this.emit('snapshot');
       this.openStream();
     } catch (error) {
       this.setStatus({
         mode: 'bridge',
         state: 'unavailable',
-        message: error instanceof Error ? error.message : 'The Hive bridge is unavailable.'
+        message: error instanceof Error ? error.message : 'The Hive bridge is unavailable.',
+        version: this.version
       });
       this.emit('snapshot');
+    }
+  }
+
+  /**
+   * Reads the bridge's contract version and feature set. A bridge without the endpoint is treated
+   * as v1 with every baseline feature; a bridge that speaks a newer contract is refused rather
+   * than guessed at.
+   */
+  private async negotiate(): Promise<void> {
+    try {
+      const raw = await this.request('/api/hive/capabilities', { method: 'GET' }) as {
+        version?: unknown;
+        capabilities?: unknown;
+      };
+      const version = typeof raw.version === 'number' ? raw.version : HIVE_BRIDGE_VERSION;
+      if (version > HIVE_BRIDGE_VERSION) {
+        throw new HiveTransportError(
+          'incompatible',
+          `The Hive bridge speaks v${version}; this app supports v${HIVE_BRIDGE_VERSION}. Update the app or the bridge.`
+        );
+      }
+      const advertised = raw.capabilities && typeof raw.capabilities === 'object'
+        ? raw.capabilities as Record<string, unknown>
+        : null;
+      // Only an explicit `false` disables a feature: unknown keys stay at the baseline.
+      this.capabilities = advertised
+        ? new Set(HIVE_FEATURES.filter(feature => advertised[feature] !== false))
+        : new Set(HIVE_FEATURES);
+      this.version = version;
+      this.negotiated = true;
+    } catch (error) {
+      if (error instanceof HiveTransportError && error.kind === 'unsupported') {
+        this.capabilities = new Set(HIVE_FEATURES);
+        this.version = HIVE_BRIDGE_VERSION;
+        this.negotiated = false;
+        return;
+      }
+      throw error;
     }
   }
 
@@ -252,15 +362,25 @@ export class BridgeHiveTransport implements HiveTransport {
         }
       });
       if (!response.ok) {
-        throw new Error(`The Hive bridge answered ${response.status}.`);
+        const kind = classifyStatus(response.status);
+        throw new HiveTransportError(kind, statusMessage(kind, response.status), response.status);
       }
       return await response.json();
     } catch (error) {
-      const message = error instanceof Error && error.name === 'AbortError'
+      if (error instanceof HiveTransportError) {
+        this.setStatus({
+          mode: 'bridge', state: 'unavailable', message: error.message, version: this.version
+        });
+        throw error;
+      }
+      const kind: HiveBridgeErrorKind = error instanceof Error && error.name === 'AbortError'
+        ? 'timeout'
+        : 'unavailable';
+      const message = kind === 'timeout'
         ? 'The Hive bridge did not answer in time.'
         : error instanceof Error ? error.message : 'The Hive bridge is unavailable.';
-      this.setStatus({ mode: 'bridge', state: 'unavailable', message });
-      throw new Error(message);
+      this.setStatus({ mode: 'bridge', state: 'unavailable', message, version: this.version });
+      throw new HiveTransportError(kind, message);
     } finally {
       clearTimeout(timer);
     }

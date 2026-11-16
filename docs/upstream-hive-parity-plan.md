@@ -101,10 +101,26 @@ Shipped:
 - Bridge unit tests cover snapshot load + stream updates, command payloads, failure status and
   transport selection
 
+## Implementation slice 7 (2026-11-16): capability negotiation and error taxonomy
+
+Shipped:
+
+- `GET /api/hive/capabilities` contract (`version`, `capabilities`) documented; the client probes it
+  before the snapshot
+- Refuses a bridge that speaks a newer contract (message names both versions, no stream opened, no
+  mock substitution); a missing probe falls back to the v1 baseline and says `(probe missing)`
+- `HiveFeature` (`steer`, `queue`, `preempt`, `artifacts`, `memoryCutoff`) with `supports()` on the
+  transport; the sheet hides Queue / Steer / Preempt and the memory cut-off controls the bridge
+  disables
+- `HiveTransportError` with `kind` (`unauthorized`, `conflict`, `stale`, `unsupported`,
+  `unavailable`, `timeout`, `unknown`) mapped from HTTP status, with user-facing copy per kind
+- Diagnostics line under the header when a bridge is ready: `Contract v1 · steer, queue, …`
+- Tests: negotiation (limiting, baseline, newer-version refusal), 409/501/abort mapping
+
 Still to do in the Hive slice:
 
 - server-side `/api/hive/*` implementation and run/task mapping (contract is frozen client-side)
-- capability probes and version negotiation
+- resume on reconnect (Last-Event-ID / snapshot cursor)
 - Android notification routing and share intake
 
 ## 1. Goal

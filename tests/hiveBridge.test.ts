@@ -121,4 +121,105 @@ describe('Hive bridge transport', () => {
     expect(remote.id).toBe('bridge');
     remote.dispose();
   });
+
+  it('negotiates capabilities and hides what the bridge does not implement', async () => {
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) {
+        return jsonResponse({ version: 1, capabilities: { steer: false, queue: false } });
+      }
+      return jsonResponse(fixture);
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    expect(transport.status().version).toBe(1);
+    expect(transport.status().negotiated).toBe(true);
+    expect(transport.status().features).toEqual(['preempt', 'artifacts', 'memoryCutoff']);
+    expect(transport.supports('steer')).toBe(false);
+    expect(transport.supports('queue')).toBe(false);
+    expect(transport.supports('preempt')).toBe(true);
+    transport.dispose();
+  });
+
+  it('assumes the v1 baseline when the bridge has no capability probe', async () => {
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({}, 404);
+      return jsonResponse(fixture);
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    expect(transport.status().negotiated).toBe(false);
+    expect(transport.supports('steer')).toBe(true);
+    expect(transport.status().features).toEqual(['steer', 'queue', 'preempt', 'artifacts', 'memoryCutoff']);
+    transport.dispose();
+  });
+
+  it('refuses a bridge that speaks a newer contract instead of guessing', async () => {
+    let streamOpened = false;
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 2, capabilities: {} });
+      return jsonResponse(fixture);
+    });
+    const transport = new BridgeHiveTransport(
+      { baseUrl: 'https://bridge.test' },
+      {
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        eventSourceFactory: () => {
+          streamOpened = true;
+          return fakeStream();
+        },
+        timeoutMs: 500
+      }
+    );
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('unavailable'));
+    expect(transport.status().message).toContain('v2');
+    expect(transport.status().message).toContain('v1');
+    expect(streamOpened).toBe(false);
+    transport.dispose();
+  });
+
+  it('maps bridge failures onto typed errors and readable messages', async () => {
+    const conflictFetch = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      return jsonResponse({}, 409);
+    });
+    const conflict = bridge(conflictFetch);
+    conflict.subscribe(() => {});
+    await vi.waitFor(() => expect(conflict.status().state).toBe('ready'));
+    await expect(conflict.send({ laneId: 'scout', text: 'x' })).rejects.toMatchObject({ kind: 'conflict' });
+    expect(conflict.status().message).toContain('changed on the bridge');
+    conflict.dispose();
+
+    const unsupportedFetch = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      return jsonResponse({}, 501);
+    });
+    const unsupported = bridge(unsupportedFetch);
+    unsupported.subscribe(() => {});
+    await vi.waitFor(() => expect(unsupported.status().state).toBe('ready'));
+    await expect(unsupported.stop('task_bridge_1')).rejects.toMatchObject({ kind: 'unsupported' });
+    unsupported.dispose();
+
+    const timeoutFetch = vi.fn(async () => {
+      const error = new Error('aborted');
+      error.name = 'AbortError';
+      throw error;
+    });
+    const timeout = bridge(timeoutFetch);
+    timeout.subscribe(() => {});
+    await vi.waitFor(() => expect(timeout.status().state).toBe('unavailable'));
+    expect(timeout.status().message).toContain('did not answer in time');
+    timeout.dispose();
+  });
 });

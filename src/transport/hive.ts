@@ -18,11 +18,22 @@ import { currentTask, HIVE_STORE_VERSION, readHiveBackup, taskIsOpen } from '../
 export type HiveTransportMode = 'mock' | 'bridge';
 export type HiveTransportState = 'ready' | 'connecting' | 'unavailable';
 
+/** Features a bridge may or may not implement; the UI hides what it cannot do. */
+export type HiveFeature = 'steer' | 'queue' | 'preempt' | 'artifacts' | 'memoryCutoff';
+
+export const HIVE_FEATURES: HiveFeature[] = ['steer', 'queue', 'preempt', 'artifacts', 'memoryCutoff'];
+
 export interface HiveTransportStatus {
   mode: HiveTransportMode;
   state: HiveTransportState;
   /** Human-readable reason, empty when ready. */
   message: string;
+  /** Contract version negotiated with a bridge; undefined for the mock. */
+  version?: number;
+  /** Features the bridge advertised (empty means "all baseline features"). */
+  features?: HiveFeature[];
+  /** True when the bridge answered the capability probe; false when the v1 baseline was assumed. */
+  negotiated?: boolean;
 }
 
 export interface HiveTransport {
@@ -30,6 +41,7 @@ export interface HiveTransport {
   subscribe: (listener: (event: HiveEvent) => void) => () => void;
   snapshot: () => HiveSnapshot;
   status: () => HiveTransportStatus;
+  supports: (feature: HiveFeature) => boolean;
   retry: () => void;
   selectLane: (laneId: string) => void;
   selectTask: (taskId: string) => void;
@@ -173,7 +185,11 @@ export class MockHiveTransport implements HiveTransport {
   }
 
   status(): HiveTransportStatus {
-    return { mode: 'mock', state: 'ready', message: '' };
+    return { mode: 'mock', state: 'ready', message: '', version: undefined, features: [...HIVE_FEATURES] };
+  }
+
+  supports(_feature: HiveFeature): boolean {
+    return true;
   }
 
   retry(): void {

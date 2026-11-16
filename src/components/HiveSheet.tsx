@@ -225,6 +225,14 @@ export function HiveSheet({
               </button>
             </div>
           ) : null}
+          {status.mode === 'bridge' && status.state === 'ready' ? (
+            <p className="hive-diagnostics">
+              {tr('Contract v', '契约 v')}{status.version ?? 1}
+              {' · '}
+              {(status.features ?? []).join(', ') || tr('baseline', '基础能力')}
+              {status.negotiated === false ? tr(' (probe missing)', '（未探测）') : ''}
+            </p>
+          ) : null}
           <div className="hive-backup-actions">
             <input
               ref={importRef}
@@ -421,6 +429,7 @@ export function HiveSheet({
                         <button
                           type="button"
                           className="hive-link"
+                          hidden={!hive.supports('memoryCutoff')}
                           onClick={() => {
                             hive.restoreMemory(lane.id);
                             onNotice(tr('Memory cut-off cleared.', '记忆截断已清除。'));
@@ -445,7 +454,7 @@ export function HiveSheet({
                             </div>
                             {cut ? (
                               <span className="hive-erased">{tr('Cut off', '已截断')}</span>
-                            ) : (
+                            ) : hive.supports('memoryCutoff') ? (
                               <button
                                 type="button"
                                 className="hive-link"
@@ -456,7 +465,7 @@ export function HiveSheet({
                               >
                                 {tr('Cut off here', '从此截断')}
                               </button>
-                            )}
+                            ) : null}
                           </div>
                         );
                       })
@@ -664,17 +673,21 @@ export function HiveSheet({
                 </button>
                 {openTask ? (
                   <>
-                    <button type="button" className="secondary-action" disabled={!draft.trim() || busy} onClick={() => void submit('queue')}>
-                      {tr('Queue', '排队')}
-                    </button>
-                    {openTask.status === 'running' ? (
+                    {hive.supports('queue') ? (
+                      <button type="button" className="secondary-action" disabled={!draft.trim() || busy} onClick={() => void submit('queue')}>
+                        {tr('Queue', '排队')}
+                      </button>
+                    ) : null}
+                    {openTask.status === 'running' && hive.supports('steer') ? (
                       <button type="button" className="secondary-action" disabled={!draft.trim() || busy} onClick={() => void submit('steer')}>
                         {tr('Steer', '补充')}
                       </button>
                     ) : null}
-                    <button type="button" className="secondary-action" disabled={!draft.trim() || busy} onClick={() => void submit('preempt')}>
-                      {tr('Preempt', '抢占')}
-                    </button>
+                    {hive.supports('preempt') ? (
+                      <button type="button" className="secondary-action" disabled={!draft.trim() || busy} onClick={() => void submit('preempt')}>
+                        {tr('Preempt', '抢占')}
+                      </button>
+                    ) : null}
                   </>
                 ) : null}
               </div>

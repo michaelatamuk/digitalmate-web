@@ -19,6 +19,7 @@ to guess state after a command.
 
 | Method | Path | Body | Response |
 | --- | --- | --- | --- |
+| GET | `/api/hive/capabilities` | — | `{ version: 1, capabilities: { steer, queue, preempt, artifacts, memoryCutoff } }` |
 | GET | `/api/hive/snapshot` | — | `HiveSnapshot` |
 | GET | `/api/hive/events` | — | `text/event-stream`, `data: {"type": "...", "snapshot": {...}}` |
 | POST | `/api/hive/send` | `{ laneId, text, attachments? }` | `{ taskId, snapshot }` |
@@ -46,8 +47,33 @@ A reference payload lives at `tests/fixtures/hive-bridge-snapshot.json` and is u
 
 ## Error handling
 
-- Non-2xx responses throw `The Hive bridge answered <status>.`
-- Requests time out after 12 s (`The Hive bridge did not answer in time.`)
+- Non-2xx responses throw `HiveTransportError` with a `kind`:
+
+  | HTTP | `kind` | Message shown |
+  | --- | --- | --- |
+  | 401 / 403 | `unauthorized` | The Hive bridge rejected this session. Check the access token. |
+  | 409 | `conflict` | That task changed on the bridge. Refresh and try again. |
+  | 410 / 412 | `stale` | That target is out of date. Refresh and try again. |
+  | 404 / 405 / 501 | `unsupported` | This Hive bridge does not support that action. |
+  | 5xx | `unavailable` | The Hive bridge is unavailable (HTTP 5xx). |
+  | other 4xx | `unknown` | The Hive bridge rejected the request (HTTP n). |
+  | abort | `timeout` | The Hive bridge did not answer in time. |
+
+- Requests time out after 12 s.
 - Any failure sets the transport status to `unavailable` with that message; the sheet shows it and
   offers **Retry**.
 - Local backup import is disabled while a bridge owns the state (the bridge is authoritative).
+
+## Version negotiation and capabilities
+
+1. The client calls `/api/hive/capabilities` before the snapshot.
+2. `version` greater than the client's (`1`) → the bridge is refused with
+   `The Hive bridge speaks vN; this app supports v1. Update the app or the bridge.` No stream is
+   opened and no mock data is substituted.
+3. A missing endpoint (404/405/501) → the **v1 baseline** is assumed, `negotiated: false`, and the
+   sheet appends `(probe missing)` to its diagnostics line.
+4. `capabilities` entries are opt-out: only an explicit `false` hides a feature. Unknown keys are
+   ignored. The UI hides `Queue`, `Steer`, `Preempt` and memory cut-off controls the bridge
+   disables.
+5. When ready, the sheet shows `Contract v1 · <features>` under the header.
+
