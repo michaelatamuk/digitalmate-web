@@ -330,6 +330,7 @@ docs/
   hive-bridge-contract.md frozen Hive bridge endpoints and vocabulary
   hive-performance.md     feed and task rendering budget
   release-0.5.0.md        Android 0.5.0 upgrade notes and what users see
+  release-0.5.1.md        Android 0.5.1 notes: Word, zoom, announcements, .ics, reports
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
