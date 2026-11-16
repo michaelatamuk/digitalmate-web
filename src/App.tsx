@@ -40,6 +40,7 @@ import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, 
 import type { CapabilityOption, ModelOption, PersonaId, ProjectOption } from './data/personas';
 import { CapabilitiesSheet, ModelSheet, PersonaSheet, ProjectSheet, modelLabel } from './components/ComposerSheets';
 import { LabsSheet } from './components/LabsSheet';
+import { HiveSheet } from './components/HiveSheet';
 import { WelcomeDeck } from './components/WelcomeDeck';
 import { speakText, stopSpeaking } from './lib/voice';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -50,7 +51,7 @@ import { Icon } from './components/Icons';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
-type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | 'tasks' | 'persona' | 'model' | 'project' | 'capabilities' | 'labs' | null;
+type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifacts' | 'tasks' | 'persona' | 'model' | 'project' | 'capabilities' | 'labs' | 'hive' | null;
 
 const defaultSettings: Settings = {
   cloudBackend: 'local',
@@ -1315,9 +1316,11 @@ export default function App() {
               setSheet('tasks');
             }}
             onLabs={() => setSheet('labs')}
+            onHive={() => setSheet('hive')}
           />
         ) : null}
         {sheet === 'labs' ? <LabsSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
+        {sheet === 'hive' ? <HiveSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
         {sheet === 'skills' ? (
           <SkillsSheet
             skills={skills}

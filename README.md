@@ -54,6 +54,7 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 | Discovery | Search, mixed media cards, natural-language topic edits, source toggles, reactions, saved cards, read state, share and RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Labs | Local BIM, multi-task, deep search, train, map, ride, checkout, social and payment demos |
+| Hive (preview) | Beebou + Bees, task lanes, question cards, steering and artifacts in a local demo |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |

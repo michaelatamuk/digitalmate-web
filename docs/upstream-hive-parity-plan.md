@@ -2,8 +2,28 @@
 
 - **Upstream snapshot:** `openJiuwen-ai/DigitalMate@14a9529` (2026-11-16)
 - **Web baseline:** DigitalMate Web `0.4.0`
-- **Status:** proposed plan, not started
+- **Status:** implementation started — local Hive slice shipped
 - **Owner:** DigitalMate Web
+
+## Implementation slice 1 (2026-11-16)
+
+Shipped:
+
+- `src/domain/hive.ts`: lanes, Bees, tasks, questions, artifacts, working state helpers
+- `src/transport/hive.ts`: local Hive transport, Bee tasks, queue/steer/preempt, question/answer, Stop, artifacts
+- `src/components/HiveSheet.tsx`: Hive Home, Beebou, Bee lanes, activity, task detail, report/artifact cards, attachments and composer
+- More → Hive entry, local-only demo
+- Unit tests for the Hive transport and an E2E question flow
+
+Still to do in the Hive slice:
+
+- activity lanes with cursor history/gaps (current task list is the first activity view)
+- persistent Hive store and backup
+- live `BridgeHiveTransport`
+- report generation and memory cut-off
+- Android notification routing and share intake
+- accessibility and Chinese copy pass
+
 
 ## 1. Goal
 

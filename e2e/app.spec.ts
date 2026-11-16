@@ -528,6 +528,31 @@ test('mobile layout does not overflow horizontally', async ({ page }) => {
   await expect(page.locator('.composer')).toBeVisible();
 });
 
+test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await expect(page.getByRole('tab', { name: /Scout/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Forge/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /Ledger/ })).toBeVisible();
+  const hiveScan = await new AxeBuilder({ page }).include('.sheet-layer').analyze();
+  expect(
+    hiveScan.violations
+      .filter(violation => violation.impact === 'critical' || violation.impact === 'serious')
+      .map(violation => violation.id)
+  ).toEqual([]);
+
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer textarea').fill('Draft an email to Alice about the launch');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });
+  await page.locator('.hive-question textarea').fill('Keep it as a draft');
+  await page.getByRole('button', { name: 'Send answer' }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Done', {
+    timeout: 10_000
+  });
+  await expect(page.locator('.hive-artifact')).toHaveCount(1);
+});
+
 test('core screens have no serious accessibility violations', async ({ page }) => {
   test.setTimeout(120_000);
   const scan = async (label: string) => {
