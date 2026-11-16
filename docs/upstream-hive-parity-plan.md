@@ -323,9 +323,24 @@ Shipped:
   base64 and returns the id; the bridged E2E attaches a PNG, sends it, and previews it from
   `/api/hive/attachment/:id`
 
+## Implementation slice 22 (2026-11-16): POST share target with files
+
+Shipped:
+
+- `manifest.webmanifest` share target is now **POST multipart** with `title`, `text`, `url` and a
+  `files` field (images, text, PDF, JSON) — the only way a browser can hand files to a PWA
+- `public/sw.js` intercepts `POST …/share-target`, empties the form into the **share cache**
+  (`/__share/meta` + `/__share/file/<index>/<name>`) and redirects to `/?shared=1`
+- `src/lib/shareTargetCache.ts` reads that inbox once (and clears it), tolerating unreadable files or
+  malformed metadata; `App` then stashes the text **and** the files, opens Hive, and `HiveSheet`
+  puts both into the selected Bee's draft
+- Files arrive as ordinary draft attachments, so the existing five-file limit, thumbnails and the
+  upload-on-send path apply unchanged
+- Tests: three inbox unit cases (read-once, text-only, damaged entries) and an E2E that seeds the
+  inbox, sees text + `shot.png` in the draft, and confirms a second load starts clean
+
 Still to do in the Hive slice:
 
-- share **files** into a Bee draft (a POST share target needs service-worker plumbing)
 - session/run mapping in the bridge (tasks are per lane today; there is no run/session identity)
 
 ## 1. Goal

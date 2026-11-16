@@ -15,7 +15,7 @@ import {
   taskStatusLabel
 } from '../domain/hive';
 import { currentHiveTransport } from '../transport/hiveBridge';
-import { consumeHiveShare } from '../lib/hiveShare';
+import { consumeHiveShare, consumeHiveShareFiles } from '../lib/hiveShare';
 import { requestHiveNotificationPermission } from '../lib/hiveNotifications';
 import type { HiveTransport, HiveTransportStatus } from '../transport/hive';
 import { Sheet } from './Overlays';
@@ -85,10 +85,11 @@ export function HiveSheet({
     });
   }, [hive]);
 
-  // A share launched the app: put the text in the Bee that is selected, or the first Bee.
+  // A share launched the app: put the text and any files in the Bee that is selected, or the first.
   useEffect(() => {
     const shared = consumeHiveShare();
-    if (!shared) return;
+    const sharedFiles = consumeHiveShareFiles();
+    if (!shared && sharedFiles.length === 0) return;
     const snap = hive.snapshot();
     const selected = snap.lanes.find(item => item.id === snap.selectedLaneId);
     const target = selected && selected.kind === 'bee'
@@ -96,10 +97,26 @@ export function HiveSheet({
       : snap.lanes.find(item => item.kind === 'bee' && item.lifecycle === 'active')?.id;
     if (!target) return;
     if (snap.selectedLaneId !== target) hive.selectLane(target);
-    setDrafts(current => ({
-      ...current,
-      [target]: current[target] ? `${current[target]}\n${shared}` : shared
-    }));
+    if (shared) {
+      setDrafts(current => ({
+        ...current,
+        [target]: current[target] ? `${current[target]}\n${shared}` : shared
+      }));
+    }
+    if (sharedFiles.length) {
+      const drafts = sharedFiles.map(file => ({
+        id: `shared-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+      }));
+      setAttachmentsByLane(current => ({
+        ...current,
+        [target]: [...(current[target] ?? []), ...drafts].slice(0, 5)
+      }));
+    }
   }, [hive]);
 
   const lane = snapshot.lanes.find(item => item.id === snapshot.selectedLaneId) ?? snapshot.lanes[0];

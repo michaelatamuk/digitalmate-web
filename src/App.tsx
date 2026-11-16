@@ -34,7 +34,8 @@ import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment,
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell, consumeSharedText, onNativeNotificationTap, consumeLaunchTab } from './lib/native';
-import { stashHiveShare, readShareText } from './lib/hiveShare';
+import { stashHiveShare, stashHiveShareFiles, readShareText } from './lib/hiveShare';
+import { readSharedDraft } from './lib/shareTargetCache';
 import { installHiveNotifications } from './lib/hiveNotifications';
 import { currentHiveMode } from './lib/hiveMode';
 import { currentHiveTransport } from './transport/hiveBridge';
@@ -204,15 +205,16 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    const apply = (text: string) => {
-      if (cancelled || !text.trim()) return;
+    const apply = (text: string, files: File[] = []) => {
+      if (cancelled || (!text.trim() && files.length === 0)) return;
       if (hiveEnabled) {
         stashHiveShare(text);
+        stashHiveShareFiles(files);
         setSheet('hive');
-        showToast(tr('Shared text saved to a Hive draft.', '分享内容已放入蜂巢草稿。'));
+        showToast(tr('Shared content saved to a Hive draft.', '分享内容已放入蜂巢草稿。'));
       } else {
         // Hive is off in this build, so shared text goes to the chat composer instead of nowhere.
-        setComposer(text);
+        if (text.trim()) setComposer(text);
         setHome(false);
         setTab('chat');
         showToast(tr('Shared text added to the composer.', '已把分享内容放入输入框。'));
@@ -222,7 +224,11 @@ export default function App() {
     };
     const shared = readShareText(new URLSearchParams(window.location.search));
     if (shared) apply(shared);
-    void consumeSharedText().then(apply);
+    void consumeSharedText().then(text => apply(text));
+    // A POST share lands in the cache inbox instead of the query string.
+    void readSharedDraft().then(draft => {
+      if (draft) apply(draft.text, draft.files);
+    });
     return () => {
       cancelled = true;
     };

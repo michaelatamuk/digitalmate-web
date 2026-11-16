@@ -13,6 +13,20 @@ export function readShareText(params: URLSearchParams): string {
   return parts.join('\n');
 }
 
+/** Holds shared files until the Hive sheet mounts and takes them (same page load only). */
+let pendingHiveFiles: File[] = [];
+
+export function stashHiveShareFiles(files: File[]): void {
+  if (!files.length) return;
+  pendingHiveFiles = [...pendingHiveFiles, ...files].slice(0, 5);
+}
+
+export function consumeHiveShareFiles(): File[] {
+  const files = pendingHiveFiles;
+  pendingHiveFiles = [];
+  return files;
+}
+
 /** Holds the shared text until the Hive sheet mounts and takes it. */
 export function stashHiveShare(text: string): void {
   const trimmed = text.trim();

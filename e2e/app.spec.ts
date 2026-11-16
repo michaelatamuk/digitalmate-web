@@ -678,6 +678,41 @@ test('the Hive demo keeps working offline', async ({ page, context }) => {
   await context.setOffline(false);
 });
 
+test('a shared file lands in a Hive draft', async ({ page }) => {
+  await page.goto('/');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  // The service worker fills this inbox on a POST share; seed it directly to test the page half.
+  await page.evaluate(async () => {
+    const cache = await caches.open('digitalmate-share');
+    const origin = location.origin;
+    await cache.put(
+      new URL('/__share/meta', origin).href,
+      new Response(
+        JSON.stringify({
+          text: 'Shared from Android',
+          files: [{ index: 0, name: 'shot.png', size: 8, type: 'image/png' }]
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      )
+    );
+    await cache.put(
+      new URL('/__share/file/0/shot.png', origin).href,
+      new Response(new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])], { type: 'image/png' }))
+    );
+  });
+  await page.reload();
+
+  await expect(page.locator('.hive')).toBeVisible();
+  await expect(page.locator('.hive-composer textarea')).toHaveValue(/Shared from Android/);
+  await expect(page.locator('.hive-attachment-name')).toContainText('shot.png');
+
+  // The inbox is consumed once: a second load starts clean.
+  await page.reload();
+  await expect(page.locator('.hive')).toHaveCount(0);
+});
+
 test('a build can turn Hive off and shared text falls back to chat', async ({ page }) => {
   await page.goto('/?hive=off');
   if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
