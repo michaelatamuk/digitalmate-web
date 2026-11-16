@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { HiveArtifact, HiveAttachmentMeta, HiveSnapshot } from '../domain/hive';
+import type { HiveArtifact, HiveAttachmentMeta, HiveReport, HiveSnapshot } from '../domain/hive';
 import {
   currentTask,
   laneActivity,
@@ -23,6 +23,82 @@ import { Sheet } from './Overlays';
 import { Icon } from './Icons';
 import { ZoomableImage } from './ZoomableImage';
 import { useI18n } from '../i18n/I18nContext';
+
+/** A report card with two sides: the summary a reader wants, and the sources behind it. */
+function HiveReportCard({
+  report,
+  tr
+}: {
+  report: HiveReport;
+  tr: (en: string, zh: string) => string;
+}) {
+  const evidence = report.evidence ?? [];
+  const [view, setView] = useState<'summary' | 'sources'>('summary');
+
+  return (
+    <div className="hive-report">
+      <div className="hive-report-head">
+        <strong>{report.title}</strong>
+        {evidence.length > 0 ? (
+          <div className="hive-report-tabs" role="tablist" aria-label={tr('Report view', '报告视图')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === 'summary'}
+              className={view === 'summary' ? 'is-active' : ''}
+              onClick={() => setView('summary')}
+            >
+              {tr('Summary', '摘要')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === 'sources'}
+              className={view === 'sources' ? 'is-active' : ''}
+              onClick={() => setView('sources')}
+            >
+              {tr(`Sources (${evidence.length})`, `来源（${evidence.length}）`)}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {view === 'summary' || evidence.length === 0 ? (
+        <>
+          <p>{report.summary}</p>
+          {report.sections.map(section => (
+            <div key={section.label}>
+              <em>{section.label}</em>
+              <span>{section.value}</span>
+            </div>
+          ))}
+          {report.mail ? (
+            <div className="hive-report-mail">
+              <span className="hive-section-head">{tr('From the inbox', '来自收件箱')}</span>
+              <strong>{report.mail.subject}</strong>
+              <em>{`${report.mail.from} · ${report.mail.receivedAt}`}</em>
+              <p>{report.mail.body}</p>
+              {report.mail.truncated ? (
+                <span className="hive-report-note">{tr('Preview truncated', '预览已截断')}</span>
+              ) : null}
+            </div>
+          ) : null}
+        </>
+      ) : (
+        <ul className="hive-report-evidence">
+          {evidence.map(item => (
+            <li key={item.id}>
+              <span className="hive-report-category">{item.category}</span>
+              <strong>{item.title}</strong>
+              <blockquote>{item.quote}</blockquote>
+              <cite>{item.source}</cite>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 function shortTime(value: number, locale: string): string {
   return new Date(value).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
@@ -752,16 +828,7 @@ export function HiveSheet({
                     ) : null}
                     {selectedTask.output ? <p className="hive-output">{selectedTask.output}</p> : null}
                     {selectedTask.report ? (
-                      <div className="hive-report">
-                        <strong>{selectedTask.report.title}</strong>
-                        <p>{selectedTask.report.summary}</p>
-                        {selectedTask.report.sections.map(section => (
-                          <div key={section.label}>
-                            <em>{section.label}</em>
-                            <span>{section.value}</span>
-                          </div>
-                        ))}
-                      </div>
+                      <HiveReportCard report={selectedTask.report} tr={tr} />
                     ) : null}
                     {selectedTask.artifacts.length > 0 ? (
                       <div className="hive-artifacts">

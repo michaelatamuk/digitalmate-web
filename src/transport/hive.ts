@@ -765,7 +765,37 @@ export class MockHiveTransport implements HiveTransport {
         { label: 'Signal', value: 'On-device agents are becoming narrower and more reliable.' },
         { label: 'Risk', value: 'Memory is still often a black box.' },
         { label: 'Next', value: 'Ask for a memory receipt, not just an answer.' }
-      ]
+      ],
+      evidence: [
+        {
+          id: 'ev_signal',
+          category: 'Signal',
+          title: 'Narrow agents finish more work',
+          quote: 'Agents with explicit tools complete their tasks more often than broad assistants.',
+          source: 'Weekly briefing · 12 Nov'
+        },
+        {
+          id: 'ev_memory',
+          category: 'Risk',
+          title: 'Memory is rarely explained',
+          quote: 'Most people cannot say why a preference was reused in a later answer.',
+          source: 'Product review · 10 Nov'
+        },
+        {
+          id: 'ev_receipt',
+          category: 'Next',
+          title: 'Receipts make memory auditable',
+          quote: 'A decision with a receipt is easier to trust than the same decision without one.',
+          source: 'Support digest · 9 Nov'
+        }
+      ],
+      mail: {
+        subject: 'Weekly signal report',
+        from: 'Scout · Hive',
+        receivedAt: 'Mon 09:12',
+        body: 'Three changes worth your attention: agents are narrowing, memory is opaque, and receipts help. I kept the sources beside each claim.',
+        truncated: true
+      }
     };
   }
 

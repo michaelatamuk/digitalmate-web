@@ -7379,3 +7379,68 @@ a {
 .capability-pill.is-prompt { color: #7a5a1f; border-color: rgba(122, 90, 31, 0.3); background: rgba(122, 90, 31, 0.08); }
 .capability-pill.is-local { color: #4a5a6a; border-color: rgba(74, 90, 106, 0.3); background: rgba(74, 90, 106, 0.08); }
 .capability-pill.is-unsupported { opacity: 0.6; }
+
+/* Report card: summary on the front, traceable sources on the back. */
+.hive-report-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hive-report-tabs { display: flex; gap: 4px; }
+.hive-report-tabs button {
+  border: 1px solid rgba(33, 27, 23, 0.14);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.hive-report-tabs button.is-active {
+  background: rgba(33, 27, 23, 0.08);
+  border-color: rgba(33, 27, 23, 0.28);
+}
+.hive-report-mail {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: rgba(33, 27, 23, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hive-report-mail em { font-size: 11px; opacity: 0.7; }
+.hive-report-mail p { margin: 4px 0 0; }
+.hive-report-note { font-size: 11px; opacity: 0.65; }
+.hive-report-evidence {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hive-report-evidence li {
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: rgba(33, 27, 23, 0.035);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.hive-report-category {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+.hive-report-evidence blockquote {
+  margin: 2px 0;
+  padding-left: 9px;
+  border-left: 2px solid rgba(33, 27, 23, 0.18);
+  font-style: italic;
+}
+.hive-report-evidence cite { font-size: 11px; opacity: 0.7; font-style: normal; }

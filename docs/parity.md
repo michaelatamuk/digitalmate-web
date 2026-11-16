@@ -47,6 +47,7 @@ Details are in `docs/hive-user-guide.md`, `docs/architecture.md` and `docs/hive-
 | Question cards and answers | ✅ | Answer drafts kept per lane; duplicate answer is a conflict |
 | Stop with confirmation | ✅ | Keeps produced work; other lanes unaffected |
 | Artifacts | ✅ | Preview, export, erase |
+| Report cards | ✅ | Summary with mail preview and a sources side; evidence survives backups |
 | Shared memory and cut-off | ✅ | Per-lane entries, cut-off and restore |
 | Attachments per Bee | ✅ | Five-file limit, thumbnails, text/PDF preview, bridge upload |
 | Activity feed and unread cursor | ✅ | `New` markers, per-lane unread count, trimmed-log notice |

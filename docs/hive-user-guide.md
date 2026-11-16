@@ -62,6 +62,10 @@ refreshes to the latest state and offers **Retry** instead of pretending the com
 Finished work that produces a document appears under **Artifacts** on the task: preview it, **Export**
 it as a file, or **Erase** it. Erasing keeps the task and its summary; only the artifact content goes.
 
+A report task also shows a **report card**: the summary and a mail preview on the front, and a
+**Sources** side listing each claim with its quote and where it came from. The sources travel with
+the task, so they survive a backup and restore.
+
 ## Memory
 
 The **Memory** tab shows what the lane remembers: decisions, results and preferences. Each entry can

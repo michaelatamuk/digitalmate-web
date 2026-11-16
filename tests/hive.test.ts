@@ -152,6 +152,11 @@ describe('Hive local transport', () => {
     const imported = target.snapshot();
     expect(imported.tasks.map(task => task.id)).toEqual(source.snapshot().tasks.map(task => task.id));
     expect(imported.tasks.find(task => task.id === taskId)?.report?.title).toBe('Weekly signal report');
+    // The report card keeps its sources and the mail preview across a backup round trip.
+    const report = imported.tasks.find(task => task.id === taskId)?.report;
+    expect(report?.evidence).toHaveLength(3);
+    expect(report?.evidence?.[0].source).toContain('·');
+    expect(report?.mail?.from).toContain('Scout');
     expect(imported.activity.length).toBe(source.snapshot().activity.length);
 
     expect(target.importBackup('{"hello":"world"}').ok).toBe(false);

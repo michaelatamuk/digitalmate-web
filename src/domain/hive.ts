@@ -47,10 +47,30 @@ export interface HiveReportSection {
   value: string;
 }
 
+/** One traceable claim behind a report; the card shows these on its sources side. */
+export interface HiveReportEvidence {
+  id: string;
+  category: string;
+  title: string;
+  quote: string;
+  source: string;
+}
+
+/** The message a report was written from, kept as a short preview. */
+export interface HiveReportMail {
+  subject: string;
+  from: string;
+  receivedAt: string;
+  body: string;
+  truncated?: boolean;
+}
+
 export interface HiveReport {
   title: string;
   summary: string;
   sections: HiveReportSection[];
+  evidence?: HiveReportEvidence[];
+  mail?: HiveReportMail;
 }
 
 export interface HiveTask {

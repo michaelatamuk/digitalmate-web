@@ -944,6 +944,22 @@ test('notifies when a Bee finishes with the sheet closed, and a tap opens the ta
   await expect(page.locator('.hive-detail h3')).toContainText('Build an artifact');
 });
 
+test('shows a report with a mail preview and traceable sources', async ({ page }) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await page.getByRole('tab', { name: /Ledger/ }).click();
+  await page.locator('.hive-composer textarea').fill('Prepare the weekly report');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+
+  await expect(page.locator('.hive-report')).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator('.hive-report-mail')).toContainText('Scout');
+  await page.locator('.hive-report-tabs').getByRole('tab', { name: /Sources/ }).click();
+  await expect(page.locator('.hive-report-evidence li').first()).toContainText('Signal');
+  await expect(page.locator('.hive-report-evidence blockquote').first()).not.toBeEmpty();
+  await page.locator('.hive-report-tabs').getByRole('tab', { name: 'Summary' }).click();
+  await expect(page.locator('.hive-report-mail')).toBeVisible();
+});
+
 test('shows failed and queued Bee states', async ({ page }) => {
   await page.goto('/');
   if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
