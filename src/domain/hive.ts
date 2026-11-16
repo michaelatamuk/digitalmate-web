@@ -131,10 +131,17 @@ export interface HiveSnapshot {
   selectedTaskId: string;
 }
 
+/** Metadata for a draft attachment. Bytes stay on the device until a bridge upload exists. */
+export interface HiveAttachmentMeta {
+  name: string;
+  size: number;
+  type: string;
+}
+
 export interface HiveSendInput {
   laneId: string;
   text: string;
-  attachments?: string[];
+  attachments?: HiveAttachmentMeta[];
   /** Caller-supplied id so a retried send is deduplicated instead of creating a second task. */
   operationId?: string;
 }

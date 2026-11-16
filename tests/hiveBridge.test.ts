@@ -285,6 +285,28 @@ describe('Hive bridge transport', () => {
     transport.dispose();
   });
 
+  it('sends attachment metadata with the command', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    const fetchImpl = vi.fn(async (input: unknown, init?: { body?: string }) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      bodies.push(JSON.parse(init?.body ?? '{}') as Record<string, unknown>);
+      return jsonResponse({ taskId: 'task_att', snapshot: fixture });
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    await transport.send({
+      laneId: 'scout',
+      text: 'Look at this',
+      attachments: [{ name: 'shot.png', size: 2048, type: 'image/png' }]
+    });
+    expect(bodies[0].attachments).toEqual([{ name: 'shot.png', size: 2048, type: 'image/png' }]);
+    transport.dispose();
+  });
+
   it('retries a transient failure with the same operation id', async () => {    const bodies: Array<Record<string, unknown>> = [];
     let failNext = true;
     const fetchImpl = vi.fn(async (input: unknown, init?: { body?: string }) => {

@@ -280,7 +280,9 @@ export class MockHiveTransport implements HiveTransport {
     const existing = this.tasks.find(task => task.laneId === lane.id && task.operationId === operationId);
     if (existing) return existing.id;
     const busy = Boolean(currentTask(this.tasks, lane.id));
-    const task = this.createTask(lane.id, text, busy, input.attachments ?? [], operationId);
+    // The demo keeps attachment names on the task; real bytes would be uploaded by a bridge.
+    const names = (input.attachments ?? []).map(attachment => attachment.name);
+    const task = this.createTask(lane.id, text, busy, names, operationId);
     this.touchLane(lane.id);
     this.messages.push({
       id: id('msg'),

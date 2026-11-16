@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { HiveArtifact, HiveSnapshot } from '../domain/hive';
+import type { HiveArtifact, HiveAttachmentMeta, HiveSnapshot } from '../domain/hive';
 import {
   currentTask,
   laneActivity,
@@ -35,6 +35,18 @@ function downloadText(filename: string, content: string, type = 'text/plain'): v
   URL.revokeObjectURL(url);
 }
 
+/** A picked file that has not been sent yet. Bytes never leave the device in the demo. */
+interface HiveDraftAttachment extends HiveAttachmentMeta {
+  id: string;
+  previewUrl?: string;
+}
+
+function formatBytes(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function HiveSheet({
   onClose,
   onNotice
@@ -51,7 +63,7 @@ export function HiveSheet({
   const [status, setStatus] = useState<HiveTransportStatus>(() => hive.status());
   // Drafts and attachments are kept per lane, so switching Bees never discards unsent work.
   const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const [attachmentsByLane, setAttachmentsByLane] = useState<Record<string, string[]>>({});
+  const [attachmentsByLane, setAttachmentsByLane] = useState<Record<string, HiveDraftAttachment[]>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [confirmStopId, setConfirmStopId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -76,12 +88,33 @@ export function HiveSheet({
   const setDraft = (value: string): void => {
     setDrafts(current => ({ ...current, [laneDraftKey]: value }));
   };
-  const setAttachments = (updater: string[] | ((current: string[]) => string[])): void => {
+  const setAttachments = (
+    updater: HiveDraftAttachment[] | ((current: HiveDraftAttachment[]) => HiveDraftAttachment[])
+  ): void => {
     setAttachmentsByLane(current => {
       const existing = current[laneDraftKey] ?? [];
       const next = typeof updater === 'function' ? updater(existing) : updater;
       return { ...current, [laneDraftKey]: next };
     });
+  };
+  const removeAttachment = (attachment: HiveDraftAttachment): void => {
+    if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl);
+    setAttachments(current => current.filter(item => item.id !== attachment.id));
+  };
+  const addFiles = (files: File[]): void => {
+    if (!files.length) return;
+    const room = Math.max(0, 5 - attachments.length);
+    if (files.length > room) {
+      onNotice(tr('You can attach up to 5 files.', '最多可附加 5 个文件。'));
+    }
+    const picked = files.slice(0, room).map(file => ({
+      id: `att-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+    }));
+    if (picked.length) setAttachments(current => [...current, ...picked]);
   };
   const laneTasks = useMemo(
     () =>
@@ -182,8 +215,16 @@ export function HiveSheet({
   const submit = async (mode: 'send' | 'steer' | 'queue' | 'preempt') => {
     if (!lane || lane.kind !== 'bee' || !draft.trim()) return;
     const text = draft.trim();
+    const metas: HiveAttachmentMeta[] = attachments.map(item => ({
+      name: item.name,
+      size: item.size,
+      type: item.type
+    }));
     if (mode === 'send') {
-      await act(() => hive.send({ laneId: lane.id, text, attachments }), tr('Sent to the Bee.', '已发送给 Bee。'));
+      await act(
+        () => hive.send({ laneId: lane.id, text, attachments: metas }),
+        tr('Sent to the Bee.', '已发送给 Bee。')
+      );
     } else if (openTask) {
       await act(
         () => hive.control(openTask.id, mode, text),
@@ -195,6 +236,9 @@ export function HiveSheet({
       );
     }
     setDraft('');
+    for (const item of attachments) {
+      if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    }
     setAttachments([]);
   };
 
@@ -673,9 +717,9 @@ export function HiveSheet({
                 multiple
                 className="hidden-file-input"
                 onChange={event => {
-                  const names = event.target.files ? Array.from(event.target.files).map(file => file.name) : [];
+                  const files = event.target.files ? Array.from(event.target.files) : [];
                   event.target.value = '';
-                  setAttachments(current => [...current, ...names].slice(0, 5));
+                  addFiles(files);
                 }}
               />
               <div className="hive-composer-head">
@@ -688,15 +732,20 @@ export function HiveSheet({
               </div>
               {attachments.length > 0 ? (
                 <div className="hive-attachments">
-                  {attachments.map((item, index) => (
-                    <span key={`${item}-${index}`}>
-                      <Icon name="grid" size={12} />
-                      {item}
+                  {attachments.map(item => (
+                    <span key={item.id}>
+                      {item.previewUrl ? (
+                        <img className="hive-attachment-thumb" src={item.previewUrl} alt="" />
+                      ) : (
+                        <Icon name="grid" size={12} />
+                      )}
+                      <em className="hive-attachment-name">{item.name}</em>
+                      <em className="hive-attachment-size">{formatBytes(item.size)}</em>
                       <button
                         type="button"
                         className="hive-attachment-remove"
-                        aria-label={tr(`Remove ${item}`, `移除 ${item}`)}
-                        onClick={() => setAttachments(current => current.filter((_, i) => i !== index))}
+                        aria-label={tr(`Remove ${item.name}`, `移除 ${item.name}`)}
+                        onClick={() => removeAttachment(item)}
                       >
                         ×
                       </button>

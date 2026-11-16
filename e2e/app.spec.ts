@@ -550,7 +550,19 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await expect(page.locator('.hive-composer textarea')).toHaveValue('forge draft in progress');
 
   await page.locator('.hive-composer textarea').fill('Draft an email to Alice about the launch');
+  // Attachments are real files: capped at five, sized, and removable before sending.
+  const attachments = Array.from({ length: 6 }, (_, index) => ({
+    name: `f${index}.txt`,
+    mimeType: 'text/plain',
+    buffer: Buffer.from(`file ${index}`)
+  }));
+  await page.locator('.hive-composer input[type="file"]').setInputFiles(attachments);
+  await expect(page.getByText('You can attach up to 5 files.')).toBeVisible();
+  await expect(page.locator('.hive-attachment-name')).toHaveCount(5);
+  await page.getByRole('button', { name: 'Remove f0.txt' }).click();
+  await expect(page.locator('.hive-attachment-name')).toHaveCount(4);
   await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-detail .hive-attachments')).toContainText('f1.txt');
   await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });
   await page.locator('.hive-question textarea').fill('Keep it as a draft');
   // Answer drafts survive a lane switch: they belong to the question, not the composer.

@@ -233,8 +233,7 @@ describe('Hive local transport', () => {
     expect(hive.snapshot().tasks.filter(task => task.operationId === 'op-1').length).toBe(1);
   });
 
-  it('keeps an answer draft with its question until the question is answered', async () => {
-    const hive = new MockHiveTransport(0);
+  it('keeps an answer draft with its question until the question is answered', async () => {    const hive = new MockHiveTransport(0);
     const taskId = await hive.send({ laneId: 'scout', text: 'Draft an email to Bob' });
     const question = hive.snapshot().tasks.find(task => task.id === taskId)!.question!;
 
@@ -244,5 +243,21 @@ describe('Hive local transport', () => {
     await hive.answer(taskId, question.id, 'Keep it as a draft');
     expect(hive.snapshot().tasks.find(task => task.id === taskId)?.question?.draft).toBeUndefined();
     expect(hive.snapshot().tasks.find(task => task.id === taskId)?.question?.answer).toBe('Keep it as a draft');
+  });
+
+  it('keeps at most five attachment names on a task', async () => {
+    const hive = new MockHiveTransport(0);
+    const taskId = await hive.send({
+      laneId: 'scout',
+      text: 'Check these files',
+      attachments: Array.from({ length: 6 }, (_, index) => ({
+        name: `f${index}.txt`,
+        size: 12,
+        type: 'text/plain'
+      }))
+    });
+    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.attachments).toEqual([
+      'f0.txt', 'f1.txt', 'f2.txt', 'f3.txt', 'f4.txt'
+    ]);
   });
 });

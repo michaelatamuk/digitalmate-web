@@ -22,7 +22,7 @@ to guess state after a command.
 | GET | `/api/hive/capabilities` | — | `{ version: 1, capabilities: { steer, queue, preempt, artifacts, memoryCutoff } }` |
 | GET | `/api/hive/snapshot` | — | `HiveSnapshot` |
 | GET | `/api/hive/events` | — | `text/event-stream`, `data: {"type": "...", "snapshot": {...}}` |
-| POST | `/api/hive/send` | `{ laneId, text, attachments? }` | `{ taskId, snapshot }` |
+| POST | `/api/hive/send` | `{ laneId, text, attachments?: [{ name, size, type }] }` | `{ taskId, snapshot }` |
 | POST | `/api/hive/control` | `{ taskId, action: "steer" \| "queue" \| "preempt", text }` | `{ snapshot }` |
 | POST | `/api/hive/answer` | `{ taskId, questionId, text }` | `{ snapshot }` |
 | POST | `/api/hive/answer/draft` | `{ taskId, questionId, text }` | `{ snapshot }` (may be ignored) |

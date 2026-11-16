@@ -172,9 +172,26 @@ Shipped:
 - Tests: a 410 Stop leaves the transport ready, flags the task and triggers exactly one extra
   snapshot fetch; a 409 records the conflict and `clearConflict()` drops it
 
+## Implementation slice 12 (2026-11-16): real attachments
+
+Shipped:
+
+- Draft attachments are real files, not names: each carries `name`, `size`, `type`, an id and (for
+  images) an object-URL thumbnail
+- Five-file limit enforced when picking, with a notice; each chip shows the name and a human size
+  (`47.1 KB`) and can be removed individually; thumbnails are revoked on remove and after send
+- Attachments stay per lane with the draft, and are sent as metadata (`{ name, size, type }`) in
+  `/api/hive/send`; the task keeps the names for its detail chips
+- Tests: mock keeps at most five names on a task, the bridge sends metadata in the documented shape,
+  and the Hive E2E attaches six files, sees the limit notice, removes one and finds the rest on the
+  sent task
+
 Still to do in the Hive slice:
 
-- server-side `/api/hive/*` implementation, run/task mapping and dedupe (contract frozen)
+- upload the bytes themselves once a bridge upload endpoint exists (today they never leave the
+  device)
+- busy/refused composer states
+- server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
 - Android notification routing and share intake
 
