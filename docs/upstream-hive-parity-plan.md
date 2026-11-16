@@ -2,7 +2,7 @@
 
 - **Upstream snapshot:** `openJiuwen-ai/DigitalMate@14a9529` (2026-11-16)
 - **Web baseline:** DigitalMate Web `0.4.0`
-- **Status:** implementation started — local Hive slice shipped
+- **Status:** shipped — all 43 deliverables complete (local mock and optional bridge)
 - **Owner:** DigitalMate Web
 
 ## Implementation slice 1 (2026-11-16)
@@ -47,7 +47,7 @@ Shipped:
 - Unit coverage for v1 migration, key cleanup, export/import round trip and rejection of foreign
   files; the Hive E2E flow downloads a backup and imports it back
 
-Still to do in the Hive slice:
+Still to do at that point in the Hive slice (all since shipped):
 
 - live `BridgeHiveTransport` and `/api/hive/*`
 - report generation and memory cut-off
@@ -290,7 +290,7 @@ Shipped:
   `applySnapshot()` keeps the reader's lane/task and only falls back to the server's choice when the
   lane no longer exists
 
-Still to do in the Hive slice:
+Still to do at that point in the Hive slice (all since shipped):
 
 - share **files** into a Bee draft (text is routed today; a POST share target needs service-worker
   plumbing)
@@ -369,6 +369,40 @@ Shipped:
   - bridge: `steer` applies, `queue` adds a second task, `preempt` stops the open one
   - bridge: a second answer to a settled question returns **409 CONFLICT**
   - E2E: `!fail` shows `Failed` with the reason, and a second send while one runs shows `Queued`
+
+## Implementation slice 25 (2026-11-16): standalone store and event replay
+
+Shipped:
+
+- `src/state/hiveStore.ts`: `createLocalHiveStore(storage?)` now owns persistence — versioned
+  envelope (`digitalmate.hive.v2`), legacy `v1` read-through, legacy key removed on the next write,
+  corrupt/foreign payload rejected, quota failures swallowed so the demo keeps working.
+  `MockHiveTransport` takes the store as a constructor argument (default: the browser store) and
+  only calls `load()` / `save()`; it no longer knows storage keys.
+- `src/state/hiveReplay.ts`: `recordHiveEvents(transport)` captures the emitted stream and
+  `replayHiveEvents(events, listener, { intervalMs })` feeds it back, synchronously by default and
+  stepped when given an interval.
+- Tests: 6 store cases (round trip, v1 migration, legacy key cleanup, corrupt payload, unusable
+  storage, clear) and 3 replay cases (record → replay ends at the live snapshot, recording stops when
+  asked, interval playback yields between events).
+
+## Implementation slice 26 (2026-11-16): Hive documentation
+
+Shipped:
+
+- `docs/architecture.md`: new “Hive runtime” section — transport, domain, store, replay, upstream
+  mapping, and the rules that keep them honest (transport owns state, selection is client-owned,
+  operation ids, store-not-side-effect persistence, replay without a transport, broken bridge is
+  reported not masked).
+- `docs/operations.md`: Hive operations — mode resolution (`?hive=` → stored → `VITE_HIVE_MODE` →
+  bridge URL → local mock), running the reference bridge, persistence/recovery, smoke checks and a
+  troubleshooting table.
+- `docs/hive-user-guide.md`: end-user walkthrough of lanes, sends, attachments, drafts, steering,
+  questions, Stop, artifacts, memory cut-off, activity, share intake, backups and `!fail`.
+- `docs/parity.md`: Hive capability table (mock and bridge) plus refreshed test counts.
+- `.env.example`: Hive variables documented next to the existing ones.
+
+With this, every deliverable in the plan is shipped.
 
 ## 1. Goal
 

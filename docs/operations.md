@@ -32,6 +32,11 @@ the values through the container environment or your platform's secret store.
 | `ORBIT_ALLOW_INSECURE_WS` | Allow `ws://` for local gateways | No |
 | `VITE_API_BASE` | Absolute API base for static/native builds | No |
 | `VITE_BASE` | Base path for Pages builds | Pages only |
+| `VITE_HIVE_MODE` | `off`, `mock` or `bridge`; unset defaults to the local mock | No |
+| `VITE_HIVE_BRIDGE_URL` | Hive service base URL; setting it selects bridge mode | For live Hive |
+| `VITE_HIVE_BRIDGE_TOKEN` | Bearer token sent to the Hive service | For protected bridges |
+| `HIVE_BRIDGE_PORT` | Reference Hive bridge port (default `8787`) | No |
+| `HIVE_BRIDGE_TOKEN` | Shared secret the reference Hive bridge requires (optional) | No |
 
 The token is read only by the server. It is never included in the static bundle,
 the health response or client errors.
@@ -53,6 +58,61 @@ ORBIT_ALLOWED_ORIGINS=https://localhost,https://app.example.com
 `https://localhost` is the default Capacitor Android origin. Add the production
 web origin only if it is not served by the same host as the bridge. Do **not**
 add `null` unless you deliberately support `file://` clients.
+
+## Hive
+
+Hive needs no server: the local demo runs the whole Bee workflow in the browser. A deployment only
+configures the bridge when it wants Bee work to happen on a real service.
+
+| `VITE_HIVE_MODE` | Behaviour |
+| --- | --- |
+| `off` | The Hive entry is hidden entirely |
+| `mock` | Local demo, persisted per browser; works offline |
+| `bridge` | Talks to `VITE_HIVE_BRIDGE_URL`; failures are shown as `Unavailable`, never faked |
+
+Mode resolution, most specific first: `?hive=` URL override → stored choice
+(`digitalmate.hive.mode`) → `VITE_HIVE_MODE` → presence of `VITE_HIVE_BRIDGE_URL` → `mock`.
+The URL override is remembered, so `?hive=off` sticks for that browser until changed.
+
+### Running the reference bridge
+
+```bash
+HIVE_BRIDGE_TOKEN=local-secret npm run bridge:hive      # 127.0.0.1:8787
+VITE_HIVE_BRIDGE_URL=http://127.0.0.1:8787              # .env.local
+VITE_HIVE_BRIDGE_TOKEN=local-secret                     # only if the token is set
+```
+
+The reference bridge is dependency-free Node and is meant for developing and proving the contract.
+Bind it to a private interface; it allows any origin by default, so treat it like a dev tool, not a
+public endpoint. When a token is set, REST calls send `Authorization: Bearer …` and the SSE stream
+(which cannot set headers) sends `?access_token=…`.
+
+### Persistence and recovery
+
+- The local demo writes a versioned envelope to `localStorage` under `digitalmate.hive.v2`. A legacy
+  `digitalmate.hive.v1` payload is migrated on read and removed on the next write.
+- A corrupt, foreign or over-quota payload is ignored; the demo starts clean instead of crashing.
+- **Settings → Export** gives a JSON backup; **Import** validates it (`kind`, snapshot shape) before
+  replacing state. Interrupted tasks are restored as `stopped` (`Interrupted by reload`).
+- To reset a browser: import a fresh backup, or clear the two keys above.
+
+### Smoke checks
+
+```bash
+curl -fsS http://127.0.0.1:8787/api/hive/health
+curl -fsS http://127.0.0.1:8787/api/hive/capabilities
+curl -fsS http://127.0.0.1:8787/api/hive/snapshot
+```
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Sheet shows `Unavailable` with `Failed to fetch` | Bridge not running or wrong URL | Start `npm run bridge:hive`, check `VITE_HIVE_BRIDGE_URL` |
+| `Unauthorized` / 401 | Token mismatch | Set the same `HIVE_BRIDGE_TOKEN` for bridge and app |
+| “speaks vN; this app supports v1” | Contract version skew | Upgrade the bridge or the app; the client refuses rather than misreading |
+| Commands report `conflict`/`stale` | Another client changed the task | The sheet refreshes; re-run the action |
+| Hive entry missing | `VITE_HIVE_MODE=off` or `?hive=off` | Change the env value or the URL override |
 
 ## Credential rotation
 
@@ -108,5 +168,7 @@ Security headers are applied to every response: CSP, `nosniff`, `DENY` framing,
 - [ ] `/healthz` and `/api/orbit/health` respond after deployment
 - [ ] CSP does not block local assets, remote RSS images or the configured API base
 - [ ] `ORBIT_ALLOWED_ORIGINS` contains every separate client origin
+- [ ] Hive mode matches the intent: `mock` for the demo build, `bridge` with a reachable URL, `off`
+      to hide it — and the Hive smoke checks above pass for `bridge`
 - [ ] Old gateway token revoked after a successful rotation
 - [ ] Pages deploy and Android artifact are green

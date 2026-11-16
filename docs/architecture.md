@@ -53,7 +53,46 @@ Local helpers / bridge                           (dev/preview)
   └── Snapshot reconciliation / reconnect        (future)
 ```
 
-### Why a bridge is needed for the browser
+## Hive runtime
+
+Hive (the Bee lanes) follows the same rule as chat: the UI talks to one transport interface, so the
+offline demo and a real service are interchangeable.
+
+```text
+HiveSheet (UI)
+  ↓ commands: send · steer/queue/preempt · answer · stop · erase · memory cut-off
+HiveTransport (src/transport/hive.ts)
+  ├── MockHiveTransport        default, offline, in-browser state machine
+  └── BridgeHiveTransport      HTTP + SSE against services/hive-bridge
+  ↓ events: snapshot · task · message · lane   (each carries a full HiveSnapshot)
+Domain   src/domain/hive.ts                 types, selectors, validation, backup envelope
+State    src/state/hiveStore.ts              versioned persistence + v1→v3 migration
+         src/state/hiveReplay.ts             record/replay an event stream
+Upstream src/transport/hiveUpstream.ts       maps v3.1 rows into the domain
+```
+
+Rules the implementation keeps:
+
+- **The transport owns state; the UI is a projection.** Every mutation emits an event carrying a
+  complete snapshot, so rendering any event out of order is safe and replay is exact.
+- **Selection is client-owned.** Lane and task selection live in the UI. A server snapshot replaces
+  data but never moves the reader; `applySnapshot` restores the current selection after swapping.
+- **Commands carry operation ids.** A retried send reuses its `operationId`, so a lost response
+  cannot create a second task.
+- **Persistence is a store, not a side effect.** `MockHiveTransport` writes through `HiveStore`
+  (`digitalmate.hive.v2`; legacy `digitalmate.hive.v1` is migrated on read and dropped on the next
+  write). Corrupt, missing or full storage degrades to an empty demo instead of a crash.
+- **Recorded events replay without a transport.** `recordHiveEvents()` collects the stream and
+  `replayHiveEvents()` feeds it to a listener — synchronously for tests, stepped for a future UI.
+- **A configured-but-broken bridge is reported, never masked.** `createHiveTransport()` chooses the
+  bridge only when `VITE_HIVE_BRIDGE_URL` is set; the sheet shows `Unavailable` with the reason
+  rather than silently serving fake data.
+
+The reference bridge in `services/hive-bridge/server.mjs` is dependency-free Node. It exists to
+prove the contract in `docs/hive-bridge-contract.md`, not to be the production Hive runtime; a real
+deployment implements the same endpoints in front of its own Bee service.
+
+## Why a bridge is needed for the browser
 
 The native app authenticates with Huawei Account Kit or AGC and obtains a Jiuwen Gateway
 Bearer token. A browser cannot safely reproduce that native exchange, and provider secrets

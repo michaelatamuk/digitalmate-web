@@ -35,6 +35,29 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Local backup | ✅ | Export/import JSON in Settings; validated and scoped to app keys |
 | Home-screen widgets / atomic services | 🟡 | Android widget with refresh; Quick Settings tile and shortcuts approximate atomic services |
 
+## Hive (Bee lanes)
+
+Details are in `docs/hive-user-guide.md`, `docs/architecture.md` and `docs/hive-bridge-contract.md`.
+
+| Area | Web | Notes |
+| --- | --- | --- |
+| Hive home and Bee lanes | ✅ | Beebou, Scout, Forge, Ledger; local mock and bridge |
+| Named Bee send / task refs | ✅ | `T-XXXX`, run handle `R-…` and row version `vN` |
+| Queue / steer / preempt | ✅ | Same controls in mock and bridge; state-machine tested |
+| Question cards and answers | ✅ | Answer drafts kept per lane; duplicate answer is a conflict |
+| Stop with confirmation | ✅ | Keeps produced work; other lanes unaffected |
+| Artifacts | ✅ | Preview, export, erase |
+| Shared memory and cut-off | ✅ | Per-lane entries, cut-off and restore |
+| Attachments per Bee | ✅ | Five-file limit, thumbnails, text/PDF preview, bridge upload |
+| Activity feed and unread cursor | ✅ | `New` markers, per-lane unread count, trimmed-log notice |
+| Local persistence and migration | ✅ | Versioned store, v1 migration, corrupt-payload fallback |
+| Backup / restore / reset | ✅ | Validated JSON export and import |
+| Share target into a Bee draft | ✅ | Text and files land in the draft; nothing auto-sends |
+| Failure state | ✅ | Reachable in the demo with `!fail`; real errors come from the bridge |
+| Live Hive bridge | ✅ | Reference Node service implements the frozen contract, SSE and idempotency |
+| Upstream v3.1 run identity | 🟡 | `run_id` / `version` mapped and preserved; real gateway integration unproven |
+| Real Bee runtime / router / gateways | ❌ | Needs a Hive service; never called directly from the browser |
+
 ## A2UI and protocol
 
 | Item | Web | Notes |
@@ -79,8 +102,8 @@ No components from the tracked native list remain. Future native additions may s
 | Real authentication | ❌ | Bridge accepts a pre-issued token; no Huawei/AGC exchange |
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
-| Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, covers, natural-language topics, sources, labs, welcome, offline banner, language, protocol, RSS, backup, Orbit fallback, mobile and axe |
-| Unit tests | ✅ | 166 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts, profiles and discovery |
+| Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, covers, natural-language topics, sources, labs, welcome, offline banner, language, protocol, RSS, backup, Orbit fallback, Hive mock and bridged flows, share target, notifications, performance budget, mobile and axe |
+| Unit tests | ✅ | 175 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts, profiles, discovery and Hive domain/store/bridge/replay |
 | Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills and settings |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | ✅ | Capacitor 8 shell, widget, share and notifications |

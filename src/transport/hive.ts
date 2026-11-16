@@ -15,6 +15,8 @@ import type {
   HiveTask
 } from '../domain/hive';
 import { currentTask, HIVE_STORE_VERSION, readHiveBackup, taskIsOpen } from '../domain/hive';
+import type { HiveStore } from '../state/hiveStore';
+import { createLocalHiveStore } from '../state/hiveStore';
 
 export type HiveTransportMode = 'mock' | 'bridge';
 export type HiveTransportState = 'ready' | 'connecting' | 'unavailable';
@@ -143,15 +145,8 @@ export function newOperationId(): string {
   return `op-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-const STORAGE_KEY = 'digitalmate.hive.v2';
-/** v1 stored a bare snapshot; it is migrated on first read and then dropped. */
-const LEGACY_STORAGE_KEY = 'digitalmate.hive.v1';
 /** Bounded so the local store cannot grow without limit; dropping entries is reported as a gap. */
 const MAX_ACTIVITY = 60;
-
-function canPersist(): boolean {
-  return typeof window !== 'undefined' && Boolean(window.localStorage);
-}
 
 /** Local Hive demo. It mirrors the event and control shape of a real Hive bridge. */
 export class MockHiveTransport implements HiveTransport {
@@ -172,7 +167,10 @@ export class MockHiveTransport implements HiveTransport {
   private timers = new Set<number>();
   private disposed = false;
 
-  constructor(private readonly timingScale = 1) {
+  constructor(
+    private readonly timingScale = 1,
+    private readonly store: HiveStore = createLocalHiveStore()
+  ) {
     this.lanes = clone(LANES).map(lane => ({
       ...lane,
       lastActivityAt: Date.now() - Math.floor(Math.random() * 8_000)
@@ -461,15 +459,7 @@ export class MockHiveTransport implements HiveTransport {
 
   /** Reads the current version, and migrates a legacy v1 payload if that is all there is. */
   private restore(): HiveSnapshot | null {
-    if (!canPersist()) return null;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_STORAGE_KEY);
-      if (!raw) return null;
-      const backup = readHiveBackup(JSON.parse(raw));
-      return backup ? backup.snapshot : null;
-    } catch {
-      return null;
-    }
+    return this.store.load();
   }
 
   private normalizeRestored(): void {
@@ -488,20 +478,7 @@ export class MockHiveTransport implements HiveTransport {
   }
 
   private persist(): void {
-    if (!canPersist()) return;
-    try {
-      const backup: HiveBackup = {
-        kind: 'digitalmate.hive.backup',
-        version: HIVE_STORE_VERSION,
-        savedAt: Date.now(),
-        snapshot: this.snapshot()
-      };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(backup));
-      // The migrated payload replaces the legacy one; leaving it would resurrect stale state.
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    } catch {
-      // The local demo still works when storage is unavailable.
-    }
+    this.store.save(this.snapshot());
   }
 
   /** A portable copy of the current Hive state. */
@@ -515,7 +492,8 @@ export class MockHiveTransport implements HiveTransport {
   }
 
   /** Replaces the local demo state with a backup file's contents. */
-  importBackup(raw: string): { ok: boolean; error?: string } {    let parsed: unknown;
+  importBackup(raw: string): { ok: boolean; error?: string } {
+    let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
     } catch {

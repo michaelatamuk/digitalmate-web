@@ -26,9 +26,11 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
-- Hive preview (**More → Hive**): Beebou + Bees, activity lanes, steering, memory, local mock only
-- Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`
-- 166 unit tests plus 43 Playwright UI, mobile and accessibility checks
+- Hive (**More → Hive**): Beebou + Bees, activity lanes, steering, questions, memory, artifacts and
+  attachments on a local mock; see [docs/hive-user-guide.md](docs/hive-user-guide.md)
+- Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`; the contract
+  is frozen in [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md)
+- 175 unit tests plus 43 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
@@ -56,7 +58,7 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 | Discovery | Search, mixed media cards, natural-language topic edits, source toggles, reactions, saved cards, read state, share and RSS import |
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Labs | Local BIM, multi-task, deep search, train, map, ride, checkout, social and payment demos |
-| Hive (preview) | Beebou + Bees, task lanes, question cards, steering and artifacts in a local demo |
+| Hive | Beebou + Bees, task lanes, questions, steering, artifacts, memory and attachments; local demo by default, optional bridge |
 | Calendar | Local event creation with a confirmation sheet and updated schedule card |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
@@ -324,6 +326,9 @@ docs/
   accessibility.md        automated coverage and screen-reader checklist
   branding.md             naming, BeeBou caveat and asset licensing
   upstream-hive-parity-plan.md  plan for current Hive / v3.1 parity
+  hive-user-guide.md      Hive lanes, controls, memory, artifacts and bridge mode
+  hive-bridge-contract.md frozen Hive bridge endpoints and vocabulary
+  hive-performance.md     feed and task rendering budget
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
