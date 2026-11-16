@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { HiveSnapshot } from '../domain/hive';
+import type { HiveArtifact, HiveSnapshot } from '../domain/hive';
 import {
   currentTask,
   laneActivity,
   laneHasActivityGap,
+  laneLastActivity,
   laneUnreadCount,
   latestTask,
+  relativeTime,
+  taskRef,
   taskStatusLabel
 } from '../domain/hive';
 import { MockHiveTransport } from '../transport/hive';
@@ -15,6 +18,17 @@ import { useI18n } from '../i18n/I18nContext';
 
 function shortTime(value: number, locale: string): string {
   return new Date(value).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Saves text from the demo without touching the network. */
+function downloadText(filename: string, content: string, type = 'text/plain'): void {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 export function HiveSheet({
@@ -42,6 +56,7 @@ export function HiveSheet({
   useEffect(() => hive.subscribe(event => setSnapshot(event.snapshot)), [hive]);
 
   const lane = snapshot.lanes.find(item => item.id === snapshot.selectedLaneId) ?? snapshot.lanes[0];
+  const now = Date.now();
   const laneTasks = useMemo(
     () =>
       [...snapshot.tasks]
@@ -72,14 +87,19 @@ export function HiveSheet({
   const exportHive = (): void => {
     const backup = transport.current?.exportBackup();
     if (!backup) return;
-    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `digitalmate-hive-${new Date().toISOString().slice(0, 10)}.json`;
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadText(
+      `digitalmate-hive-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(backup, null, 2),
+      'application/json'
+    );
     onNotice(tr('Hive backup exported.', '蜂巢备份已导出。'));
+  };
+
+  const exportArtifact = (artifact: HiveArtifact): void => {
+    const extension = artifact.kind === 'report' ? 'md' : 'txt';
+    const safeName = artifact.title.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'artifact';
+    downloadText(`${safeName}.${extension}`, artifact.content);
+    onNotice(tr('Artifact exported.', '成果已导出。'));
   };
 
   const importHive = async (file: File | undefined): Promise<void> => {
@@ -201,6 +221,11 @@ export function HiveSheet({
               >
                 <span className="hive-avatar" style={{ background: item.color }}>{item.avatar}</span>
                 <span>{item.label}</span>
+                {latestTask(snapshot.tasks, item.id) ? (
+                  <span className="hive-lane-time">
+                    {relativeTime(laneLastActivity(snapshot.lanes, snapshot.tasks, item.id), now, tr)}
+                  </span>
+                ) : null}
                 {laneUnreadCount(snapshot, item.id) > 0 ? (
                   <span className="hive-unread" aria-label={tr('Unread activity', '未读动态')}>
                     {laneUnreadCount(snapshot, item.id)}
@@ -237,18 +262,34 @@ export function HiveSheet({
               )}
             </p>
             <div className="hive-bee-grid">
-              {activeLanes.map(item => (
-                <button
-                  type="button"
-                  className="hive-bee-card"
-                  key={item.id}
-                  onClick={() => transport.current?.selectLane(item.id)}
-                >
-                  <span className="hive-avatar" style={{ background: item.color }}>{item.avatar}</span>
-                  <strong>{item.label}</strong>
-                  <em>{item.description}</em>
-                </button>
-              ))}
+              {activeLanes.map(item => {
+                const latest = latestTask(snapshot.tasks, item.id);
+                return (
+                  <button
+                    type="button"
+                    className="hive-bee-card"
+                    key={item.id}
+                    onClick={() => transport.current?.selectLane(item.id)}
+                  >
+                    <span className="hive-avatar" style={{ background: item.color }}>{item.avatar}</span>
+                    <strong>{item.label}</strong>
+                    <em>{item.description}</em>
+                    <span className="hive-bee-meta">
+                      {latest ? (
+                        <span className={`hive-status is-${latest.status}`}>{taskStatusLabel(latest.status, tr)}</span>
+                      ) : null}
+                      {latest ? <code className="hive-ref">{taskRef(latest)}</code> : null}
+                      {latest ? (
+                        <span className="hive-bee-time">
+                          {relativeTime(laneLastActivity(snapshot.lanes, snapshot.tasks, item.id), now, tr)}
+                        </span>
+                      ) : (
+                        <span className="hive-bee-time">{tr('No tasks yet', '还没有任务')}</span>
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -331,7 +372,9 @@ export function HiveSheet({
                       <span className={`hive-status-dot is-${task.status}`} />
                       <span>
                         <strong>{task.title}</strong>
-                        <em>{task.step} · {shortTime(task.updatedAt, locale)}</em>
+                        <em>
+                          <code className="hive-ref">{taskRef(task)}</code> · {task.step} · {shortTime(task.updatedAt, locale)}
+                        </em>
                       </span>
                       <span className={`hive-status is-${task.status}`}>{taskStatusLabel(task.status, tr)}</span>
                     </button>
@@ -427,16 +470,25 @@ export function HiveSheet({
                               {artifact.erasedAt ? (
                                 <span className="hive-erased">{tr('Erased', '已清除')}</span>
                               ) : (
-                                <button
-                                  type="button"
-                                  className="hive-link"
-                                  onClick={() => {
-                                    transport.current?.eraseArtifact(artifact.id);
-                                    onNotice(tr('Artifact erased.', '成果已清除。'));
-                                  }}
-                                >
-                                  {tr('Erase', '清除')}
-                                </button>
+                                <>
+                                  <button
+                                    type="button"
+                                    className="hive-link"
+                                    onClick={() => exportArtifact(artifact)}
+                                  >
+                                    {tr('Export', '导出')}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="hive-link"
+                                    onClick={() => {
+                                      transport.current?.eraseArtifact(artifact.id);
+                                      onNotice(tr('Artifact erased.', '成果已清除。'));
+                                    }}
+                                  >
+                                    {tr('Erase', '清除')}
+                                  </button>
+                                </>
                               )}
                             </div>
                             {openArtifact === artifact.id && !artifact.erasedAt ? (

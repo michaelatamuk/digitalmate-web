@@ -7144,3 +7144,14 @@ a {
   margin-top: -4px;
 }
 .hive-backup-actions .hive-link { font-size: 10px; }
+
+.hive-lane-time { font-size: 9px; color: var(--ink-muted, #6f625a); opacity: 0.8; }
+.hive-bee-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; }
+.hive-bee-time { font-size: 9px; color: var(--ink-muted, #6f625a); }
+.hive-ref {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(120, 96, 82, 0.1);
+  color: #6f625a;
+  font: 9px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
+}

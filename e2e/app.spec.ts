@@ -551,6 +551,14 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
     timeout: 10_000
   });
   await expect(page.locator('.hive-artifact')).toHaveCount(1);
+  await expect(page.locator('.hive-lane-time').first()).toBeVisible();
+  await expect(page.locator('.hive-task-row').first()).toContainText('T-');
+
+  // Artifact export is a local download; no network leaves the page.
+  const artifactDownload = page.waitForEvent('download');
+  await page.locator('.hive-artifact').getByRole('button', { name: 'Export', exact: true }).click();
+  const artifactFile = await artifactDownload;
+  expect(artifactFile.suggestedFilename()).toMatch(/\.txt$/);
 
   // Activity lane: the run is logged, counts as unread until the feed is opened, and older
   // entries are not silently implied — the feed is a bounded cursor log.

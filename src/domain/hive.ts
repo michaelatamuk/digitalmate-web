@@ -211,6 +211,33 @@ export function taskStatusLabel(status: HiveTaskStatus, tr: (en: string, zh: str
   }
 }
 
+/** Short, stable reference shown wherever a task is mentioned. */
+export function taskRef(task: HiveTask): string {
+  const tail = task.id.replace(/[^a-z0-9]/gi, '').slice(-4).toUpperCase();
+  return `T-${tail}`;
+}
+
+/** Latest moment a lane did anything: its own pulse or any task in it. */
+export function laneLastActivity(lanes: HiveLane[], tasks: HiveTask[], laneId: string): number {
+  const lane = lanes.find(item => item.id === laneId);
+  const taskAt = tasks
+    .filter(task => task.laneId === laneId)
+    .reduce((max, task) => Math.max(max, task.updatedAt), 0);
+  return Math.max(lane?.lastActivityAt ?? 0, taskAt);
+}
+
+/** Compact relative stamp for lane chips and Bee cards. */
+export function relativeTime(at: number, now: number, tr: (en: string, zh: string) => string): string {
+  if (!at) return '';
+  const delta = Math.max(0, now - at);
+  if (delta < 60_000) return tr('just now', '刚刚');
+  const minutes = Math.floor(delta / 60_000);
+  if (minutes < 60) return tr(`${minutes}m ago`, `${minutes} 分钟前`);
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return tr(`${hours}h ago`, `${hours} 小时前`);
+  return tr(`${Math.floor(hours / 24)}d ago`, `${Math.floor(hours / 24)} 天前`);
+}
+
 export function currentTask(tasks: HiveTask[], laneId: string): HiveTask | undefined {
   return [...tasks]
     .filter(task => task.laneId === laneId && taskIsOpen(task))

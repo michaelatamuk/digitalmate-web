@@ -4,8 +4,11 @@ import {
   currentTask,
   laneActivity,
   laneHasActivityGap,
+  laneLastActivity,
   laneUnreadCount,
-  taskIsOpen
+  relativeTime,
+  taskIsOpen,
+  taskRef
 } from '../src/domain/hive';
 
 function memoryStorage(): Storage {
@@ -150,5 +153,23 @@ describe('Hive local transport', () => {
 
     expect(target.importBackup('{"hello":"world"}').ok).toBe(false);
     expect(target.importBackup('not json').ok).toBe(false);
+  });
+
+  it('exposes a stable task ref, lane last activity and relative stamps', async () => {
+    const hive = new MockHiveTransport(0);
+    const taskId = await hive.send({ laneId: 'scout', text: 'Build an artifact' });
+    const snapshot = hive.snapshot();
+    const task = snapshot.tasks.find(item => item.id === taskId)!;
+    expect(taskRef(task)).toMatch(/^T-[A-Z0-9]{4}$/);
+    expect(taskRef(task)).toBe(taskRef(task));
+
+    const at = laneLastActivity(snapshot.lanes, snapshot.tasks, 'scout');
+    expect(at).toBeGreaterThan(0);
+    expect(laneLastActivity(snapshot.lanes, snapshot.tasks, 'forge')).toBeGreaterThan(0);
+    const translate = (english: string): string => english;
+    expect(relativeTime(at, at + 30_000, translate)).toBe('just now');
+    expect(relativeTime(at, at + 90_000, translate)).toBe('1m ago');
+    expect(relativeTime(at, at + 3 * 3_600_000, translate)).toBe('3h ago');
+    expect(relativeTime(0, at, translate)).toBe('');
   });
 });

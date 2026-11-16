@@ -53,6 +53,25 @@ Still to do in the Hive slice:
 - report generation and memory cut-off
 - Android notification routing and share intake
 
+## Implementation slice 4 (2026-11-16): lane metadata and artifact export
+
+Shipped:
+
+- `taskRef()` gives every task a short stable handle (`T-XXXX`, taken from the id tail); it is
+  shown on task rows and Bee cards so a task can be named without quoting its title
+- `laneLastActivity()` + `relativeTime()`: lane chips carry an age stamp, Bee cards carry the
+  latest status, ref and age, and lanes that never ran anything say "No tasks yet" instead of
+  implying activity
+- Artifact export downloads the stored content as `.txt` (reports as `.md`) with the filename
+  sanitised; export sits beside Erase in the artifact row
+- Unit coverage for refs, lane activity and relative stamps; the Hive E2E flow asserts the lane
+  stamp, the `T-` ref and a real browser download for artifact export
+
+Still to do in the Hive slice:
+
+- live `BridgeHiveTransport` and `/api/hive/*`
+- report generation and memory cut-off
+- Android notification routing and share intake
 
 ## 1. Goal
 
