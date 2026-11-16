@@ -1,18 +1,28 @@
 # Installing the native DigitalMate HAP on a HarmonyOS device
 
-Status as of 2026-11-16: **installed and running on the phone.**
+Status as of 2026-11-16: **installed and running on the phone and the 2-in-1
+laptop.**
 
 ## Result
 
+| Device | Type | OS | Install | Launch |
+| --- | --- | --- | --- | --- |
+| HBP-AL00 | `phone` | HarmonyOS 7.0.0.111, API 26 | ok | ok, ~650 ms cold start |
+| HAD-W32 | `2in1` | HarmonyOS 7.0.0.115, API 26 | ok | ok, windowed desktop app |
+
 - Signed HAP: `digitalmate\entry\build\default\outputs\default\entry-default-signed.hap`
   (43.9 MB)
-- `hdc install -r` → `install bundle successfully`
+- `hdc install -r` → `install bundle successfully` on both devices
 - `hdc shell aa start -a EntryAbility -b com.jiuwen.digitalmate` →
-  `start ability successfully`, process `com.jiuwen.digitalmate` running,
-  cold start ~650 ms
-- First screen: the native login gate
+  `start ability successfully` on both devices
+- First screen on both: the native login gate
   (`登录 DigitalMate` / `使用华为账号登录` / `手机号登录`), which confirms the
   app is not account-free.
+- On the 2-in-1 the app opens as a normal resizable desktop window with a
+  title bar, not a stretched phone layout, and it appears in the dock.
+
+The same UDID-whitelisted profile covers both devices, so one build serves the
+phone and the laptop.
 
 ## What already works
 
@@ -84,7 +94,9 @@ hdc shell aa start -a EntryAbility -b com.jiuwen.digitalmate
    material.profile` at it, keeping the existing cert/keystore paths.
 
 Add the laptop UDID to the same profile when the 2-in-1 is connected
-(`hdc shell bm get --udid`), then rebuild and install the same HAP.
+(`hdc shell bm get --udid`), then rebuild and install the same HAP. A brand-new
+2-in-1 will not launch apps until its first-boot setup finishes: the log shows
+`isAppConfigReady: false` and the OOBE trust-list check blocking the start.
 
 ## Notes
 
