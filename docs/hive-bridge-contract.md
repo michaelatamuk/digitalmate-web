@@ -57,6 +57,42 @@ Required arrays: `lanes`, `tasks`, `messages`. Optional-with-defaults: `activity
 A reference payload lives at `tests/fixtures/hive-bridge-snapshot.json` and is used by
 `tests/hiveBridge.test.ts`.
 
+## Upstream vocabulary
+
+Our bridge contract is shaped after the real Hive server payloads captured at
+`openJiuwen-ai/DigitalMate@2b9b721d7` (see `tests/fixtures/hive-upstream/README.md`).
+`src/transport/hiveUpstream.ts` is the only place that translates between the two, and
+`tests/hiveUpstream.test.ts` asserts every value in those fixtures maps — a new upstream status
+fails the suite instead of silently becoming "error".
+
+| Upstream task/run state | Domain `HiveTaskStatus` |
+| --- | --- |
+| `queued`, `pending` | `queued` |
+| `running` | `running` |
+| `waiting_user` | `waiting_user` |
+| `done`, `completed` | `done` |
+| `stopped` | `stopped` |
+| `stopping` | `running` (a stop was accepted, the task is still open) |
+| `target_stale` | `error` |
+| `error`, `failed` | `error` |
+
+| `hive_answer.status` | Outcome |
+| --- | --- |
+| `consumed` | ok |
+| `conflict` | `conflict` — non-retryable |
+| `closed`, `stale_generation`, `stale_question` | `stale` |
+| `delivery_pending` | `unavailable` — **retryable**, the write may have landed |
+| `invalid` | `unknown` |
+
+| Server error code | Kind |
+| --- | --- |
+| `BAD_PARAMS` | `unknown` |
+| `UNKNOWN_METHOD` | `unsupported` |
+
+`mapUpstreamTaskRow()` also converts a server snapshot row
+(`bee_id`, `run_id`, `state`, `task_ref`, `updated_at_ms`, `question_open`) into a `HiveTask`, and
+returns `null` for rows it cannot represent rather than inventing values.
+
 ## Error handling
 
 A refusal and an outage are different things:

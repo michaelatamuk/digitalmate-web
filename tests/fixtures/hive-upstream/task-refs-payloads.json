@@ -1,0 +1,96 @@
+{
+  "question_open": {
+    "push": {
+      "event": "digitalmate.changed",
+      "hive": {
+        "change": "question_open",
+        "task_ref": "<task-1>"
+      }
+    },
+    "result": {
+      "interaction": {
+        "execution_id": "<run-1>",
+        "interaction_id": "hive-bee-question.<question-token-1>",
+        "interaction_ref": "<question-2>",
+        "question_version": 1,
+        "questions": [
+          {
+            "question": "Which city?"
+          }
+        ]
+      },
+      "status": "waiting_user",
+      "task_ref": "<task-1>"
+    },
+    "snapshot_before": [
+      {
+        "bee_id": "<bee-1>",
+        "question_open": false,
+        "run_id": "<run-1>",
+        "state": "running",
+        "task_ref": "<task-1>",
+        "updated_at_ms": 1700000000000,
+        "version": 2
+      }
+    ],
+    "snapshot_waiting": [
+      {
+        "bee_id": "<bee-1>",
+        "question_open": true,
+        "run_id": "<run-1>",
+        "state": "waiting_user",
+        "task_ref": "<task-1>",
+        "updated_at_ms": 1700000000000,
+        "version": 3
+      }
+    ]
+  },
+  "running_task_and_stop": {
+    "scan_push": {
+      "event": "digitalmate.changed",
+      "hive": {
+        "change": "state",
+        "task_ref": "<task-1>"
+      }
+    },
+    "snapshot_after_stop": [],
+    "snapshot_running": [
+      {
+        "bee_id": "<bee-1>",
+        "question_open": false,
+        "run_id": "<run-1>",
+        "state": "running",
+        "task_ref": "<task-1>",
+        "updated_at_ms": 1700000000000,
+        "version": 2
+      }
+    ],
+    "stop_pushes": [
+      {
+        "committed_message_id": "<event-1>",
+        "earlier": "",
+        "event": "digitalmate.task.text",
+        "event_id": "<event-1>",
+        "execution_id": "<run-1>",
+        "final": true,
+        "state": "stopped",
+        "task_id": "<task-1>",
+        "text": "",
+        "version": 1
+      },
+      {
+        "event": "digitalmate.changed",
+        "hive": {
+          "change": "terminal",
+          "task_ref": "<task-1>"
+        }
+      }
+    ],
+    "stop_result": {
+      "operation_id": "stop-1",
+      "run_id": "<run-1>",
+      "status": "STOPPED",
+      "task_ref": "<task-1>"
+    }
+  }
+}

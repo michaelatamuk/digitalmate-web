@@ -251,6 +251,22 @@ Shipped:
   waiting for a bridge.
 - README documents the release, the flag and the bridge contract
 
+## Implementation slice 18 (2026-11-16): upstream contract fixtures
+
+Shipped:
+
+- `tests/fixtures/hive-upstream/` holds the real server payloads captured upstream at
+  `openJiuwen-ai/DigitalMate@2b9b721d7`:
+  `phase2-payloads.json` (stop, stop-unconfirmed, question answers, question card, text notice) and
+  `task-refs-payloads.json` (task snapshot rows), with a README recording provenance and how to
+  refresh them
+- `src/transport/hiveUpstream.ts` maps upstream vocabulary onto the domain: task/run states answer
+  outcomes (`delivery_pending` stays retryable), error codes, and `mapUpstreamTaskRow()` for
+  snapshot rows
+- `tests/hiveUpstream.test.ts` fails when upstream adds a status we have not mapped, instead of that
+  status silently becoming `error`
+- `docs/hive-bridge-contract.md` gained an "Upstream vocabulary" section with the mapping tables
+
 Still to do in the Hive slice:
 
 - share **files** into a Bee draft (text is routed today; a POST share target needs service-worker
@@ -258,7 +274,6 @@ Still to do in the Hive slice:
 - upload attachment bytes once a bridge upload endpoint exists
 - server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
-- upstream contract fixtures captured from the Hive tests
 
 ## 1. Goal
 

@@ -1,0 +1,234 @@
+{
+  "bee_stop": {
+    "errors": {
+      "bad_params": {
+        "code": "BAD_PARAMS",
+        "message": "operation_id and task_ref are required"
+      },
+      "unknown_method": {
+        "code": "UNKNOWN_METHOD",
+        "message": "unknown method 'hive.bee.stop'"
+      }
+    },
+    "replay": {
+      "operation_id": "stop-op-1",
+      "run_id": "<run-1>",
+      "status": "STOPPED",
+      "task_ref": "<task-1>"
+    },
+    "stopped": {
+      "operation_id": "stop-op-1",
+      "run_id": "<run-1>",
+      "status": "STOPPED",
+      "task_ref": "<task-1>"
+    },
+    "stopped_notice": [
+      {
+        "committed_message_id": "<event-1>",
+        "earlier": "",
+        "event": "digitalmate.task.text",
+        "event_id": "<event-1>",
+        "execution_id": "<run-1>",
+        "final": true,
+        "state": "stopped",
+        "task_id": "<task-1>",
+        "text": "",
+        "version": 1
+      }
+    ],
+    "target_stale": {
+      "operation_id": "stop-op-2",
+      "run_id": null,
+      "status": "TARGET_STALE",
+      "task_ref": "<task-1>"
+    }
+  },
+  "bee_stop_unconfirmed": {
+    "retried": {
+      "operation_id": "stop-op-3",
+      "run_id": "<run-1>",
+      "status": "STOPPED",
+      "task_ref": "<task-1>"
+    },
+    "unconfirmed": {
+      "operation_id": "stop-op-3",
+      "run_id": "<run-1>",
+      "status": "STOPPING",
+      "task_ref": "<task-1>"
+    }
+  },
+  "question_answers": {
+    "card": {
+      "execution_id": "<run-1>",
+      "interaction_id": "hive-bee-question.<question-token-1>",
+      "interaction_ref": "question-1",
+      "question_version": 1,
+      "questions": [
+        {
+          "question": "去哪个城市？"
+        }
+      ]
+    },
+    "results": {
+      "closed_second_answer": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "question already settled or closed",
+          "status": "closed",
+          "task_ref": "<task-1>",
+          "witness": null
+        }
+      },
+      "conflict_same_id_other_answer": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "operation ID already used for another request",
+          "status": "conflict",
+          "task_ref": "<task-1>",
+          "witness": null
+        }
+      },
+      "consumed": {
+        "hive_answer": {
+          "draft_kept": false,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "",
+          "status": "consumed",
+          "task_ref": "<task-1>",
+          "witness": {
+            "harness_ref": "workswarm",
+            "operation_id": "answer-1",
+            "run_generation": 1,
+            "run_id": "<run-1>",
+            "session_generation": 1
+          }
+        }
+      },
+      "delivery_pending": {
+        "hive_answer": {
+          "draft_kept": false,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "delivery outcome unknown: RuntimeError",
+          "status": "delivery_pending",
+          "task_ref": "<task-1>",
+          "witness": null
+        }
+      },
+      "delivery_pending_resend": {
+        "hive_answer": {
+          "draft_kept": false,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "delivery outcome unknown: RuntimeError",
+          "status": "delivery_pending",
+          "task_ref": "<task-1>",
+          "witness": null
+        }
+      },
+      "invalid_missing_message_id": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "one answer to one question with a stable message_id is required",
+          "status": "invalid",
+          "task_ref": "<task-1>"
+        }
+      },
+      "invalid_token": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-2>",
+          "reason": "malformed Hive question identity",
+          "status": "invalid",
+          "task_ref": "<task-1>"
+        }
+      },
+      "invalid_two_answers": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "one answer to one question with a stable message_id is required",
+          "status": "invalid",
+          "task_ref": "<task-1>"
+        }
+      },
+      "stale_generation": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-3>",
+          "reason": "not the Run generation that asked",
+          "status": "stale_generation",
+          "task_ref": "<task-1>",
+          "witness": null
+        }
+      },
+      "stale_question_other_task": {
+        "hive_answer": {
+          "draft_kept": true,
+          "interaction_id": "hive-bee-question.<question-token-1>",
+          "reason": "no such question for this task",
+          "status": "stale_question",
+          "task_ref": "<task-2>"
+        }
+      }
+    }
+  },
+  "question_card": {
+    "result": {
+      "interaction": {
+        "execution_id": "<run-1>",
+        "interaction_id": "hive-bee-question.<question-token-1>",
+        "interaction_ref": "question-1",
+        "question_version": 1,
+        "questions": [
+          {
+            "question": "去哪个城市？"
+          }
+        ]
+      },
+      "status": "waiting_user",
+      "task_ref": "<task-1>"
+    },
+    "signal": {
+      "event": "digitalmate.changed"
+    }
+  },
+  "text_notice": {
+    "pending": {
+      "status": "pending"
+    },
+    "published": [
+      {
+        "committed_message_id": "<event-1>",
+        "earlier": "",
+        "event": "digitalmate.task.text",
+        "event_id": "<event-1>",
+        "execution_id": "<run-1>",
+        "final": true,
+        "task_id": "<task-1>",
+        "text": "12",
+        "version": 1
+      }
+    ],
+    "pull": {
+      "pushed": [
+        {
+          "committed_message_id": "<event-1>",
+          "earlier": "",
+          "event": "digitalmate.task.text",
+          "event_id": "<event-1>",
+          "execution_id": "<run-1>",
+          "final": true,
+          "task_id": "<task-1>",
+          "text": "12",
+          "version": 1
+        }
+      ],
+      "result": {
+        "status": "available",
+        "task_ref": "<task-1>"
+      }
+    }
+  }
+}

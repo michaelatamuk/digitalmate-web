@@ -27,7 +27,7 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
 - Hive preview (**More → Hive**): Beebou + Bees, activity lanes, steering, memory, local mock only
-- 144 unit tests plus 40 Playwright UI, mobile and accessibility checks
+- 149 unit tests plus 40 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
