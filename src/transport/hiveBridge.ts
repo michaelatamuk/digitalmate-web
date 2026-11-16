@@ -2,6 +2,7 @@ import type { HiveBackup, HiveEvent, HiveSendInput, HiveSnapshot } from '../doma
 import { emptyHiveSnapshot, readHiveSnapshot } from '../domain/hive';
 import type { HiveTransport, HiveTransportStatus } from './hive';
 import type { HiveConflict, HiveFeature } from './hive';
+import type { HiveAttachmentMeta } from '../domain/hive';
 import { HIVE_FEATURES, MockHiveTransport, newOperationId } from './hive';
 
 /**
@@ -217,6 +218,43 @@ export class BridgeHiveTransport implements HiveTransport {
     // Drafts stay client-side until sent: typing must not spam the bridge.
     void this.post('/api/hive/answer/draft', { taskId, questionId, text, operationId: newOperationId() })
       .catch(() => {});
+  }
+
+  /** Uploads the bytes once; the returned `id` travels with the send instead of the file. */
+  async uploadAttachment(file: File): Promise<HiveAttachmentMeta> {
+    const buffer = new Uint8Array(await file.arrayBuffer());
+    let binary = '';
+    for (let index = 0; index < buffer.length; index += 0x8000) {
+      binary += String.fromCharCode(...buffer.subarray(index, index + 0x8000));
+    }
+    const data = btoa(binary);
+    if (!data) throw new HiveTransportError('unknown', 'Could not read the file.');
+
+    const uploaded = await this.request('/api/hive/attachment', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        data
+      })
+    }) as { id?: unknown; name?: unknown; size?: unknown; type?: unknown };
+
+    if (typeof uploaded?.id !== 'string' || !uploaded.id) {
+      throw new HiveTransportError('unavailable', 'The Hive bridge did not store the attachment.');
+    }
+    return {
+      id: uploaded.id,
+      name: typeof uploaded.name === 'string' ? uploaded.name : file.name,
+      size: typeof uploaded.size === 'number' ? uploaded.size : file.size,
+      type: typeof uploaded.type === 'string' ? uploaded.type : (file.type || 'application/octet-stream')
+    };
+  }
+
+  attachmentUrl(attachment: HiveAttachmentMeta): string {
+    if (!attachment.id) return '';
+    const base = `${this.config.baseUrl.replace(/\/$/, '')}/api/hive/attachment/${encodeURIComponent(attachment.id)}`;
+    return this.config.token ? `${base}?access_token=${encodeURIComponent(this.config.token)}` : base;
   }
 
   async stop(taskId: string): Promise<void> {

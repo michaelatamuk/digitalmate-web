@@ -294,9 +294,39 @@ Still to do in the Hive slice:
 
 - share **files** into a Bee draft (text is routed today; a POST share target needs service-worker
   plumbing)
-- upload attachment bytes (the bridge has no upload endpoint yet)
 - session/run mapping in the bridge (tasks are per lane today; there is no run/session identity)
-- preview a **sent** attachment (bytes are released after send)
+
+## Implementation slice 20 (2026-11-16): the bridge runs in CI
+
+Shipped:
+
+- `playwright.config.ts` starts three servers: the normal app (mock), the reference bridge, and a
+  second app started with `--mode bridge`
+- `.env.bridge` points that second app at `http://127.0.0.1:8788`; `.gitignore` got an explicit
+  `!.env.bridge` because it carries no secrets
+- New E2E *a bridged build talks to the reference bridge*: asserts `Hive bridge` + `Contract v1`,
+  runs a task to `Done`, checks the output came from the bridge, and that the reader's lane survives
+  the snapshots the bridge keeps pushing — the regression guard for the selection bug found by hand
+
+## Implementation slice 21 (2026-11-16): attachments end-to-end
+
+Shipped:
+
+- Bridge: `POST /api/hive/attachment` (base64, 8 MB limit, content-addressed by sha256) and
+  `GET /api/hive/attachment/:id` serving the bytes with their content type; `/send` now stores
+  attachment metadata (`{ id, name, size, type }`) on the task
+- Client: `uploadAttachment()` + `attachmentUrl()` on the transport. The bridge uploads once and
+  sends ids; the mock keeps a session object URL so nothing leaves the device
+- Task attachments are `HiveAttachmentMeta` rather than bare names, show their size, and open a
+  preview: an `<img>` for images, a link for anything else
+- Tests: server upload → fetch-back → content-addressed dedupe → send metadata; client upload posts
+  base64 and returns the id; the bridged E2E attaches a PNG, sends it, and previews it from
+  `/api/hive/attachment/:id`
+
+Still to do in the Hive slice:
+
+- share **files** into a Bee draft (a POST share target needs service-worker plumbing)
+- session/run mapping in the bridge (tasks are per lane today; there is no run/session identity)
 
 ## 1. Goal
 

@@ -127,6 +127,49 @@ describe('Hive bridge service', () => {
     expect(stale.status).toBe(410);
   });
 
+  it('stores attachment bytes and serves them back', async () => {
+    const bytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    const uploaded = await fetch(`${base}/api/hive/attachment`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        name: 'pixel.png',
+        type: 'image/png',
+        data: Buffer.from(bytes).toString('base64')
+      })
+    }).then(response => response.json());
+    expect(uploaded.id).toBeTruthy();
+    expect(uploaded.size).toBe(bytes.length);
+    expect(uploaded.name).toBe('pixel.png');
+
+    const fetched = await fetch(`${base}/api/hive/attachment/${uploaded.id}`);
+    expect(fetched.status).toBe(200);
+    expect(fetched.headers.get('content-type')).toBe('image/png');
+    expect(new Uint8Array(await fetched.arrayBuffer())).toEqual(bytes);
+
+    // The same bytes are content-addressed: a second upload reuses the id.
+    const again = await fetch(`${base}/api/hive/attachment`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'pixel-copy.png', type: 'image/png', data: Buffer.from(bytes).toString('base64') })
+    }).then(response => response.json());
+    expect(again.id).toBe(uploaded.id);
+
+    const sent = await post('/api/hive/send', {
+      laneId: 'scout',
+      text: 'Look at the pixel',
+      attachments: [{ id: uploaded.id, name: 'pixel.png', size: bytes.length, type: 'image/png' }]
+    }).then(response => response.json());
+    const snapshot = await get('/api/hive/snapshot');
+    const task = snapshot.tasks.find((item: { id: string }) => item.id === sent.taskId);
+    expect(task.attachments).toEqual([
+      { id: uploaded.id, name: 'pixel.png', size: bytes.length, type: 'image/png' }
+    ]);
+
+    const missing = await fetch(`${base}/api/hive/attachment/does-not-exist`);
+    expect(missing.status).toBe(404);
+  });
+
   it('streams the snapshot as server-sent events', async () => {
     const controller = new AbortController();
     const response = await fetch(`${base}/api/hive/events`, { signal: controller.signal });

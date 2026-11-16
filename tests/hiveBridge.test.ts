@@ -314,6 +314,9 @@ describe('Hive bridge transport', () => {
       const url = String(input);
       if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
       if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      if (url.endsWith('/api/hive/attachment')) {
+        return jsonResponse({ id: 'file-1', name: 'shot.png', size: 2048, type: 'image/png' });
+      }
       bodies.push(JSON.parse(init?.body ?? '{}') as Record<string, unknown>);
       return jsonResponse({ taskId: 'task_att', snapshot: fixture });
     });
@@ -321,12 +324,13 @@ describe('Hive bridge transport', () => {
     transport.subscribe(() => {});
     await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
 
-    await transport.send({
-      laneId: 'scout',
-      text: 'Look at this',
-      attachments: [{ name: 'shot.png', size: 2048, type: 'image/png' }]
-    });
-    expect(bodies[0].attachments).toEqual([{ name: 'shot.png', size: 2048, type: 'image/png' }]);
+    const file = new File([new Uint8Array([1, 2, 3, 4])], 'shot.png', { type: 'image/png' });
+    const uploaded = await transport.uploadAttachment(file);
+    expect(uploaded).toEqual({ id: 'file-1', name: 'shot.png', size: 2048, type: 'image/png' });
+    expect(transport.attachmentUrl(uploaded)).toBe('https://bridge.test/api/hive/attachment/file-1');
+
+    await transport.send({ laneId: 'scout', text: 'Look at this', attachments: [uploaded] });
+    expect(bodies[0].attachments).toEqual([{ id: 'file-1', name: 'shot.png', size: 2048, type: 'image/png' }]);
     transport.dispose();
   });
 

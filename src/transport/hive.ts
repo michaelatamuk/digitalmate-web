@@ -2,6 +2,7 @@ import type {
   HiveActivity,
   HiveActivityKind,
   HiveArtifact,
+  HiveAttachmentMeta,
   HiveBackup,
   HiveEvent,
   HiveLane,
@@ -65,6 +66,10 @@ export interface HiveTransport {
   answer: (taskId: string, questionId: string, text: string) => Promise<void>;
   /** Keeps the unsent answer with its question; no network call is implied. */
   saveAnswerDraft: (taskId: string, questionId: string, text: string) => void;
+  /** Stores attachment bytes when the transport can; the mock keeps them locally. */
+  uploadAttachment?: (file: File) => Promise<HiveAttachmentMeta>;
+  /** A URL usable in an <img>/<a> for a stored attachment, or '' when unavailable. */
+  attachmentUrl?: (attachment: HiveAttachmentMeta) => string;
   stop: (taskId: string) => Promise<void>;
   eraseArtifact: (artifactId: string) => void;
   markActivityRead: (laneId: string) => void;
@@ -159,6 +164,8 @@ export class MockHiveTransport implements HiveTransport {
   private activityTrimmed = false;
   private memory: HiveMemoryEntry[] = [];
   private memoryCutoffAt: Record<string, number> = {};
+  /** Attachment bytes for this session, keyed by the id handed back to the task. */
+  private files = new Map<string, string>();
   private selectedLaneId = 'beebou';
   private selectedTaskId = '';
   private listeners = new Set<(event: HiveEvent) => void>();
@@ -281,8 +288,8 @@ export class MockHiveTransport implements HiveTransport {
     if (existing) return existing.id;
     const busy = Boolean(currentTask(this.tasks, lane.id));
     // The demo keeps attachment names on the task; real bytes would be uploaded by a bridge.
-    const names = (input.attachments ?? []).map(attachment => attachment.name);
-    const task = this.createTask(lane.id, text, busy, names, operationId);
+    const kept = (input.attachments ?? []).slice(0, 5);
+    const task = this.createTask(lane.id, text, busy, kept, operationId);
     this.touchLane(lane.id);
     this.messages.push({
       id: id('msg'),
@@ -384,6 +391,18 @@ export class MockHiveTransport implements HiveTransport {
     // No emit: the field is controlled by this value and re-rendering on each keystroke would fight
     // the cursor. Persisting keeps the draft across a reload or a lane switch.
     this.persist();
+  }
+
+  /** The mock keeps bytes in an object URL for this session; nothing leaves the device. */
+  async uploadAttachment(file: File): Promise<HiveAttachmentMeta> {
+    const fileId = id('local');
+    const canCreate = typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function';
+    if (canCreate) this.files.set(fileId, URL.createObjectURL(file));
+    return { id: fileId, name: file.name, size: file.size, type: file.type || 'application/octet-stream' };
+  }
+
+  attachmentUrl(attachment: HiveAttachmentMeta): string {
+    return attachment.id ? this.files.get(attachment.id) ?? '' : '';
   }
 
   eraseArtifact(artifactId: string): void {
@@ -559,7 +578,7 @@ export class MockHiveTransport implements HiveTransport {
     laneId: string,
     text: string,
     queued: boolean,
-    attachments: string[],
+    attachments: HiveAttachmentMeta[],
     operationId: string = newOperationId()
   ): HiveTask {
     const task: HiveTask = {

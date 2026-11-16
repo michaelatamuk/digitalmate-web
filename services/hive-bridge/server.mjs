@@ -12,9 +12,11 @@
  *   HIVE_BRIDGE_TOKEN=secret node services/hive-bridge/server.mjs
  */
 import { createServer } from 'node:http';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 export const HIVE_BRIDGE_VERSION = 1;
+/** Bytes are kept in memory for the life of the process; base64 bodies inflate this by ~33%. */
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
 
 const LANES = [
   {
@@ -63,6 +65,7 @@ export class HiveBridgeState {
     this.selectedLaneId = 'scout';
     this.selectedTaskId = '';
     this.operations = new Map();
+    this.files = new Map();
     this.listeners = new Set();
     this.timers = new Set();
   }
@@ -110,7 +113,18 @@ export class HiveBridgeState {
     this.lanes = this.lanes.map(lane => (lane.id === laneId ? { ...lane, lastActivityAt: this.now() } : lane));
   }
 
-  createTask(laneId, text, operationId) {
+  createTask(laneId, text, operationId, attachments = []) {
+    const kept = Array.isArray(attachments)
+      ? attachments
+        .filter(item => item && typeof item.name === 'string')
+        .slice(0, 5)
+        .map(item => ({
+          name: item.name,
+          size: typeof item.size === 'number' ? item.size : 0,
+          type: typeof item.type === 'string' ? item.type : 'application/octet-stream',
+          id: typeof item.id === 'string' ? item.id : undefined
+        }))
+      : [];
     const task = {
       id: id('task'),
       laneId,
@@ -120,7 +134,7 @@ export class HiveBridgeState {
       step: 'Reading the request',
       output: '',
       steering: [],
-      attachments: [],
+      attachments: kept,
       operationId,
       createdAt: this.now(),
       updatedAt: this.now(),
@@ -192,12 +206,29 @@ export class HiveBridgeState {
     this.emit();
   }
 
-  send({ laneId, text, operationId }) {
+  send({ laneId, text, attachments, operationId }) {
     const existing = this.operations.get(operationId);
     if (existing) return { taskId: existing, duplicated: true };
-    const task = this.createTask(laneId, text, operationId);
+    const task = this.createTask(laneId, text, operationId, attachments);
     this.emit();
     return { taskId: task.id, duplicated: false };
+  }
+
+  /** Stores bytes content-addressed, so the same file uploaded twice costs one copy. */
+  uploadAttachment({ name, type, data }) {
+    if (typeof data !== 'string' || !data) return { missing: true };
+    const buffer = Buffer.from(data, 'base64');
+    if (!buffer.length) return { missing: true };
+    if (buffer.length > MAX_ATTACHMENT_BYTES) return { tooLarge: true };
+    const id = createHash('sha256').update(buffer).digest('hex').slice(0, 24);
+    const safeName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 200) : 'file';
+    const safeType = typeof type === 'string' && type.trim() ? type.trim() : 'application/octet-stream';
+    this.files.set(id, { name: safeName, type: safeType, buffer });
+    return { id, name: safeName, size: buffer.length, type: safeType };
+  }
+
+  file(fileId) {
+    return this.files.get(fileId) ?? null;
   }
 
   control({ taskId, action, text }) {
@@ -377,6 +408,23 @@ export function createHiveBridge(options = {}) {
         }, cors);
         return;
       }
+      if (url.pathname.startsWith('/api/hive/attachment/') && request.method === 'GET') {
+        const fileId = decodeURIComponent(url.pathname.slice('/api/hive/attachment/'.length));
+        const file = state.file(fileId);
+        if (!file) {
+          json(response, 404, { error: { code: 'NOT_FOUND' } }, cors);
+          return;
+        }
+        response.writeHead(200, {
+          'content-type': file.type,
+          'content-length': file.buffer.length,
+          'cache-control': 'private, max-age=3600',
+          'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+          ...cors
+        });
+        response.end(file.buffer);
+        return;
+      }
       if (url.pathname === '/api/hive/snapshot' && request.method === 'GET') {
         json(response, 200, state.snapshot(), cors);
         return;
@@ -414,9 +462,17 @@ export function createHiveBridge(options = {}) {
           const result = state.send({
             laneId: body.laneId,
             text: body.text,
+            attachments: body.attachments,
             operationId: body.operationId || randomUUID()
           });
           json(response, 200, { taskId: result.taskId, snapshot: state.snapshot() }, cors);
+          return;
+        }
+        case '/api/hive/attachment': {
+          const uploaded = state.uploadAttachment(body);
+          if (uploaded.missing) return json(response, 400, { error: { code: 'BAD_PARAMS' } }, cors);
+          if (uploaded.tooLarge) return json(response, 413, { error: { code: 'PAYLOAD_TOO_LARGE' } }, cors);
+          json(response, 200, uploaded, cors);
           return;
         }
         case '/api/hive/control': {

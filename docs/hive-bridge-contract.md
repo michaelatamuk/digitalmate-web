@@ -163,3 +163,15 @@ VITE_HIVE_BRIDGE_URL=http://127.0.0.1:8787 npm run dev
   or `?access_token=`
 - It is **not a model** and **not durable**: output is canned and state lives in memory. See
   `services/hive-bridge/README.md`.
+
+## Attachments
+
+| Method | Path | Body | Response |
+| --- | --- | --- | --- |
+| POST | `/api/hive/attachment` | `{ name, type, data }` (base64) | `{ id, name, size, type }` |
+| GET | `/api/hive/attachment/:id` | — | the bytes, with their content type |
+
+Uploads are content-addressed: the same bytes uploaded twice return the same `id`. The client
+uploads each file once, then sends `attachments: [{ id, name, size, type }]` with `/send`, and uses
+`GET /api/hive/attachment/:id` for previews. The reference bridge keeps files in memory (8 MB per
+file, gone on restart); a real bridge should store them durably and authorize per account.

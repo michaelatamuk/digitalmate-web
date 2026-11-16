@@ -62,7 +62,7 @@ export interface HiveTask {
   step: string;
   output: string;
   steering: string[];
-  attachments: string[];
+  attachments: HiveAttachmentMeta[];
   /** Stable id for the command that created the task, so a retry does not create a second one. */
   operationId?: string;
   createdAt: number;
@@ -131,11 +131,12 @@ export interface HiveSnapshot {
   selectedTaskId: string;
 }
 
-/** Metadata for a draft attachment. Bytes stay on the device until a bridge upload exists. */
+/** Metadata for an attachment; `id` is present once a bridge (or the mock) has stored the bytes. */
 export interface HiveAttachmentMeta {
   name: string;
   size: number;
   type: string;
+  id?: string;
 }
 
 export interface HiveSendInput {

@@ -37,10 +37,12 @@ function downloadText(filename: string, content: string, type = 'text/plain'): v
   URL.revokeObjectURL(url);
 }
 
-/** A picked file that has not been sent yet. Bytes never leave the device in the demo. */
+/** A picked file that has not been sent yet. */
 interface HiveDraftAttachment extends HiveAttachmentMeta {
-  id: string;
+  id?: string;
   previewUrl?: string;
+  /** Kept so the bytes can be uploaded when the send happens. */
+  file?: File;
 }
 
 function formatBytes(size: number): string {
@@ -72,6 +74,7 @@ export function HiveSheet({
   const [openArtifact, setOpenArtifact] = useState('');
   const [view, setView] = useState<'tasks' | 'activity' | 'memory'>('tasks');
   const [activitySeenAt, setActivitySeenAt] = useState(0);
+  const [preview, setPreview] = useState<{ url: string; name: string; type: string } | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -131,6 +134,7 @@ export function HiveSheet({
       name: file.name,
       size: file.size,
       type: file.type,
+      file,
       previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
     }));
     if (picked.length) setAttachments(current => [...current, ...picked]);
@@ -234,16 +238,19 @@ export function HiveSheet({
   const submit = async (mode: 'send' | 'steer' | 'queue' | 'preempt') => {
     if (!lane || lane.kind !== 'bee' || !draft.trim()) return;
     const text = draft.trim();
-    const metas: HiveAttachmentMeta[] = attachments.map(item => ({
-      name: item.name,
-      size: item.size,
-      type: item.type
-    }));
     if (mode === 'send') {
-      await act(
-        () => hive.send({ laneId: lane.id, text, attachments: metas }),
-        tr('Sent to the Bee.', '已发送给 Bee。')
-      );
+      await act(async () => {
+        // Bytes are uploaded first when the transport can store them; the send then carries ids.
+        const metas: HiveAttachmentMeta[] = [];
+        for (const item of attachments) {
+          if (item.file && hive.uploadAttachment) {
+            metas.push(await hive.uploadAttachment(item.file));
+          } else {
+            metas.push({ name: item.name, size: item.size, type: item.type, id: item.id });
+          }
+        }
+        await hive.send({ laneId: lane.id, text, attachments: metas });
+      }, tr('Sent to the Bee.', '已发送给 Bee。'));
       // A send is the user gesture that legitimately asks for notification permission.
       requestHiveNotificationPermission();
     } else if (openTask) {
@@ -634,9 +641,28 @@ export function HiveSheet({
                     <p className="hive-step"><span className="live-dot" />{selectedTask.step}</p>
                     {selectedTask.attachments.length > 0 ? (
                       <div className="hive-attachments">
-                        {selectedTask.attachments.map(item => (
-                          <span key={item}><Icon name="grid" size={12} />{item}</span>
-                        ))}
+                        {selectedTask.attachments.map((item, index) => {
+                          const url = hive.attachmentUrl?.(item) ?? '';
+                          const label = (
+                            <>
+                              <Icon name="grid" size={12} />
+                              {item.name}
+                              {item.size > 0 ? <em className="hive-attachment-size">{formatBytes(item.size)}</em> : null}
+                            </>
+                          );
+                          return url ? (
+                            <button
+                              type="button"
+                              className="hive-attachment-open"
+                              key={item.id ?? `${item.name}-${index}`}
+                              onClick={() => setPreview({ url, name: item.name, type: item.type })}
+                            >
+                              {label}
+                            </button>
+                          ) : (
+                            <span key={item.id ?? `${item.name}-${index}`}>{label}</span>
+                          );
+                        })}
                       </div>
                     ) : null}
                     {selectedTask.question && !selectedTask.question.answer ? (
@@ -862,6 +888,25 @@ export function HiveSheet({
             ) : null}
           </>
         )}
+        {preview ? (
+          <div className="hive-preview" role="dialog" aria-label={preview.name}>
+            <div className="hive-preview-card">
+              <div className="hive-preview-head">
+                <strong>{preview.name}</strong>
+                <button type="button" className="hive-link" onClick={() => setPreview(null)}>
+                  {tr('Close', '关闭')}
+                </button>
+              </div>
+              {preview.type.startsWith('image/') ? (
+                <img src={preview.url} alt={preview.name} />
+              ) : (
+                <a className="hive-link" href={preview.url} target="_blank" rel="noreferrer">
+                  {tr('Open the stored file', '打开已保存的文件')}
+                </a>
+              )}
+            </div>
+          </div>
+        ) : null}
       </div>
     </Sheet>
   );

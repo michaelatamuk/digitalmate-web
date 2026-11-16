@@ -615,6 +615,42 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await expect(page.locator('.hive-task-row').first()).toBeVisible();
 });
 
+test('a bridged build talks to the reference bridge', async ({ page }) => {
+  const bridged = 'http://127.0.0.1:5176';
+  await page.goto(`${bridged}/`);
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+
+  await expect(page.locator('.hive-live')).toContainText('Hive bridge');
+  await expect(page.locator('.hive-diagnostics')).toContainText('Contract v1');
+
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer input[type="file"]').setInputFiles({
+    name: 'pixel.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
+  });
+  await page.locator('.hive-composer textarea').fill('E2E bridged task');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Done', { timeout: 20_000 });
+  // The output is the bridge's, not the local mock's.
+  await expect(page.locator('.hive-output').first()).toContainText('Bridge finished');
+  // The reader's lane survives the snapshots the bridge keeps pushing.
+  await expect(page.locator('.hive-composer-head')).toContainText('Forge');
+  await expect(page.locator('.hive-detail h3')).toContainText('E2E bridged task');
+
+  // Attachment bytes went to the bridge and come back for a preview.
+  await expect(page.locator('.hive-attachments .hive-attachment-open')).toHaveCount(1);
+  await page.locator('.hive-attachments .hive-attachment-open').first().click();
+  await expect(page.locator('.hive-preview img')).toBeVisible();
+  await expect(page.locator('.hive-preview img')).toHaveAttribute('src', /\/api\/hive\/attachment\//);
+  await page.locator('.hive-preview').getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('.hive-preview')).toHaveCount(0);
+});
+
 test('a shared link lands in a Hive draft and is consumed once', async ({ page }) => {
   await page.goto('/?title=Launch%20notes&text=Read%20this&url=https%3A%2F%2Fexample.com%2Fx');
   await expect(page.locator('.hive')).toBeVisible();

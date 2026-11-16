@@ -256,7 +256,7 @@ describe('Hive local transport', () => {
         type: 'text/plain'
       }))
     });
-    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.attachments).toEqual([
+    expect(hive.snapshot().tasks.find(task => task.id === taskId)?.attachments.map(item => item.name)).toEqual([
       'f0.txt', 'f1.txt', 'f2.txt', 'f3.txt', 'f4.txt'
     ]);
   });
