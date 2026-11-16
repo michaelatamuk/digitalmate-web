@@ -33,6 +33,17 @@ to guess state after a command.
 `Authorization: Bearer <token>` is sent when a token is configured. The event stream uses
 `?access_token=` because `EventSource` cannot set headers; the bridge must accept either.
 
+## Idempotency
+
+Every POST body also carries a client-generated `operationId` (UUID). Repeating the same
+`operationId` must return the same result — for `/send`, the **same task id**, never a second task.
+
+- Transient failures (network error, timeout, 5xx) leave the command pending in the sheet, which
+  offers **Retry**; the retry re-posts the identical body, operation id included.
+- Refusals (409, 410/412, 4xx) are not retried — the command is wrong, so repeating it is pointless.
+- The client does not queue commands locally: a command either succeeds on the bridge or is offered
+  for an explicit retry.
+
 ## Snapshot shape
 
 `HiveSnapshot` is defined in `src/domain/hive.ts` and validated by `readHiveSnapshot`, which fills

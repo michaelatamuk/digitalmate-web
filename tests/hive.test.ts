@@ -203,8 +203,7 @@ describe('Hive local transport', () => {
     expect(memoryInUse(hive.snapshot(), 'scout').length).toBe(entries.length);
   });
 
-  it('loads a v2 backup that predates memory fields', async () => {
-    const source = new MockHiveTransport(0);
+  it('loads a v2 backup that predates memory fields', async () => {    const source = new MockHiveTransport(0);
     await source.send({ laneId: 'scout', text: 'Build an artifact' });
     const legacy = source.snapshot() as Record<string, unknown>;
     delete legacy.memory;
@@ -221,5 +220,17 @@ describe('Hive local transport', () => {
     expect(target.snapshot().memory).toEqual([]);
     expect(target.snapshot().memoryCutoffAt).toEqual({});
     expect(target.snapshot().tasks.length).toBeGreaterThan(0);
+  });
+
+  it('deduplicates a retried send by operation id', async () => {
+    const hive = new MockHiveTransport(0);
+    const first = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-1' });
+    const retried = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-1' });
+    expect(retried).toBe(first);
+    expect(hive.snapshot().tasks.filter(task => task.operationId === 'op-1').length).toBe(1);
+
+    const other = await hive.send({ laneId: 'scout', text: 'Same command', operationId: 'op-2' });
+    expect(other).not.toBe(first);
+    expect(hive.snapshot().tasks.filter(task => task.operationId === 'op-1').length).toBe(1);
   });
 });

@@ -86,7 +86,11 @@ describe('Hive bridge transport', () => {
 
     const sendCall = fetchImpl.mock.calls.find(call => String(call[0]).endsWith('/api/hive/send'));
     expect(sendCall).toBeTruthy();
-    expect(JSON.parse((sendCall![1] as { body: string }).body)).toEqual({ laneId: 'scout', text: 'Hello bridge' });
+    expect(JSON.parse((sendCall![1] as { body: string }).body)).toEqual({
+      laneId: 'scout',
+      text: 'Hello bridge',
+      operationId: expect.any(String)
+    });
     transport.dispose();
   });
 
@@ -253,6 +257,52 @@ describe('Hive bridge transport', () => {
     // Backoff starts at one second; the reconnect happens without user input.
     await vi.waitFor(() => expect(urls.length).toBe(2), { timeout: 4_000 });
     await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+    transport.dispose();
+  });
+
+  it('retries a transient failure with the same operation id', async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    let failNext = true;
+    const fetchImpl = vi.fn(async (input: unknown, init?: { body?: string }) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      const body = JSON.parse(init?.body ?? '{}') as Record<string, unknown>;
+      bodies.push(body);
+      if (failNext) {
+        failNext = false;
+        return jsonResponse({}, 503);
+      }
+      return jsonResponse({ taskId: 'task_new', snapshot: fixture });
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    await expect(transport.send({ laneId: 'scout', text: 'Hello' })).rejects.toMatchObject({ kind: 'unavailable' });
+    expect(transport.hasFailedOperation()).toBe(true);
+
+    await transport.retryLastOperation();
+    expect(bodies.length).toBe(2);
+    expect(bodies[0].operationId).toBeTruthy();
+    expect(bodies[1].operationId).toBe(bodies[0].operationId);
+    expect(transport.hasFailedOperation()).toBe(false);
+    transport.dispose();
+  });
+
+  it('does not offer a retry for a rejected command', async () => {
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
+      return jsonResponse({}, 409);
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    await expect(transport.stop('task_bridge_1')).rejects.toMatchObject({ kind: 'conflict' });
+    expect(transport.hasFailedOperation()).toBe(false);
     transport.dispose();
   });
 

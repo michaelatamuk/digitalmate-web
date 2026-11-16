@@ -1,7 +1,7 @@
 import type { HiveBackup, HiveEvent, HiveSendInput, HiveSnapshot } from '../domain/hive';
 import { emptyHiveSnapshot, readHiveSnapshot } from '../domain/hive';
 import type { HiveTransport, HiveTransportStatus } from './hive';
-import { HIVE_FEATURES, MockHiveTransport } from './hive';
+import { HIVE_FEATURES, MockHiveTransport, newOperationId } from './hive';
 import type { HiveFeature } from './hive';
 
 /**
@@ -110,6 +110,8 @@ export class BridgeHiveTransport implements HiveTransport {
   private lastEventId = '';
   private resumeTimer: number | null = null;
   private resumeAttempt = 0;
+  /** Last command that failed in a retryable way, kept so Retry reuses its operation id. */
+  private failed: { path: string; body: Record<string, unknown> } | null = null;
   private readonly fetchImpl: typeof fetch;
   private readonly eventSourceFactory: (url: string) => EventSourceLike;
   private readonly timeoutMs: number;
@@ -148,6 +150,23 @@ export class BridgeHiveTransport implements HiveTransport {
     return this.capabilities.has(feature);
   }
 
+  hasFailedOperation(): boolean {
+    return this.failed !== null;
+  }
+
+  /** Re-posts the failed command with its original body, so the operation id is unchanged. */
+  async retryLastOperation(): Promise<void> {
+    const failed = this.failed;
+    if (!failed) return;
+    this.failed = null;
+    try {
+      await this.post(failed.path, failed.body);
+    } catch (error) {
+      this.failed = failed;
+      throw error;
+    }
+  }
+
   retry(): void {
     if (this.disposed) return;
     this.resumeAttempt = 0;
@@ -171,22 +190,23 @@ export class BridgeHiveTransport implements HiveTransport {
   }
 
   async send(input: HiveSendInput): Promise<string> {
-    const result = await this.post('/api/hive/send', input);
+    const operationId = input.operationId?.trim() || newOperationId();
+    const result = await this.post('/api/hive/send', { ...input, operationId });
     const taskId = typeof result.taskId === 'string' ? result.taskId : '';
     if (!taskId) throw new Error('The Hive bridge did not return a task id.');
     return taskId;
   }
 
   async control(taskId: string, action: 'steer' | 'queue' | 'preempt', text: string): Promise<void> {
-    await this.post('/api/hive/control', { taskId, action, text });
+    await this.post('/api/hive/control', { taskId, action, text, operationId: newOperationId() });
   }
 
   async answer(taskId: string, questionId: string, text: string): Promise<void> {
-    await this.post('/api/hive/answer', { taskId, questionId, text });
+    await this.post('/api/hive/answer', { taskId, questionId, text, operationId: newOperationId() });
   }
 
   async stop(taskId: string): Promise<void> {
-    await this.post('/api/hive/stop', { taskId });
+    await this.post('/api/hive/stop', { taskId, operationId: newOperationId() });
   }
 
   eraseArtifact(artifactId: string): void {
@@ -389,12 +409,23 @@ export class BridgeHiveTransport implements HiveTransport {
   }
 
   private async post(path: string, body: unknown): Promise<SnapshotResponse> {
-    const response = await this.request(path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    let response: unknown;
+    try {
+      response = await this.request(path, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+    } catch (error) {
+      // Only transient failures are worth replaying; a conflict or a refusal means the command
+      // itself is wrong and repeating it changes nothing.
+      if (error instanceof HiveTransportError && (error.kind === 'unavailable' || error.kind === 'timeout')) {
+        this.failed = { path, body: body as Record<string, unknown> };
+      }
+      throw error;
+    }
     const parsed = response as SnapshotResponse;
+    this.failed = null;
     const snapshot = readHiveSnapshot(parsed.snapshot);
     if (snapshot) {
       this.snapshotValue = snapshot;

@@ -542,6 +542,13 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   ).toEqual([]);
 
   await page.getByRole('tab', { name: /Forge/ }).click();
+  // Drafts belong to the lane: switching Bees must not discard unsent work.
+  await page.locator('.hive-composer textarea').fill('forge draft in progress');
+  await page.getByRole('tab', { name: /Ledger/ }).click();
+  await expect(page.locator('.hive-composer textarea')).toHaveValue('');
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await expect(page.locator('.hive-composer textarea')).toHaveValue('forge draft in progress');
+
   await page.locator('.hive-composer textarea').fill('Draft an email to Alice about the launch');
   await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });

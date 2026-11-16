@@ -130,9 +130,24 @@ Shipped:
 - Tests: event-id tracking + `since=` on manual retry, and a real-timer test that asserts the client
   reconnects by itself after `onerror`
 
+## Implementation slice 9 (2026-11-16): operation ids and per-lane drafts
+
+Shipped:
+
+- Every mutating call carries a client-generated `operationId`; the mock deduplicates by it (a
+  retried send returns the existing task instead of creating a second one)
+- `HiveTransport.hasFailedOperation()` / `retryLastOperation()`: transient failures (network,
+  timeout, 5xx) are kept and re-posted with the **same** body and operation id; refusals
+  (conflict/stale/unsupported) are not, because repeating them changes nothing
+- The sheet shows an inline "The last action did not reach the bridge" row with **Retry**
+- Drafts and attachments are kept per lane: switching Bees restores that lane's unsent work instead
+  of clearing the composer
+- Tests: mock dedupe by operation id, bridge retry reusing the id, no retry offered for a 409, and
+  an E2E pass that types in Forge, switches to Ledger, returns and finds the draft intact
+
 Still to do in the Hive slice:
 
-- server-side `/api/hive/*` implementation, run/task mapping and idempotency (contract frozen)
+- server-side `/api/hive/*` implementation, run/task mapping and dedupe (contract frozen)
 - health endpoint behind the client diagnostics line
 - Android notification routing and share intake
 

@@ -42,6 +42,10 @@ export interface HiveTransport {
   snapshot: () => HiveSnapshot;
   status: () => HiveTransportStatus;
   supports: (feature: HiveFeature) => boolean;
+  /** True when the last bridge command failed in a way that is worth retrying. */
+  hasFailedOperation: () => boolean;
+  /** Re-sends the failed command with the same operation id, so the bridge can dedupe it. */
+  retryLastOperation: () => Promise<void>;
   retry: () => void;
   selectLane: (laneId: string) => void;
   selectTask: (taskId: string) => void;
@@ -112,6 +116,13 @@ function id(prefix: string): string {
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
+}
+
+/** Stable command id: `crypto.randomUUID` when available, otherwise a local fallback. */
+export function newOperationId(): string {
+  const random = globalThis.crypto as Crypto | undefined;
+  if (random && typeof random.randomUUID === 'function') return random.randomUUID();
+  return `op-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 const STORAGE_KEY = 'digitalmate.hive.v2';
@@ -192,6 +203,14 @@ export class MockHiveTransport implements HiveTransport {
     return true;
   }
 
+  hasFailedOperation(): boolean {
+    return false;
+  }
+
+  async retryLastOperation(): Promise<void> {
+    // The local demo has no transport to retry.
+  }
+
   retry(): void {
     // The local demo has nothing to reconnect to.
   }
@@ -239,8 +258,12 @@ export class MockHiveTransport implements HiveTransport {
     const lane = this.lanes.find(item => item.id === input.laneId);
     const text = input.text.trim();
     if (!lane || !text) throw new Error('A Bee and a request are required.');
+    const operationId = input.operationId?.trim() || newOperationId();
+    // A retried command must not create a second task for the same Bee.
+    const existing = this.tasks.find(task => task.laneId === lane.id && task.operationId === operationId);
+    if (existing) return existing.id;
     const busy = Boolean(currentTask(this.tasks, lane.id));
-    const task = this.createTask(lane.id, text, busy, input.attachments ?? []);
+    const task = this.createTask(lane.id, text, busy, input.attachments ?? [], operationId);
     this.touchLane(lane.id);
     this.messages.push({
       id: id('msg'),
@@ -503,7 +526,13 @@ export class MockHiveTransport implements HiveTransport {
     );
   }
 
-  private createTask(laneId: string, text: string, queued: boolean, attachments: string[]): HiveTask {
+  private createTask(
+    laneId: string,
+    text: string,
+    queued: boolean,
+    attachments: string[],
+    operationId: string = newOperationId()
+  ): HiveTask {
     const task: HiveTask = {
       id: id('task'),
       laneId,
@@ -514,6 +543,7 @@ export class MockHiveTransport implements HiveTransport {
       output: '',
       steering: [],
       attachments: attachments.slice(0, 5),
+      operationId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       artifacts: []

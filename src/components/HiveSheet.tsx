@@ -49,10 +49,11 @@ export function HiveSheet({
   const hive = currentHiveTransport();
   const [snapshot, setSnapshot] = useState<HiveSnapshot>(() => hive.snapshot());
   const [status, setStatus] = useState<HiveTransportStatus>(() => hive.status());
-  const [draft, setDraft] = useState('');
+  // Drafts and attachments are kept per lane, so switching Bees never discards unsent work.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [attachmentsByLane, setAttachmentsByLane] = useState<Record<string, string[]>>({});
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
-  const [attachments, setAttachments] = useState<string[]>([]);
   const [openArtifact, setOpenArtifact] = useState('');
   const [view, setView] = useState<'tasks' | 'activity' | 'memory'>('tasks');
   const [activitySeenAt, setActivitySeenAt] = useState(0);
@@ -68,6 +69,19 @@ export function HiveSheet({
 
   const lane = snapshot.lanes.find(item => item.id === snapshot.selectedLaneId) ?? snapshot.lanes[0];
   const now = Date.now();
+  const laneDraftKey = lane?.id ?? '';
+  const draft = drafts[laneDraftKey] ?? '';
+  const attachments = attachmentsByLane[laneDraftKey] ?? [];
+  const setDraft = (value: string): void => {
+    setDrafts(current => ({ ...current, [laneDraftKey]: value }));
+  };
+  const setAttachments = (updater: string[] | ((current: string[]) => string[])): void => {
+    setAttachmentsByLane(current => {
+      const existing = current[laneDraftKey] ?? [];
+      const next = typeof updater === 'function' ? updater(existing) : updater;
+      return { ...current, [laneDraftKey]: next };
+    });
+  };
   const laneTasks = useMemo(
     () =>
       [...snapshot.tasks]
@@ -263,7 +277,6 @@ export function HiveSheet({
                 onClick={() => {
                   hive.selectLane(item.id);
                   setAnswer('');
-                  setDraft('');
                   setView('tasks');
                 }}
               >
@@ -290,7 +303,6 @@ export function HiveSheet({
               onClick={() => {
                 hive.selectLane('beebou');
                 setAnswer('');
-                setDraft('');
               }}
             >
               <span className="hive-avatar" style={{ background: '#a06b58' }}>✦</span>
@@ -667,6 +679,23 @@ export function HiveSheet({
                 rows={2}
               />
               <div className="hive-actions">
+                {hive.hasFailedOperation() ? (
+                  <div className="hive-retry">
+                    <span>{tr('The last action did not reach the bridge.', '上一个操作未送达桥接。')}</span>
+                    <button
+                      type="button"
+                      className="hive-link"
+                      onClick={() => {
+                        void hive.retryLastOperation()
+                          .then(() => onNotice(tr('Action retried.', '操作已重试。')))
+                          .catch((error: unknown) =>
+                            onNotice(error instanceof Error ? error.message : tr('Retry failed.', '重试失败。')));
+                      }}
+                    >
+                      {tr('Retry', '重试')}
+                    </button>
+                  </div>
+                ) : null}
                 <button type="button" className="primary-action" disabled={!draft.trim() || busy} onClick={() => void submit('send')}>
                   <Icon name="send" size={14} />
                   {tr('Send', '发送')}

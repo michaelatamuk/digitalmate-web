@@ -61,6 +61,8 @@ export interface HiveTask {
   output: string;
   steering: string[];
   attachments: string[];
+  /** Stable id for the command that created the task, so a retry does not create a second one. */
+  operationId?: string;
   createdAt: number;
   updatedAt: number;
   question?: HiveQuestion;
@@ -131,6 +133,8 @@ export interface HiveSendInput {
   laneId: string;
   text: string;
   attachments?: string[];
+  /** Caller-supplied id so a retried send is deduplicated instead of creating a second task. */
+  operationId?: string;
 }
 
 export interface HiveEvent {
