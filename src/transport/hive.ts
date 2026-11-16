@@ -5,6 +5,8 @@ import type {
   HiveBackup,
   HiveEvent,
   HiveLane,
+  HiveMemoryEntry,
+  HiveMemoryKind,
   HiveMessage,
   HiveQuestion,
   HiveSendInput,
@@ -25,6 +27,8 @@ export interface HiveTransport {
   stop: (taskId: string) => Promise<void>;
   eraseArtifact: (artifactId: string) => void;
   markActivityRead: (laneId: string) => void;
+  cutOffMemory: (laneId: string, before: number) => void;
+  restoreMemory: (laneId: string) => void;
   exportBackup: () => HiveBackup;
   importBackup: (raw: string) => { ok: boolean; error?: string };
   reset: () => void;
@@ -105,6 +109,8 @@ export class MockHiveTransport implements HiveTransport {
   private activity: HiveActivity[] = [];
   private activityReadAt: Record<string, number> = {};
   private activityTrimmed = false;
+  private memory: HiveMemoryEntry[] = [];
+  private memoryCutoffAt: Record<string, number> = {};
   private selectedLaneId = 'beebou';
   private selectedTaskId = '';
   private listeners = new Set<(event: HiveEvent) => void>();
@@ -139,6 +145,8 @@ export class MockHiveTransport implements HiveTransport {
     this.activity = snapshot.activity;
     this.activityReadAt = snapshot.activityReadAt;
     this.activityTrimmed = snapshot.activityTrimmed;
+    this.memory = snapshot.memory;
+    this.memoryCutoffAt = snapshot.memoryCutoffAt;
     this.selectedLaneId = this.lanes.some(lane => lane.id === snapshot.selectedLaneId)
       ? snapshot.selectedLaneId
       : 'beebou';
@@ -160,6 +168,8 @@ export class MockHiveTransport implements HiveTransport {
       activity: clone(this.activity),
       activityReadAt: { ...this.activityReadAt },
       activityTrimmed: this.activityTrimmed,
+      memory: clone(this.memory),
+      memoryCutoffAt: { ...this.memoryCutoffAt },
       selectedLaneId: this.selectedLaneId,
       selectedTaskId: this.selectedTaskId
     };
@@ -270,6 +280,7 @@ export class MockHiveTransport implements HiveTransport {
     task.steering.push(answer);
     task.updatedAt = Date.now();
     this.record('answer', task.laneId, task.id, `Answered · ${answer}`);
+    this.recordMemory('decision', task.laneId, task.id, `User decided: ${answer}`);
     this.messages.push({
       id: id('msg'),
       laneId: task.laneId,
@@ -305,10 +316,32 @@ export class MockHiveTransport implements HiveTransport {
     this.activity = [];
     this.activityReadAt = {};
     this.activityTrimmed = false;
+    this.memory = [];
+    this.memoryCutoffAt = {};
     this.selectedLaneId = 'beebou';
     this.selectedTaskId = '';
     this.seed();
     this.emit('snapshot');
+  }
+
+  /** Hides this lane's memory at and before `before` from what the Bee reuses. */
+  cutOffMemory(laneId: string, before: number): void {
+    if (!Number.isFinite(before) || before <= 0) return;
+    const existing = this.memoryCutoffAt[laneId] ?? 0;
+    if (before <= existing) return;
+    this.memoryCutoffAt = { ...this.memoryCutoffAt, [laneId]: before };
+    this.record('task_status', laneId, '', 'Memory cut-off moved');
+    this.emit('lane');
+  }
+
+  /** Drops the lane's cut-off, so every stored memory entry is reused again. */
+  restoreMemory(laneId: string): void {
+    if (!(laneId in this.memoryCutoffAt)) return;
+    const next = { ...this.memoryCutoffAt };
+    delete next[laneId];
+    this.memoryCutoffAt = next;
+    this.record('task_status', laneId, '', 'Memory cut-off cleared');
+    this.emit('lane');
   }
 
   dispose(): void {
@@ -374,8 +407,7 @@ export class MockHiveTransport implements HiveTransport {
   }
 
   /** Replaces the local demo state with a backup file's contents. */
-  importBackup(raw: string): { ok: boolean; error?: string } {
-    let parsed: unknown;
+  importBackup(raw: string): { ok: boolean; error?: string } {    let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -422,6 +454,14 @@ export class MockHiveTransport implements HiveTransport {
       text: 'I found three signals: local models, on-device tools, and inspectable memory.',
       createdAt: now - 9 * 60_000
     });
+    this.memory.push({
+      id: 'mem_seed_scout',
+      laneId: 'scout',
+      taskId: 'task_seed_scout',
+      kind: 'task_summary',
+      text: 'On-device agents are moving to narrow, bounded jobs; inspectable memory is the open problem.',
+      at: now - 9 * 60_000
+    });
     this.lanes = this.lanes.map(lane =>
       lane.id === 'scout' ? { ...lane, lastActivityAt: now - 9 * 60_000 } : lane
     );
@@ -454,6 +494,18 @@ export class MockHiveTransport implements HiveTransport {
       this.activity = this.activity.slice(this.activity.length - MAX_ACTIVITY);
       this.activityTrimmed = true;
     }
+  }
+
+  private recordMemory(kind: HiveMemoryKind, laneId: string, taskId: string, text: string): void {
+    const at = Date.now();
+    // Keep memory readable: the view shows one line, the full answer stays on the task.
+    this.memory.push({ id: id('mem'), laneId, taskId, kind, text: text.slice(0, 200), at });
+  }
+
+  /** How many entries the lane would reuse right now, honouring its cut-off. */
+  private memoryInUseCount(laneId: string): number {
+    const cutoff = this.memoryCutoffAt[laneId] ?? 0;
+    return this.memory.filter(entry => entry.laneId === laneId && entry.at > cutoff).length;
   }
 
   private pump(laneId: string): void {
@@ -523,9 +575,14 @@ export class MockHiveTransport implements HiveTransport {
     task.step = 'Done';
     task.updatedAt = Date.now();
     const steering = task.steering.length > 0 ? ` I also used your steer: ${task.steering.join('; ')}.` : '';
-    task.output = `${this.answerFor(task)}${steering}`;
+    const remembered = this.memoryInUseCount(task.laneId);
+    const memoryNote = remembered > 0
+      ? ` I reused ${remembered} memory ${remembered === 1 ? 'entry' : 'entries'} from this lane.`
+      : '';
+    task.output = `${this.answerFor(task)}${steering}${memoryNote}`;
     task.artifacts = this.artifactsFor(task);
     task.report = this.reportFor(task);
+    this.recordMemory('task_summary', task.laneId, task.id, `${task.title} — ${task.output}`);
     this.record('task_status', task.laneId, task.id, `Done · ${task.title}`);
     for (const artifact of task.artifacts) {
       this.record('artifact', task.laneId, task.id, `Artifact · ${artifact.title}`);

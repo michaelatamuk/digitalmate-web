@@ -3,10 +3,13 @@ import type { HiveArtifact, HiveSnapshot } from '../domain/hive';
 import {
   currentTask,
   laneActivity,
+  laneCutoff,
   laneHasActivityGap,
   laneLastActivity,
+  laneMemory,
   laneUnreadCount,
   latestTask,
+  memoryInUse,
   relativeTime,
   taskRef,
   taskStatusLabel
@@ -48,7 +51,7 @@ export function HiveSheet({
   const [busy, setBusy] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [openArtifact, setOpenArtifact] = useState('');
-  const [view, setView] = useState<'tasks' | 'activity'>('tasks');
+  const [view, setView] = useState<'tasks' | 'activity' | 'memory'>('tasks');
   const [activitySeenAt, setActivitySeenAt] = useState(0);
   const importRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -76,6 +79,9 @@ export function HiveSheet({
   const laneFeed = lane ? laneActivity(snapshot, lane.id) : [];
   const laneUnread = lane ? laneUnreadCount(snapshot, lane.id) : 0;
   const laneGap = lane ? laneHasActivityGap(snapshot, lane.id) : false;
+  const laneMemories = lane ? laneMemory(snapshot, lane.id) : [];
+  const memoryCutoff = lane ? laneCutoff(snapshot, lane.id) : 0;
+  const memoryUsed = lane ? memoryInUse(snapshot, lane.id).length : 0;
 
   const openActivity = (laneId: string): void => {
     // Freeze the cursor before marking read so the entries added in this session stay marked "new".
@@ -317,6 +323,15 @@ export function HiveSheet({
                       {tr('Activity', '动态')}
                       {laneUnread > 0 ? <span className="hive-unread is-inline">{laneUnread}</span> : null}
                     </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={view === 'memory'}
+                      className={`hive-view-tab ${view === 'memory' ? 'is-active' : ''}`}
+                      onClick={() => setView('memory')}
+                    >
+                      {tr('Memory', '记忆')}
+                    </button>
                   </div>
                   <button
                     type="button"
@@ -355,6 +370,60 @@ export function HiveSheet({
                             </span>
                             {isNew ? <span className="hive-new">{tr('New', '新')}</span> : null}
                           </button>
+                        );
+                      })
+                    )}
+                  </div>
+                ) : view === 'memory' ? (
+                  <div className="hive-memory" role="list" aria-label={tr('Lane memory', '工作线记忆')}>
+                    <div className="hive-memory-head">
+                      <span>
+                        {tr(
+                          `${memoryUsed} of ${laneMemories.length} in use`,
+                          `使用中 ${memoryUsed} / ${laneMemories.length}`
+                        )}
+                      </span>
+                      {memoryCutoff > 0 ? (
+                        <button
+                          type="button"
+                          className="hive-link"
+                          onClick={() => {
+                            transport.current?.restoreMemory(lane.id);
+                            onNotice(tr('Memory cut-off cleared.', '记忆截断已清除。'));
+                          }}
+                        >
+                          {tr('Restore all', '全部恢复')}
+                        </button>
+                      ) : null}
+                    </div>
+                    {laneMemories.length === 0 ? (
+                      <p className="settings-note">{tr('Nothing remembered in this lane yet.', '这条工作线还没有记忆。')}</p>
+                    ) : (
+                      laneMemories.map(entry => {
+                        const cut = memoryCutoff > 0 && entry.at <= memoryCutoff;
+                        return (
+                          <div className={`hive-memory-row ${cut ? 'is-cut' : ''}`} key={entry.id} role="listitem">
+                            <div className="hive-memory-copy">
+                              <strong>{entry.text}</strong>
+                              <em>
+                                {entry.kind.replace('_', ' ')} · {shortTime(entry.at, locale)}
+                              </em>
+                            </div>
+                            {cut ? (
+                              <span className="hive-erased">{tr('Cut off', '已截断')}</span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="hive-link"
+                                onClick={() => {
+                                  transport.current?.cutOffMemory(lane.id, entry.at);
+                                  onNotice(tr('Memory before this entry is cut off.', '此条之前的记忆已截断。'));
+                                }}
+                              >
+                                {tr('Cut off here', '从此截断')}
+                              </button>
+                            )}
+                          </div>
                         );
                       })
                     )}

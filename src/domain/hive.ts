@@ -99,6 +99,18 @@ export interface HiveActivity {
   at: number;
 }
 
+export type HiveMemoryKind = 'task_summary' | 'decision' | 'artifact';
+
+/** What a lane remembers and can reuse. The cut-off hides older entries from the Bee. */
+export interface HiveMemoryEntry {
+  id: string;
+  laneId: string;
+  taskId: string;
+  kind: HiveMemoryKind;
+  text: string;
+  at: number;
+}
+
 export interface HiveSnapshot {
   lanes: HiveLane[];
   tasks: HiveTask[];
@@ -108,6 +120,9 @@ export interface HiveSnapshot {
   activityReadAt: Record<string, number>;
   /** True when the bounded log dropped earlier entries, so the feed is not continuous. */
   activityTrimmed: boolean;
+  memory: HiveMemoryEntry[];
+  /** Per-lane timestamp; entries older than this are not reused by the Bee. */
+  memoryCutoffAt: Record<string, number>;
   selectedLaneId: string;
   selectedTaskId: string;
 }
@@ -124,7 +139,7 @@ export interface HiveEvent {
 }
 
 /** Bumped whenever the persisted shape changes; the store migrates older payloads forward. */
-export const HIVE_STORE_VERSION = 2;
+export const HIVE_STORE_VERSION = 3;
 
 export interface HiveBackup {
   kind: 'digitalmate.hive.backup';
@@ -141,6 +156,8 @@ export function emptyHiveSnapshot(): HiveSnapshot {
     activity: [],
     activityReadAt: {},
     activityTrimmed: false,
+    memory: [],
+    memoryCutoffAt: {},
     selectedLaneId: 'beebou',
     selectedTaskId: ''
   };
@@ -166,6 +183,10 @@ export function readHiveSnapshot(value: unknown): HiveSnapshot | null {
       ? (candidate.activityReadAt as Record<string, number>)
       : base.activityReadAt,
     activityTrimmed: candidate.activityTrimmed === true,
+    memory: Array.isArray(candidate.memory) ? candidate.memory : base.memory,
+    memoryCutoffAt: candidate.memoryCutoffAt && typeof candidate.memoryCutoffAt === 'object'
+      ? (candidate.memoryCutoffAt as Record<string, number>)
+      : base.memoryCutoffAt,
     selectedLaneId: typeof candidate.selectedLaneId === 'string' ? candidate.selectedLaneId : base.selectedLaneId,
     selectedTaskId: typeof candidate.selectedTaskId === 'string' ? candidate.selectedTaskId : ''
   };
@@ -267,4 +288,21 @@ export function laneHasActivityGap(snapshot: HiveSnapshot, laneId: string): bool
   if (!snapshot.activityTrimmed) return false;
   const items = laneActivity(snapshot, laneId);
   return items.length > 0;
+}
+
+/** Newest first, as the memory view renders it. */
+export function laneMemory(snapshot: HiveSnapshot, laneId: string): HiveMemoryEntry[] {
+  return [...snapshot.memory]
+    .filter(item => item.laneId === laneId)
+    .sort((left, right) => right.at - left.at);
+}
+
+export function laneCutoff(snapshot: HiveSnapshot, laneId: string): number {
+  return snapshot.memoryCutoffAt[laneId] ?? 0;
+}
+
+/** Entries the Bee would actually reuse: everything newer than the lane's cut-off. */
+export function memoryInUse(snapshot: HiveSnapshot, laneId: string): HiveMemoryEntry[] {
+  const cutoff = laneCutoff(snapshot, laneId);
+  return laneMemory(snapshot, laneId).filter(entry => entry.at > cutoff);
 }

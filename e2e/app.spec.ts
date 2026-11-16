@@ -560,6 +560,16 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   const artifactFile = await artifactDownload;
   expect(artifactFile.suggestedFilename()).toMatch(/\.txt$/);
 
+  // Shared memory: the lane remembers the run, and a cut-off hides older entries from reuse.
+  await page.getByRole('tab', { name: 'Memory', exact: true }).click();
+  await expect(page.locator('.hive-memory-row').first()).toBeVisible();
+  await expect(page.locator('.hive-memory-head')).toContainText('in use');
+  await page.getByRole('button', { name: 'Cut off here' }).first().click();
+  await expect(page.locator('.hive-memory-row.is-cut').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Restore all' }).click();
+  await expect(page.locator('.hive-memory-row.is-cut')).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
+
   // Activity lane: the run is logged, counts as unread until the feed is opened, and older
   // entries are not silently implied — the feed is a bounded cursor log.
   await expect(page.locator('.hive-lane .hive-unread').first()).toBeVisible();

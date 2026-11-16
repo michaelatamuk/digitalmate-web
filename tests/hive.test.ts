@@ -3,9 +3,12 @@ import { MockHiveTransport } from '../src/transport/hive';
 import {
   currentTask,
   laneActivity,
+  laneCutoff,
   laneHasActivityGap,
   laneLastActivity,
+  laneMemory,
   laneUnreadCount,
+  memoryInUse,
   relativeTime,
   taskIsOpen,
   taskRef
@@ -171,5 +174,52 @@ describe('Hive local transport', () => {
     expect(relativeTime(at, at + 90_000, translate)).toBe('1m ago');
     expect(relativeTime(at, at + 3 * 3_600_000, translate)).toBe('3h ago');
     expect(relativeTime(0, at, translate)).toBe('');
+  });
+
+  it('remembers finished work and decisions, and reuses them until cut off', async () => {
+    const hive = new MockHiveTransport(0);
+    expect(laneMemory(hive.snapshot(), 'scout').length).toBe(1);
+
+    const taskId = await hive.send({ laneId: 'scout', text: 'Build an artifact' });
+    const afterRun = hive.snapshot();
+    expect(laneMemory(afterRun, 'scout').length).toBe(2);
+    expect(afterRun.tasks.find(task => task.id === taskId)?.output).toContain('reused 1 memory entry');
+
+    const emailTask = await hive.send({ laneId: 'scout', text: 'Draft an email to Bob' });
+    const waiting = hive.snapshot().tasks.find(task => task.id === emailTask)!;
+    await hive.answer(emailTask, waiting.question!.id, 'Keep it as a draft');
+    expect(laneMemory(hive.snapshot(), 'scout').some(entry => entry.kind === 'decision')).toBe(true);
+
+    const entries = laneMemory(hive.snapshot(), 'scout');
+    expect(memoryInUse(hive.snapshot(), 'scout').length).toBe(entries.length);
+
+    // Cutting at an entry hides it and everything older.
+    hive.cutOffMemory('scout', entries[0].at);
+    expect(laneCutoff(hive.snapshot(), 'scout')).toBe(entries[0].at);
+    expect(memoryInUse(hive.snapshot(), 'scout').length).toBe(0);
+
+    hive.restoreMemory('scout');
+    expect(laneCutoff(hive.snapshot(), 'scout')).toBe(0);
+    expect(memoryInUse(hive.snapshot(), 'scout').length).toBe(entries.length);
+  });
+
+  it('loads a v2 backup that predates memory fields', async () => {
+    const source = new MockHiveTransport(0);
+    await source.send({ laneId: 'scout', text: 'Build an artifact' });
+    const legacy = source.snapshot() as Record<string, unknown>;
+    delete legacy.memory;
+    delete legacy.memoryCutoffAt;
+
+    const target = new MockHiveTransport(0);
+    const result = target.importBackup(JSON.stringify({
+      kind: 'digitalmate.hive.backup',
+      version: 2,
+      savedAt: Date.now(),
+      snapshot: legacy
+    }));
+    expect(result.ok).toBe(true);
+    expect(target.snapshot().memory).toEqual([]);
+    expect(target.snapshot().memoryCutoffAt).toEqual({});
+    expect(target.snapshot().tasks.length).toBeGreaterThan(0);
   });
 });

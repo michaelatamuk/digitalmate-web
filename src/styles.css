@@ -7155,3 +7155,27 @@ a {
   color: #6f625a;
   font: 9px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
+
+.hive-memory { display: flex; flex-direction: column; gap: 4px; }
+.hive-memory-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 6px;
+  color: var(--ink-muted, #6f625a);
+  font-size: 10px;
+}
+.hive-memory-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(120, 96, 82, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.62);
+}
+.hive-memory-row.is-cut { opacity: 0.55; background: rgba(176, 122, 69, 0.07); }
+.hive-memory-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.hive-memory-copy strong { font-size: 11px; font-weight: 500; line-height: 1.5; }
+.hive-memory-copy em { font-size: 9px; font-style: normal; color: var(--ink-muted, #6f625a); }
