@@ -239,13 +239,26 @@ Shipped:
   a streaming bridge needing a virtualised feed)
 - Tests: the budget check runs in the normal suite, so a regression fails CI rather than a doc
 
+## Implementation slice 17 (2026-11-16): 0.5.0 release
+
+Shipped:
+
+- Version **0.5.0** (`package.json`, Android `versionCode 7` / `versionName 0.5.0`)
+- `CHANGELOG.md` with the Hive preview, activity lanes, attachments, share/notification plumbing,
+  the `HiveMode` flag, the bridge contract and the verification numbers
+- Release decision: **Hive ships visible on the local mock** (option A). It is honest — every screen
+  says "Local mock" — and a deployment that wants it hidden sets `VITE_HIVE_MODE=off` instead of
+  waiting for a bridge.
+- README documents the release, the flag and the bridge contract
+
 Still to do in the Hive slice:
 
-- share **files** into a Bee draft (text is routed today)
+- share **files** into a Bee draft (text is routed today; a POST share target needs service-worker
+  plumbing)
 - upload attachment bytes once a bridge upload endpoint exists
 - server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
-- release `0.5.0` (version bump, changelog, Hive flag default)
+- upstream contract fixtures captured from the Hive tests
 
 ## 1. Goal
 
