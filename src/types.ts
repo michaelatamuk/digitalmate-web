@@ -50,7 +50,7 @@ export interface AttachmentMeta {
   name: string;
   size: number;
   type: string;
-  kind: 'text' | 'image' | 'pdf' | 'other';
+  kind: 'text' | 'image' | 'pdf' | 'docx' | 'other';
 }export interface Attachment extends AttachmentMeta {
   id: string;
   url?: string;

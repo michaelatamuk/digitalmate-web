@@ -15,6 +15,9 @@ describe('local attachments', () => {
     expect(attachmentKind('photo.png', 'image/png')).toBe('image');
     expect(attachmentKind('report.pdf', 'application/pdf')).toBe('pdf');
     expect(attachmentKind('report.PDF', '')).toBe('pdf');
+    expect(attachmentKind('brief.docx', '')).toBe('docx');
+    expect(attachmentKind('brief.bin', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBe('docx');
+    expect(attachmentKind('legacy.doc', 'application/msword')).toBe('other');
     expect(attachmentKind('archive.zip', 'application/zip')).toBe('other');
   });
 

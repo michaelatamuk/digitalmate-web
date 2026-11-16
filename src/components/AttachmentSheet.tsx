@@ -3,6 +3,7 @@ import { formatFileSize } from '../lib/attachments';
 import { useI18n } from '../i18n/I18nContext';
 import { Icon } from './Icons';
 import { Sheet } from './Overlays';
+import { ZoomableImage } from './ZoomableImage';
 
 interface AttachmentSheetProps {
   attachment: Attachment;
@@ -31,7 +32,7 @@ export function AttachmentSheet({ attachment, onClose, onNotice }: AttachmentShe
       wide
     >
       {attachment.kind === 'image' && attachment.url ? (
-        <img className="attachment-preview-image" src={attachment.url} alt={attachment.name} />
+        <ZoomableImage src={attachment.url} alt={attachment.name} className="attachment-zoomable" />
       ) : null}
 
       {attachment.kind === 'text' && attachment.text ? (
@@ -71,6 +72,39 @@ export function AttachmentSheet({ attachment, onClose, onNotice }: AttachmentShe
         </div>
       ) : null}
 
+      {attachment.kind === 'docx' && attachment.text ? (
+        <>
+          <pre className="attachment-preview-text">{attachment.text}</pre>
+          <div className="attachment-preview-note">
+            <Icon name="check" size={18} />
+            <div>
+              <strong>{tr('Word text extracted locally', 'Word 文本已在本地提取')}</strong>
+              <p>
+                {tr(
+                  'Formatting, images and tables lose their layout. The file and its text never leave this browser.',
+                  '格式、图片和表格不会保留原有版式。文件与文本都不会离开当前浏览器。'
+                )}
+              </p>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {attachment.kind === 'docx' && !attachment.text ? (
+        <div className="attachment-preview-note">
+          <Icon name="info" size={18} />
+          <div>
+            <strong>{tr('No text found in this document', '此文档没有可提取文本')}</strong>
+            <p>
+              {tr(
+                'The document may contain only images, or it may be an older binary .doc file. Extraction runs locally.',
+                '文档可能只有图片，或是旧版二进制 .doc 文件。提取在本地进行。'
+              )}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       {attachment.kind === 'other' ? (
         <div className="attachment-preview-note">
           <Icon name="info" size={18} />
@@ -78,8 +112,8 @@ export function AttachmentSheet({ attachment, onClose, onNotice }: AttachmentShe
             <strong>{tr('No preview for this file type', '此文件类型暂不支持预览')}</strong>
             <p>
               {tr(
-                'Only text files and images are previewed locally. Nothing is uploaded.',
-                '目前仅支持在本地预览文本文件和图片，不会上传任何内容。'
+                'Text, images, PDF and Word files are previewed locally. Nothing is uploaded.',
+                '目前可在本地预览文本、图片、PDF 和 Word 文件，不会上传任何内容。'
               )}
             </p>
           </div>

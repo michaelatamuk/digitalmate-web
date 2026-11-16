@@ -1,5 +1,6 @@
 import type { Attachment, AttachmentMeta } from '../types';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { extractDocxText, isDocx } from './docx';
 
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 export const MAX_ATTACHMENTS = 5;
@@ -26,6 +27,7 @@ const TEXT_EXTENSIONS = new Set([
 export function attachmentKind(name: string, type: string): AttachmentMeta['kind'] {
   if (type.startsWith('image/')) return 'image';
   if (type === 'application/pdf' || name.toLowerCase().endsWith('.pdf')) return 'pdf';
+  if (isDocx(name, type)) return 'docx';
   const extension = name.includes('.') ? name.split('.').pop()?.toLowerCase() ?? '' : '';
   if (TEXT_EXTENSIONS.has(extension) || type.startsWith('text/')) return 'text';
   return 'other';
@@ -73,6 +75,11 @@ export async function readAttachment(file: File): Promise<Attachment> {
 
   if (base.kind === 'pdf') {
     const text = await extractPdfText(file).catch(() => '');
+    return text ? { ...base, text } : base;
+  }
+
+  if (base.kind === 'docx') {
+    const text = await extractDocxText(file).catch(() => '');
     return text ? { ...base, text } : base;
   }
 

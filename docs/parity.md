@@ -14,7 +14,7 @@ Status legend: ✅ present · 🟡 partial/mock · ❌ absent
 | Orbit rooms/sessions/task rows | 🟡 | Local task shell; remote room switching needs the optional bridge |
 | Stop / retry / task clear | ✅ | Stop, retry, copy, share and clear; task detail rows |
 | Approvals / quota | ✅ | ApprovalCard, ConnectionQuotaCard and failure surfaces |
-| Attachments and upload | ✅ | Local picker, text/image preview, PDF text extraction; no upload |
+| Attachments and upload | ✅ | Local picker, text/image preview, PDF and Word text extraction, zoomable previews; no upload |
 | Artifacts and preview | ✅ | Saved text, slides and A2UI surfaces render in the preview |
 | Local artifacts | ✅ | Save, browse, render surfaces, slides, download and delete |
 | Discovery feed | 🟡 | Local seeds plus real RSS/Atom import via local proxy |
@@ -103,7 +103,7 @@ No components from the tracked native list remain. Future native additions may s
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, covers, natural-language topics, sources, labs, welcome, offline banner, language, protocol, RSS, backup, Orbit fallback, Hive mock and bridged flows, share target, notifications, performance budget, mobile and axe |
-| Unit tests | ✅ | 175 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments, skills, artifacts, profiles, discovery and Hive domain/store/bridge/replay |
-| Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills and settings |
+| Unit tests | ✅ | 185 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments (incl. DOCX), skills, artifacts, profiles, discovery, Hive domain/store/bridge/replay and accessibility announcements |
+| Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills, settings and Hive; polite and assertive live regions announce task state |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | ✅ | Capacitor 8 shell, widget, share and notifications |

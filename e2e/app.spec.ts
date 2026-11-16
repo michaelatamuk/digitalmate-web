@@ -1,6 +1,28 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { strToU8, zipSync } from 'fflate';
+
+const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+/** A minimal, valid-enough .docx: only word/document.xml is read by the app. */
+function makeDocx(text: string): Buffer {
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>${text}</w:t></w:r></w:p></w:body>
+</w:document>`;
+  return Buffer.from(
+    zipSync({
+      '[Content_Types].xml': strToU8('<?xml version="1.0"?><Types/>'),
+      'word/document.xml': strToU8(xml)
+    })
+  );
+}
+
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64'
+);
 
 const composer = (page: Page) => page.locator('.composer textarea');
 
@@ -388,6 +410,34 @@ test('extracts searchable text from a local PDF', async ({ page }) => {
   await expect(page.getByText(/PDF text extracted locally/)).toBeVisible();
 });
 
+test('extracts text from a local Word document', async ({ page }) => {
+  await page.locator('.composer-wrap input[type="file"]:not([capture])').setInputFiles({
+    name: 'brief.docx',
+    mimeType: DOCX_MIME,
+    buffer: makeDocx('DigitalMate DOCX test')
+  });
+  await expect(page.getByRole('button', { name: 'Preview brief.docx' })).toBeVisible({
+    timeout: 15_000
+  });
+  await page.getByRole('button', { name: 'Preview brief.docx' }).click();
+  await expect(page.locator('.attachment-preview-text')).toContainText('DigitalMate DOCX test');
+  await expect(page.getByText(/Word text extracted locally/)).toBeVisible();
+});
+
+test('zooms an image attachment preview', async ({ page }) => {
+  await page.locator('.composer-wrap input[type="file"]:not([capture])').setInputFiles({
+    name: 'shot.png',
+    mimeType: 'image/png',
+    buffer: TINY_PNG
+  });
+  await page.getByRole('button', { name: 'Preview shot.png' }).click();
+  await expect(page.locator('.attachment-zoomable .zoomable-controls')).toBeVisible();
+  await page.getByRole('button', { name: 'Zoom in' }).click();
+  await expect(page.locator('.zoomable-level')).toHaveText('150%');
+  await page.getByRole('button', { name: 'Reset', exact: true }).click();
+  await expect(page.locator('.zoomable-level')).toHaveCount(0);
+});
+
 test('shares a reply through the Web Share API', async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as { __shared: string | null }).__shared = null;
@@ -564,6 +614,10 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.locator('.hive-detail .hive-attachments')).toContainText('f1.txt');
   await expect(page.locator('.hive-question')).toBeVisible({ timeout: 10_000 });
+  // The question is also announced, not just drawn.
+  await expect(page.locator('.sr-only[role="alert"]')).toContainText('needs your answer', {
+    timeout: 10_000
+  });
   await page.locator('.hive-question textarea').fill('Keep it as a draft');
   // Answer drafts survive a lane switch: they belong to the question, not the composer.
   await page.getByRole('tab', { name: /Ledger/ }).click();

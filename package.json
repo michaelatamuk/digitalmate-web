@@ -1,7 +1,7 @@
 {
   "name": "digitalmate-web",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "module",
   "description": "Account-free bilingual web and Android companion for the DigitalMate app.",
   "scripts": {
@@ -27,6 +27,7 @@
     "@capacitor/share": "^8.0.3",
     "@capacitor/status-bar": "^8.0.4",
     "fast-xml-parser": "^5.11.2",
+    "fflate": "^0.8.3",
     "pdfjs-dist": "^6.4.299",
     "react": "18.3.1",
     "react-dom": "18.3.1",

@@ -53,6 +53,7 @@ import { protocolDemoSurface } from './protocol/a2ui/demo';
 import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
+import { A11yAnnouncer } from './components/A11yAnnouncer';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
@@ -1359,6 +1360,7 @@ export default function App() {
         ) : null}
         {sheet === 'labs' ? <LabsSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
         {sheet === 'hive' && hiveEnabled ? <HiveSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
+        <A11yAnnouncer />
         {sheet === 'skills' ? (
           <SkillsSheet
             skills={skills}

@@ -30,7 +30,7 @@ optionally stream through a Jiuwen/Orbit bridge.
   attachments on a local mock; see [docs/hive-user-guide.md](docs/hive-user-guide.md)
 - Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`; the contract
   is frozen in [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md)
-- 175 unit tests plus 43 Playwright UI, mobile and accessibility checks
+- 185 unit tests plus 45 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
@@ -49,7 +49,7 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 | Task shell | Local session/task rows with status, detail and retry |
 | Approvals | Approval cards, quota states and explicit failure surfaces |
 | Artifacts | Save replies with A2UI surfaces, slides view, browse, preview and download |
-| Attachments | Multi-file queue with reorder, camera capture, text/image preview and PDF text extraction |
+| Attachments | Multi-file queue with reorder, camera capture, text/image preview, PDF and Word text extraction, and zoomable image previews |
 | Transport | Mock chat + local discovery transports; optional Orbit bridge |
 | Orbit bridge | Delegated token, WSS/SSE stream, A2UI surfaces, retry and snapshots |
 | Memory | Editable local profile with evidence notes; forget everything |

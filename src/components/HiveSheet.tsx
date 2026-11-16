@@ -17,9 +17,11 @@ import {
 import { currentHiveTransport } from '../transport/hiveBridge';
 import { consumeHiveShare, consumeHiveShareFiles } from '../lib/hiveShare';
 import { requestHiveNotificationPermission } from '../lib/hiveNotifications';
+import { announce } from '../lib/announce';
 import type { HiveTransport, HiveTransportStatus } from '../transport/hive';
 import { Sheet } from './Overlays';
 import { Icon } from './Icons';
+import { ZoomableImage } from './ZoomableImage';
 import { useI18n } from '../i18n/I18nContext';
 
 function shortTime(value: number, locale: string): string {
@@ -168,6 +170,34 @@ export function HiveSheet({
     snapshot.tasks.find(task => task.id === snapshot.selectedTaskId) ??
     openTask ??
     (lane ? latestTask(snapshot.tasks, lane.id) : undefined);
+
+  // Assistive tech cannot see a status chip change, so a task transition or a new question is
+  // announced. Opening the sheet or switching lanes is silent: only a change on the same task speaks.
+  const announcedRef = useRef<{ taskId: string; status: string; questionId: string } | null>(null);
+  useEffect(() => {
+    if (!selectedTask) return;
+    const next = {
+      taskId: selectedTask.id,
+      status: selectedTask.status,
+      questionId: selectedTask.question?.id ?? ''
+    };
+    const previous = announcedRef.current;
+    announcedRef.current = next;
+    if (!previous || previous.taskId !== next.taskId) return;
+    if (next.questionId && previous.questionId !== next.questionId) {
+      announce(
+        tr(
+          `A Bee needs your answer: ${selectedTask.question?.question ?? ''}`,
+          `Bee 需要你的答复：${selectedTask.question?.question ?? ''}`
+        ),
+        'assertive'
+      );
+      return;
+    }
+    if (previous.status !== next.status) {
+      announce(`${selectedTask.title} — ${taskStatusLabel(selectedTask.status, tr)}`);
+    }
+  }, [selectedTask, tr]);
   // Answer drafts are kept in two places: the local echo keeps typing smooth, and the question's
   // draft field makes the text survive a lane switch or a reload.
   const answerKey = selectedTask?.question?.id ?? '';
@@ -924,7 +954,7 @@ export function HiveSheet({
                 </button>
               </div>
               {preview.type.startsWith('image/') ? (
-                <img src={preview.url} alt={preview.name} />
+                <ZoomableImage src={preview.url} alt={preview.name} className="hive-preview-image" />
               ) : (
                 <a className="hive-link" href={preview.url} target="_blank" rel="noreferrer">
                   {tr('Open the stored file', '打开已保存的文件')}

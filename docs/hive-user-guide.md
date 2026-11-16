@@ -24,8 +24,9 @@ URL). Add `?hive=mock` or `?hive=bridge` to the URL to bring it back for that br
 
 ### Attachments
 
-**Attach** adds up to five files. Images show a thumbnail, text files are readable inline and PDFs
-contribute their text. Files stay in the browser; a bridge stores the bytes when it receives them.
+**Attach** adds up to five files. Images show a thumbnail and open in a zoomable preview with pan;
+text files are readable inline; PDFs and Word documents contribute their text. Files stay in the
+browser; a bridge stores the bytes when it receives them.
 
 ### Drafts
 
