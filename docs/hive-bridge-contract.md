@@ -77,3 +77,14 @@ A reference payload lives at `tests/fixtures/hive-bridge-snapshot.json` and is u
    disables.
 5. When ready, the sheet shows `Contract v1 · <features>` under the header.
 
+## Resume after a dropped stream
+
+1. Every SSE event may carry an `id:`. The client remembers the last one and, on reconnect, asks
+   for `GET /api/hive/events?since=<id>`.
+2. The client always re-fetches `/api/hive/snapshot` before reopening the stream, so a bridge that
+   cannot replay events only has to return full state.
+3. Reconnects are automatic with exponential backoff: **1 s, 2 s, 4 s … capped at 30 s**, and stop
+   when the sheet unmounts or the user disposes the transport. `Retry` resets the backoff.
+4. While reconnecting the status is `connecting` with `Resuming the Hive bridge…`; a lost stream is
+   reported as `unavailable` + `The Hive event stream was lost.` with the same backoff running.
+

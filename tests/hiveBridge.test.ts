@@ -185,8 +185,78 @@ describe('Hive bridge transport', () => {
     transport.dispose();
   });
 
-  it('maps bridge failures onto typed errors and readable messages', async () => {
-    const conflictFetch = vi.fn(async (input: unknown) => {
+  it('reconnects with the last event id so missed events are replayed', async () => {
+    const urls: string[] = [];
+    const streams: FakeStream[] = [];
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      return jsonResponse(fixture);
+    });
+    const transport = new BridgeHiveTransport(
+      { baseUrl: 'https://bridge.test' },
+      {
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        eventSourceFactory: (url: string) => {
+          urls.push(url);
+          const stream = fakeStream();
+          streams.push(stream);
+          return stream;
+        },
+        timeoutMs: 500
+      }
+    );
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+    expect(urls[0]).toBe('https://bridge.test/api/hive/events');
+
+    streams[0].onmessage?.({
+      data: JSON.stringify({ type: 'task', snapshot: { ...fixture, selectedTaskId: 'task_later' } }),
+      lastEventId: '42'
+    });
+    expect(transport.snapshot().selectedTaskId).toBe('task_later');
+
+    transport.retry();
+    await vi.waitFor(() => expect(urls.length).toBe(2));
+    expect(urls[1]).toContain('since=42');
+    transport.dispose();
+  });
+
+  it('resumes by itself after the event stream drops', async () => {
+    const urls: string[] = [];
+    const streams: FakeStream[] = [];
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      return jsonResponse(fixture);
+    });
+    const transport = new BridgeHiveTransport(
+      { baseUrl: 'https://bridge.test' },
+      {
+        fetchImpl: fetchImpl as unknown as typeof fetch,
+        eventSourceFactory: (url: string) => {
+          urls.push(url);
+          const stream = fakeStream();
+          streams.push(stream);
+          return stream;
+        },
+        timeoutMs: 500
+      }
+    );
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+
+    streams[0].onerror?.();
+    expect(transport.status().state).toBe('unavailable');
+    expect(transport.status().message).toContain('event stream was lost');
+
+    // Backoff starts at one second; the reconnect happens without user input.
+    await vi.waitFor(() => expect(urls.length).toBe(2), { timeout: 4_000 });
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+    transport.dispose();
+  });
+
+  it('maps bridge failures onto typed errors and readable messages', async () => {    const conflictFetch = vi.fn(async (input: unknown) => {
       const url = String(input);
       if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
       if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);

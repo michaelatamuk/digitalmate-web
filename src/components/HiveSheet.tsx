@@ -210,7 +210,7 @@ export function HiveSheet({
             <div className="hive-bridge-banner" role="status">
               <span>
                 {status.state === 'connecting'
-                  ? tr('Connecting to the Hive bridge…', '正在连接蜂巢桥接…')
+                  ? (status.message || tr('Connecting to the Hive bridge…', '正在连接蜂巢桥接…'))
                   : tr(`Hive bridge unavailable: ${status.message}`, `蜂巢桥接不可用：${status.message}`)}
               </span>
               <button

@@ -77,7 +77,8 @@ function statusMessage(kind: HiveBridgeErrorKind, status: number): string {
 }
 
 interface EventSourceLike {
-  onmessage: ((event: { data: string }) => void) | null;
+  onopen?: (() => void) | null;
+  onmessage: ((event: { data: string; lastEventId?: string }) => void) | null;
   onerror: (() => void) | null;
   close: () => void;
 }
@@ -105,6 +106,10 @@ export class BridgeHiveTransport implements HiveTransport {
   private version: number | undefined = undefined;
   private capabilities: Set<HiveFeature> | null = null;
   private negotiated = false;
+  /** Last event id received, replayed by the bridge on reconnect as `?since=`. */
+  private lastEventId = '';
+  private resumeTimer: number | null = null;
+  private resumeAttempt = 0;
   private readonly fetchImpl: typeof fetch;
   private readonly eventSourceFactory: (url: string) => EventSourceLike;
   private readonly timeoutMs: number;
@@ -145,6 +150,8 @@ export class BridgeHiveTransport implements HiveTransport {
 
   retry(): void {
     if (this.disposed) return;
+    this.resumeAttempt = 0;
+    this.clearResumeTimer();
     this.closeStream();
     void this.connect();
   }
@@ -228,18 +235,21 @@ export class BridgeHiveTransport implements HiveTransport {
 
   dispose(): void {
     this.disposed = true;
+    this.clearResumeTimer();
     this.closeStream();
     this.listeners.clear();
   }
 
   private async connect(): Promise<void> {
-    this.setStatus({ mode: 'bridge', state: 'connecting', message: '' });
+    this.setStatus({ mode: 'bridge', state: 'connecting', message: this.lastEventId ? 'Resuming the Hive bridge…' : '' });
     try {
-      await this.negotiate();
+      // Re-probe only until the contract has been agreed once; a reconnect keeps the cached caps.
+      if (!this.negotiated) await this.negotiate();
       const response = await this.request('/api/hive/snapshot', { method: 'GET' });
       const snapshot = readHiveSnapshot(response);
       if (!snapshot) throw new Error('The Hive bridge returned an unreadable snapshot.');
       this.snapshotValue = snapshot;
+      this.resumeAttempt = 0;
       this.setStatus({
         mode: 'bridge',
         state: 'ready',
@@ -258,6 +268,7 @@ export class BridgeHiveTransport implements HiveTransport {
         version: this.version
       });
       this.emit('snapshot');
+      this.scheduleResume();
     }
   }
 
@@ -301,18 +312,65 @@ export class BridgeHiveTransport implements HiveTransport {
 
   private openStream(): void {
     if (this.disposed || this.stream) return;
-    const url = `${this.config.baseUrl.replace(/\/$/, '')}/api/hive/events`;
+    const base = `${this.config.baseUrl.replace(/\/$/, '')}/api/hive/events`;
+    const url = this.withToken(this.lastEventId
+      ? `${base}?since=${encodeURIComponent(this.lastEventId)}`
+      : base);
     try {
-      const stream = this.eventSourceFactory(this.withToken(url));
-      stream.onmessage = (event: { data: string }): void => this.applyEvent(event.data);
+      const stream = this.eventSourceFactory(url);
+      stream.onopen = (): void => {
+        this.resumeAttempt = 0;
+        if (this.statusValue.state !== 'ready') {
+          this.setStatus({
+            mode: 'bridge',
+            state: 'ready',
+            message: '',
+            version: this.version,
+            negotiated: this.negotiated,
+            features: this.capabilities
+              ? HIVE_FEATURES.filter(feature => this.capabilities!.has(feature))
+              : [...HIVE_FEATURES]
+          });
+          this.emit('snapshot');
+        }
+      };
+      stream.onmessage = (event: { data: string; lastEventId?: string }): void => {
+        if (event.lastEventId) this.lastEventId = event.lastEventId;
+        this.applyEvent(event.data);
+      };
       stream.onerror = (): void => {
-        this.setStatus({ mode: 'bridge', state: 'unavailable', message: 'The Hive event stream was lost.' });
+        this.closeStream();
+        this.setStatus({
+          mode: 'bridge',
+          state: 'unavailable',
+          message: 'The Hive event stream was lost.',
+          version: this.version
+        });
         this.emit('snapshot');
+        this.scheduleResume();
       };
       this.stream = stream;
     } catch (_error) {
       // The snapshot is still usable; the next retry re-opens the stream.
     }
+  }
+
+  /** Reconnects with exponential backoff (1s → 30s) while someone is still listening. */
+  private scheduleResume(): void {
+    if (this.disposed || this.listeners.size === 0 || this.resumeTimer !== null) return;
+    const delay = Math.min(30_000, 1_000 * 2 ** this.resumeAttempt);
+    this.resumeAttempt += 1;
+    this.resumeTimer = setTimeout((): void => {
+      this.resumeTimer = null;
+      if (this.disposed || this.listeners.size === 0) return;
+      void this.connect();
+    }, delay) as unknown as number;
+  }
+
+  private clearResumeTimer(): void {
+    if (this.resumeTimer === null) return;
+    clearTimeout(this.resumeTimer);
+    this.resumeTimer = null;
   }
 
   private applyEvent(data: string): void {

@@ -117,10 +117,23 @@ Shipped:
 - Diagnostics line under the header when a bridge is ready: `Contract v1 · steer, queue, …`
 - Tests: negotiation (limiting, baseline, newer-version refusal), 409/501/abort mapping
 
+## Implementation slice 8 (2026-11-16): resume after a dropped stream
+
+Shipped:
+
+- The bridge remembers the last SSE `id` and reconnects with `?since=<id>`; it always re-fetches
+  `/api/hive/snapshot` first, so a bridge that cannot replay events only has to return full state
+- Automatic reconnect with exponential backoff (1 s → 30 s, capped), stopped when the transport is
+  disposed; `Retry` resets the backoff and reconnects immediately
+- Status carries the resume reason (`Resuming the Hive bridge…`) and a lost stream is reported as
+  `The Hive event stream was lost.` while the backoff runs
+- Tests: event-id tracking + `since=` on manual retry, and a real-timer test that asserts the client
+  reconnects by itself after `onerror`
+
 Still to do in the Hive slice:
 
-- server-side `/api/hive/*` implementation and run/task mapping (contract is frozen client-side)
-- resume on reconnect (Last-Event-ID / snapshot cursor)
+- server-side `/api/hive/*` implementation, run/task mapping and idempotency (contract frozen)
+- health endpoint behind the client diagnostics line
 - Android notification routing and share intake
 
 ## 1. Goal
