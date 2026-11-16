@@ -561,6 +561,17 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await expect(page.locator('.hive-lane .hive-unread')).toHaveCount(0);
   await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
   await expect(page.locator('.hive-task-row').first()).toBeVisible();
+
+  // Versioned store: export produces a portable backup and importing it restores the same state.
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('.hive').getByRole('button', { name: 'Export backup', exact: true }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^digitalmate-hive-.*\.json$/);
+  const backupPath = await download.path();
+  expect(backupPath).toBeTruthy();
+  await page.locator('.hive input[type="file"][accept*="json"]').setInputFiles(backupPath!);
+  await expect(page.getByText('Hive backup imported.')).toBeVisible();
+  await expect(page.locator('.hive-task-row').first()).toBeVisible();
 });
 
 test('core screens have no serious accessibility violations', async ({ page }) => {

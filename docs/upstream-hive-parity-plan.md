@@ -31,13 +31,27 @@ Shipped:
 - Unit coverage for recording, read cursors, trimming/gaps and stop/answer activity; the Hive E2E
   flow now also checks the unread badge, the feed and the return to Tasks
 
+## Implementation slice 3 (2026-11-16): versioned store and portable backups
+
+Shipped:
+
+- Store version `HIVE_STORE_VERSION = 2` with a backup envelope
+  (`kind: digitalmate.hive.backup`, `version`, `savedAt`, `snapshot`)
+- Legacy `digitalmate.hive.v1` bare snapshots are migrated on read and the old key is dropped on
+  the next write, so upgrading an existing install keeps its tasks and activity
+- `readHiveSnapshot` / `readHiveBackup` validate imported payloads and fill fields added by later
+  versions with their empty values
+- `exportBackup()` / `importBackup(raw)` on the transport; Export downloads
+  `digitalmate-hive-<date>.json`, Import replaces the demo state and reports a readable error for
+  files that are not Hive backups
+- Unit coverage for v1 migration, key cleanup, export/import round trip and rejection of foreign
+  files; the Hive E2E flow downloads a backup and imports it back
+
 Still to do in the Hive slice:
 
-- versioned Hive store, backup/restore and cross-device sync
-- live `BridgeHiveTransport`
+- live `BridgeHiveTransport` and `/api/hive/*`
 - report generation and memory cut-off
 - Android notification routing and share intake
-- accessibility and Chinese copy pass
 
 
 ## 1. Goal

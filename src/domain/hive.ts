@@ -123,6 +123,73 @@ export interface HiveEvent {
   snapshot: HiveSnapshot;
 }
 
+/** Bumped whenever the persisted shape changes; the store migrates older payloads forward. */
+export const HIVE_STORE_VERSION = 2;
+
+export interface HiveBackup {
+  kind: 'digitalmate.hive.backup';
+  version: number;
+  savedAt: number;
+  snapshot: HiveSnapshot;
+}
+
+export function emptyHiveSnapshot(): HiveSnapshot {
+  return {
+    lanes: [],
+    tasks: [],
+    messages: [],
+    activity: [],
+    activityReadAt: {},
+    activityTrimmed: false,
+    selectedLaneId: 'beebou',
+    selectedTaskId: ''
+  };
+}
+
+/**
+ * Accepts a persisted or imported payload. Only the shape the UI relies on is required; fields
+ * added by later versions fall back to their empty values so an old backup still opens.
+ */
+export function readHiveSnapshot(value: unknown): HiveSnapshot | null {
+  if (!value || typeof value !== 'object') return null;
+  const candidate = value as Partial<HiveSnapshot>;
+  if (!Array.isArray(candidate.lanes) || !Array.isArray(candidate.tasks) || !Array.isArray(candidate.messages)) {
+    return null;
+  }
+  const base = emptyHiveSnapshot();
+  return {
+    lanes: candidate.lanes,
+    tasks: candidate.tasks,
+    messages: candidate.messages,
+    activity: Array.isArray(candidate.activity) ? candidate.activity : base.activity,
+    activityReadAt: candidate.activityReadAt && typeof candidate.activityReadAt === 'object'
+      ? (candidate.activityReadAt as Record<string, number>)
+      : base.activityReadAt,
+    activityTrimmed: candidate.activityTrimmed === true,
+    selectedLaneId: typeof candidate.selectedLaneId === 'string' ? candidate.selectedLaneId : base.selectedLaneId,
+    selectedTaskId: typeof candidate.selectedTaskId === 'string' ? candidate.selectedTaskId : ''
+  };
+}
+
+/** Reads either a bare snapshot (v1) or a versioned backup envelope. */
+export function readHiveBackup(value: unknown): HiveBackup | null {
+  if (!value || typeof value !== 'object') return null;
+  const envelope = value as Partial<HiveBackup>;
+  if (envelope.kind === 'digitalmate.hive.backup' && envelope.snapshot) {
+    const snapshot = readHiveSnapshot(envelope.snapshot);
+    if (!snapshot) return null;
+    return {
+      kind: 'digitalmate.hive.backup',
+      version: typeof envelope.version === 'number' ? envelope.version : HIVE_STORE_VERSION,
+      savedAt: typeof envelope.savedAt === 'number' ? envelope.savedAt : Date.now(),
+      snapshot
+    };
+  }
+  // Legacy v1 payloads were a bare snapshot.
+  const snapshot = readHiveSnapshot(value);
+  return snapshot ? { kind: 'digitalmate.hive.backup', version: 1, savedAt: Date.now(), snapshot } : null;
+}
+
 export function taskIsOpen(task: HiveTask): boolean {
   return task.status === 'queued' || task.status === 'running' || task.status === 'waiting_user';
 }

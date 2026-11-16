@@ -117,4 +117,38 @@ describe('Hive local transport', () => {
     expect(scoutKinds).toContain('stop');
     expect(hive.snapshot().tasks.find(task => task.id === emailTask)?.status).toBe('stopped');
   });
+
+  it('migrates a legacy v1 snapshot and drops the old key', async () => {
+    const storage = memoryStorage();
+    vi.stubGlobal('window', { localStorage: storage });
+    const first = new MockHiveTransport(0);
+    const taskId = await first.send({ laneId: 'scout', text: 'Build an artifact' });
+
+    // Simulate an install that only ever wrote the v1 bare snapshot.
+    storage.setItem('digitalmate.hive.v1', JSON.stringify(first.snapshot()));
+    storage.removeItem('digitalmate.hive.v2');
+
+    const migrated = new MockHiveTransport(0);
+    expect(migrated.snapshot().tasks.find(task => task.id === taskId)?.status).toBe('done');
+
+    await migrated.send({ laneId: 'forge', text: 'Draft a note' });
+    expect(storage.getItem('digitalmate.hive.v2')).toBeTruthy();
+    expect(storage.getItem('digitalmate.hive.v1')).toBeNull();
+  });
+
+  it('round-trips an export through import and rejects foreign files', async () => {
+    const source = new MockHiveTransport(0);
+    const taskId = await source.send({ laneId: 'ledger', text: 'Write a weekly report' });
+    const backup = JSON.stringify(source.exportBackup());
+
+    const target = new MockHiveTransport(0);
+    expect(target.importBackup(backup).ok).toBe(true);
+    const imported = target.snapshot();
+    expect(imported.tasks.map(task => task.id)).toEqual(source.snapshot().tasks.map(task => task.id));
+    expect(imported.tasks.find(task => task.id === taskId)?.report?.title).toBe('Weekly signal report');
+    expect(imported.activity.length).toBe(source.snapshot().activity.length);
+
+    expect(target.importBackup('{"hello":"world"}').ok).toBe(false);
+    expect(target.importBackup('not json').ok).toBe(false);
+  });
 });

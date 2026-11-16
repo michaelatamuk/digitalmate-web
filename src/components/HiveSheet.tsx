@@ -36,6 +36,7 @@ export function HiveSheet({
   const [openArtifact, setOpenArtifact] = useState('');
   const [view, setView] = useState<'tasks' | 'activity'>('tasks');
   const [activitySeenAt, setActivitySeenAt] = useState(0);
+  const importRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => hive.subscribe(event => setSnapshot(event.snapshot)), [hive]);
@@ -66,6 +67,31 @@ export function HiveSheet({
     setActivitySeenAt(snapshot.activityReadAt[laneId] ?? 0);
     setView('activity');
     transport.current?.markActivityRead(laneId);
+  };
+
+  const exportHive = (): void => {
+    const backup = transport.current?.exportBackup();
+    if (!backup) return;
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `digitalmate-hive-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    onNotice(tr('Hive backup exported.', '蜂巢备份已导出。'));
+  };
+
+  const importHive = async (file: File | undefined): Promise<void> => {
+    if (!file) return;
+    const text = await file.text();
+    const result = transport.current?.importBackup(text);
+    if (result?.ok) {
+      setView('tasks');
+      onNotice(tr('Hive backup imported.', '蜂巢备份已导入。'));
+      return;
+    }
+    onNotice(result?.error ?? tr('That backup could not be imported.', '无法导入该备份。'));
   };
 
   if (!lane) {
@@ -138,6 +164,25 @@ export function HiveSheet({
               <em>{tr('Routes work, keeps the lanes calm', '分派任务，保持各条工作线有序')}</em>
             </div>
             <span className="hive-live"><span className="live-dot" />{tr('Local mock', '本地模拟')}</span>
+          </div>
+          <div className="hive-backup-actions">
+            <input
+              ref={importRef}
+              type="file"
+              accept="application/json,.json"
+              className="hidden-file-input"
+              onChange={event => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                void importHive(file);
+              }}
+            />
+            <button type="button" className="hive-link" onClick={exportHive}>
+              {tr('Export backup', '导出备份')}
+            </button>
+            <button type="button" className="hive-link" onClick={() => importRef.current?.click()}>
+              {tr('Import backup', '导入备份')}
+            </button>
           </div>
           <div className="hive-lane-strip" role="tablist" aria-label={tr('Hive lanes', '蜂巢工作线')}>
             {activeLanes.map(item => (
