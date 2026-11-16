@@ -7354,3 +7354,28 @@ a {
 }
 .attachment-zoomable { width: 100%; }
 .hive-preview-image { width: 100%; }
+
+/* Local capability rows in Settings. */
+.capability-list { display: flex; flex-direction: column; gap: 6px; }
+.capability-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(33, 27, 23, 0.035);
+  font-size: 13px;
+}
+.capability-pill {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(33, 27, 23, 0.12);
+  white-space: nowrap;
+}
+.capability-pill.is-granted { color: #2f6a43; border-color: rgba(47, 106, 67, 0.35); background: rgba(47, 106, 67, 0.1); }
+.capability-pill.is-denied { color: #8f3a2f; border-color: rgba(143, 58, 47, 0.35); background: rgba(143, 58, 47, 0.09); }
+.capability-pill.is-prompt { color: #7a5a1f; border-color: rgba(122, 90, 31, 0.3); background: rgba(122, 90, 31, 0.08); }
+.capability-pill.is-local { color: #4a5a6a; border-color: rgba(74, 90, 106, 0.3); background: rgba(74, 90, 106, 0.08); }
+.capability-pill.is-unsupported { opacity: 0.6; }

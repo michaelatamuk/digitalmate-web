@@ -12,6 +12,11 @@ import { coverForCard, fallbackCoverForCard } from '../lib/covers';
 import { cardKind } from '../lib/discoveryExperience';
 import { requestNativeNotificationPermission } from '../lib/native';
 import {
+  browserCapabilityEnvironment,
+  probeLocalCapabilities,
+  type LocalCapability
+} from '../lib/localCapabilities';
+import {
   clearDiagnostics,
   isDiagnosticsEnabled,
   readDiagnostics,
@@ -572,7 +577,22 @@ export function SettingsSheet({
   const [release, setRelease] = useState<ReleaseInfo | null | undefined>(undefined);
   const [releaseBusy, setReleaseBusy] = useState(false);
   const [releaseError, setReleaseError] = useState('');
+  const [capabilities, setCapabilities] = useState<LocalCapability[] | null>(null);
   const backupInput = useRef<HTMLInputElement>(null);
+  // What this browser lets the app do, shown as-is instead of pretending native permissions exist.
+  useEffect(() => {
+    let active = true;
+    probeLocalCapabilities(browserCapabilityEnvironment())
+      .then(list => {
+        if (active) setCapabilities(list);
+      })
+      .catch(() => {
+        if (active) setCapabilities([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     let active = true;
     orbitHealth()
@@ -754,6 +774,21 @@ export function SettingsSheet({
     onNotice(tr('Local diagnostic log cleared.', '本地诊断日志已清除。'));
   };
 
+  const capabilityLabel = (id: LocalCapability['id']): string => {
+    if (id === 'notifications') return tr('Notifications', '通知');
+    if (id === 'microphone') return tr('Microphone', '麦克风');
+    if (id === 'location') return tr('Location', '位置');
+    if (id === 'calendar') return tr('Calendar', '日历');
+    return tr('Offline storage', '离线存储');
+  };
+  const capabilityStateLabel = (state: LocalCapability['state']): string => {
+    if (state === 'granted') return tr('Allowed', '已允许');
+    if (state === 'denied') return tr('Blocked', '已拒绝');
+    if (state === 'prompt') return tr('Ask first', '使用时询问');
+    if (state === 'local') return tr('Local only', '仅本地');
+    return tr('Not available', '不可用');
+  };
+
   return (
     <Sheet title={tr('Settings', '设置')} subtitle={tr('Local demo · nothing is uploaded', '本地演示 · 不会上传任何数据')} onClose={onClose} wide>
       <div className="account-card">
@@ -766,6 +801,27 @@ export function SettingsSheet({
           <span className="connection-dot" />
           {tr('Local demo', '本地演示')}
         </span>
+      </div>
+
+      <div className="settings-group">
+        <span className="settings-label">{tr('Local access', '本地权限')}</span>
+        <div className="capability-list">
+          {(capabilities ?? []).map(item => (
+            <div key={item.id} className="capability-row">
+              <span>{capabilityLabel(item.id)}</span>
+              <span className={`capability-pill is-${item.state}`}>{capabilityStateLabel(item.state)}</span>
+            </div>
+          ))}
+          {capabilities === null ? (
+            <p className="settings-note">{tr('Checking what this browser allows…', '正在检查浏览器权限…')}</p>
+          ) : null}
+        </div>
+        <p className="settings-note">
+          {tr(
+            'Calendar events stay in the demo unless you export them as an .ics file. These states come from the browser, not a device account.',
+            '日程只保存在演示中，除非导出为 .ics 文件。这些状态来自浏览器，与设备账号无关。'
+          )}
+        </p>
       </div>
 
       <div className="settings-group">

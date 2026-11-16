@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFile } from 'node:fs/promises';
 import { strToU8, zipSync } from 'fflate';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -362,6 +363,37 @@ test('shows an offline banner while local mode stays usable', async ({ page }) =
   await expect(composer(page)).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect(page.locator('.offline-banner')).toHaveCount(0);
+});
+
+test('exports a new calendar event as an .ics file', async ({ page }) => {
+  // Force the download path instead of an OS share sheet.
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'canShare', { configurable: true, value: undefined });
+  });
+  await sendMessage(page, 'Read my calendar for this week');
+  const newEvent = page.getByRole('button', { name: 'New event' }).first();
+  await expect(newEvent).toBeVisible();
+  await newEvent.click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Add to phone calendar (.ics)' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/\.ics$/);
+  const path = await download.path();
+  expect(path).toBeTruthy();
+  const ics = await readFile(path!, 'utf8');
+  expect(ics).toContain('BEGIN:VCALENDAR');
+  expect(ics).toContain('BEGIN:VEVENT');
+  expect(ics).toContain('SUMMARY:');
+});
+
+test('shows local capability states in settings', async ({ page }) => {
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Settings/ }).click();
+  const rows = page.locator('.capability-row');
+  await expect(rows).toHaveCount(5);
+  await expect(rows.filter({ hasText: 'Calendar' })).toContainText('Local only');
+  await expect(rows.filter({ hasText: 'Notifications' })).toBeVisible();
+  await expect(page.getByText(/export them as an \.ics file/)).toBeVisible();
 });
 
 test('is installable and advertises account-free offline access', async ({ page }) => {

@@ -30,7 +30,7 @@ optionally stream through a Jiuwen/Orbit bridge.
   attachments on a local mock; see [docs/hive-user-guide.md](docs/hive-user-guide.md)
 - Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`; the contract
   is frozen in [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md)
-- 185 unit tests plus 45 Playwright UI, mobile and accessibility checks
+- 194 unit tests plus 47 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
@@ -59,7 +59,7 @@ authentication in front of a real Jiuwen/Orbit gateway. See
 | Skills | Detail view, install/toggle, local JSON import/export |
 | Labs | Local BIM, multi-task, deep search, train, map, ride, checkout, social and payment demos |
 | Hive | Beebou + Bees, task lanes, questions, steering, artifacts, memory and attachments; local demo by default, optional bridge |
-| Calendar | Local event creation with a confirmation sheet and updated schedule card |
+| Calendar | Local event creation with a confirmation sheet, updated schedule card and .ics export for the device calendar |
 | Hotel / ride / payment | Mock comparison cards with refundable tags, fare estimates and payment review |
 | Media | Scene tabs and a media slider for podcasts and short video |
 | Offline / PWA | Installable build, offline shell and update check with app version |
