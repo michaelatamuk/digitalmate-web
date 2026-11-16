@@ -144,3 +144,22 @@ A refusal and an outage are different things:
 4. While reconnecting the status is `connecting` with `Resuming the Hive bridge…`; a lost stream is
    reported as `unavailable` + `The Hive event stream was lost.` with the same backoff running.
 
+
+## Reference bridge
+
+`services/hive-bridge/` is a dependency-free Node implementation of this contract, used to prove the
+client against a real HTTP + SSE server:
+
+```bash
+npm run bridge:hive                              # http://127.0.0.1:8787/api/hive
+VITE_HIVE_BRIDGE_URL=http://127.0.0.1:8787 npm run dev
+```
+
+- Idempotent `send` (same `operationId` → same task), canned task execution, questions, Stop,
+  artifacts, memory cut-off and reset
+- `410 TARGET_STALE`, `409 CONFLICT`, `400 BAD_PARAMS`, `404 UNKNOWN_METHOD` and `401 UNAUTHORIZED`
+  so every client error kind has a real producer
+- `GET /api/hive/health` for diagnostics; optional `HIVE_BRIDGE_TOKEN` accepted as a Bearer header
+  or `?access_token=`
+- It is **not a model** and **not durable**: output is canned and state lives in memory. See
+  `services/hive-bridge/README.md`.

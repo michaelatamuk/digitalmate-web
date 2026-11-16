@@ -274,6 +274,17 @@ export class BridgeHiveTransport implements HiveTransport {
     this.listeners.clear();
   }
 
+  private applySnapshot(snapshot: HiveSnapshot): void {
+    // Selection belongs to the reader, not the server: a snapshot refresh must not yank the lane or
+    // task the user is looking at. Falls back to the server's choice when ours no longer exists.
+    const keepLane = this.snapshotValue.lanes.some(lane => lane.id === this.snapshotValue.selectedLaneId);
+    this.snapshotValue = {
+      ...snapshot,
+      selectedLaneId: keepLane ? this.snapshotValue.selectedLaneId : snapshot.selectedLaneId,
+      selectedTaskId: keepLane ? this.snapshotValue.selectedTaskId : snapshot.selectedTaskId
+    };
+  }
+
   private async connect(): Promise<void> {
     this.setStatus({ mode: 'bridge', state: 'connecting', message: this.lastEventId ? 'Resuming the Hive bridge…' : '' });
     try {
@@ -282,7 +293,7 @@ export class BridgeHiveTransport implements HiveTransport {
       const response = await this.request('/api/hive/snapshot', { method: 'GET' });
       const snapshot = readHiveSnapshot(response);
       if (!snapshot) throw new Error('The Hive bridge returned an unreadable snapshot.');
-      this.snapshotValue = snapshot;
+      this.applySnapshot(snapshot);
       this.resumeAttempt = 0;
       this.setStatus({
         mode: 'bridge',
@@ -417,7 +428,7 @@ export class BridgeHiveTransport implements HiveTransport {
     const payload = parsed as { type?: unknown; snapshot?: unknown };
     const snapshot = readHiveSnapshot(payload.snapshot);
     if (!snapshot) return;
-    this.snapshotValue = snapshot;
+    this.applySnapshot(snapshot);
     const type = payload.type;
     this.emit(type === 'task' || type === 'message' || type === 'lane' ? type : 'snapshot');
   }
@@ -465,7 +476,7 @@ export class BridgeHiveTransport implements HiveTransport {
     this.lastConflict = undefined;
     const snapshot = readHiveSnapshot(parsed.snapshot);
     if (snapshot) {
-      this.snapshotValue = snapshot;
+      this.applySnapshot(snapshot);
       this.emit('snapshot');
     }
     this.setStatus({
@@ -487,7 +498,7 @@ export class BridgeHiveTransport implements HiveTransport {
       const response = await this.request('/api/hive/snapshot', { method: 'GET' });
       const snapshot = readHiveSnapshot(response);
       if (!snapshot) return;
-      this.snapshotValue = snapshot;
+      this.applySnapshot(snapshot);
       this.emit('snapshot');
     } catch (_error) {
       // Keeping the previous snapshot is better than blanking the UI; the status already explains.

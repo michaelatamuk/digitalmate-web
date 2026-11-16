@@ -58,9 +58,20 @@ describe('Hive bridge transport', () => {
       expect.objectContaining({ method: 'GET' })
     );
 
-    // A pushed event updates the snapshot without a command round trip.
-    stream.onmessage?.({ data: JSON.stringify({ type: 'task', snapshot: { ...fixture, selectedTaskId: '' } }) });
-    expect(transport.snapshot().selectedTaskId).toBe('');
+    // A pushed event updates the snapshot without a command round trip; the reader's selection is
+    // client-owned, so a server snapshot cannot move it.
+    stream.onmessage?.({
+      data: JSON.stringify({
+        type: 'task',
+        snapshot: {
+          ...fixture,
+          selectedTaskId: '',
+          tasks: [...fixture.tasks, { ...fixture.tasks[0], id: 'task_pushed', title: 'Pushed task' }]
+        }
+      })
+    });
+    expect(transport.snapshot().tasks.some(task => task.id === 'task_pushed')).toBe(true);
+    expect(transport.snapshot().selectedTaskId).toBe('task_bridge_1');
     expect(events.length).toBeGreaterThan(1);
     transport.dispose();
     expect(stream.closed()).toBe(true);
@@ -71,7 +82,13 @@ describe('Hive bridge transport', () => {
       if (init?.body) {
         const body = JSON.parse(init.body);
         if (body.text === 'Hello bridge') {
-          return jsonResponse({ taskId: 'task_new', snapshot: { ...fixture, selectedTaskId: 'task_new' } });
+          return jsonResponse({
+            taskId: 'task_new',
+            snapshot: {
+              ...fixture,
+              tasks: [...fixture.tasks, { ...fixture.tasks[0], id: 'task_new', title: 'New from bridge' }]
+            }
+          });
         }
       }
       return jsonResponse(fixture);
@@ -82,7 +99,7 @@ describe('Hive bridge transport', () => {
 
     const taskId = await transport.send({ laneId: 'scout', text: 'Hello bridge' });
     expect(taskId).toBe('task_new');
-    expect(transport.snapshot().selectedTaskId).toBe('task_new');
+    expect(transport.snapshot().tasks.some(task => task.id === 'task_new')).toBe(true);
 
     const sendCall = fetchImpl.mock.calls.find(call => String(call[0]).endsWith('/api/hive/send'));
     expect(sendCall).toBeTruthy();
@@ -215,10 +232,16 @@ describe('Hive bridge transport', () => {
     expect(urls[0]).toBe('https://bridge.test/api/hive/events');
 
     streams[0].onmessage?.({
-      data: JSON.stringify({ type: 'task', snapshot: { ...fixture, selectedTaskId: 'task_later' } }),
+      data: JSON.stringify({
+        type: 'task',
+        snapshot: {
+          ...fixture,
+          tasks: [...fixture.tasks, { ...fixture.tasks[0], id: 'task_later', title: 'Later task' }]
+        }
+      }),
       lastEventId: '42'
     });
-    expect(transport.snapshot().selectedTaskId).toBe('task_later');
+    expect(transport.snapshot().tasks.some(task => task.id === 'task_later')).toBe(true);
 
     transport.retry();
     await vi.waitFor(() => expect(urls.length).toBe(2));
@@ -304,6 +327,22 @@ describe('Hive bridge transport', () => {
       attachments: [{ name: 'shot.png', size: 2048, type: 'image/png' }]
     });
     expect(bodies[0].attachments).toEqual([{ name: 'shot.png', size: 2048, type: 'image/png' }]);
+    transport.dispose();
+  });
+
+  it('keeps the reader’s lane when the server sends a new snapshot', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(fixture));
+    const stream = fakeStream();
+    const transport = bridge(fetchImpl, stream);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+    // The fixture selects Scout; the reader switches to Beebou.
+    transport.selectLane('beebou');
+    expect(transport.snapshot().selectedLaneId).toBe('beebou');
+
+    // A pushed snapshot still says Scout; the client keeps what the reader chose.
+    stream.onmessage?.({ data: JSON.stringify({ type: 'snapshot', snapshot: fixture }) });
+    expect(transport.snapshot().selectedLaneId).toBe('beebou');
     transport.dispose();
   });
 

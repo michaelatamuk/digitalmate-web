@@ -267,13 +267,36 @@ Shipped:
   status silently becoming `error`
 - `docs/hive-bridge-contract.md` gained an "Upstream vocabulary" section with the mapping tables
 
+## Implementation slice 19 (2026-11-16): reference bridge service
+
+Shipped:
+
+- `services/hive-bridge/server.mjs`: dependency-free Node implementation of the whole contract —
+  `health`, `capabilities`, `snapshot`, SSE `events` with `id:` frames and keep-alive, `send`
+  (idempotent by `operationId`), `control`, `answer` + `answer/draft`, `stop`, `artifact/erase`,
+  `memory/cutoff`, `reset`
+- Real error producers for every client kind: `410 TARGET_STALE`, `409 CONFLICT`, `400 BAD_PARAMS`,
+  `404 UNKNOWN_METHOD`, `401 UNAUTHORIZED`
+- Optional bearer token (header or `?access_token=`, because `EventSource` cannot set headers)
+- `npm run bridge:hive`, and the app is pointed at it with `VITE_HIVE_BRIDGE_URL`
+- `tests/hiveBridgeServer.test.ts` starts it on an ephemeral port and covers health, capabilities,
+  dedupe, run-to-done, question→answer→done, Stop + stale 410, an SSE frame, memory cut-off and
+  token enforcement
+- Verified by hand against a production build: the sheet showed `Hive bridge`,
+  `Contract v1 · steer, queue, preempt, artifacts, memoryCutoff`, and a task ran to `Done` with the
+  bridge's own output and artifact
+- Fixed a real bug the live run exposed: the bridge snapshot used to override the reader's selected
+  lane (composer said Scout while a Forge task was open). Selection is now client-owned —
+  `applySnapshot()` keeps the reader's lane/task and only falls back to the server's choice when the
+  lane no longer exists
+
 Still to do in the Hive slice:
 
 - share **files** into a Bee draft (text is routed today; a POST share target needs service-worker
   plumbing)
-- upload attachment bytes once a bridge upload endpoint exists
-- server-side `/api/hive/*`, run/task mapping and dedupe
-- health endpoint behind the client diagnostics line
+- upload attachment bytes (the bridge has no upload endpoint yet)
+- session/run mapping in the bridge (tasks are per lane today; there is no run/session identity)
+- preview a **sent** attachment (bytes are released after send)
 
 ## 1. Goal
 

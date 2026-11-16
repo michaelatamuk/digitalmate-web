@@ -280,7 +280,9 @@ export function HiveSheet({
   return (
     <Sheet
       title={tr('Hive', '蜂巢')}
-      subtitle={tr('Beebou, Bees and their current work · local demo', 'Beebou、Bee 与当前工作 · 本地演示')}
+      subtitle={status.mode === 'bridge'
+        ? tr('Beebou, Bees and their current work · Hive bridge', 'Beebou、Bee 与当前工作 · 蜂巢桥接')
+        : tr('Beebou, Bees and their current work · local demo', 'Beebou、Bee 与当前工作 · 本地演示')}
       onClose={onClose}
       wide
     >
