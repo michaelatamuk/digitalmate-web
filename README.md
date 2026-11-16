@@ -317,6 +317,7 @@ docs/
   operations.md           deployment, env config, origin checks and token rotation
   accessibility.md        automated coverage and screen-reader checklist
   branding.md             naming, BeeBou caveat and asset licensing
+  upstream-hive-parity-plan.md  plan for current Hive / v3.1 parity
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
