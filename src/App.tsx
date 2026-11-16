@@ -36,6 +36,7 @@ import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell, consumeSharedText, onNativeNotificationTap, consumeLaunchTab } from './lib/native';
 import { stashHiveShare, readShareText } from './lib/hiveShare';
 import { installHiveNotifications } from './lib/hiveNotifications';
+import { currentHiveMode } from './lib/hiveMode';
 import { currentHiveTransport } from './transport/hiveBridge';
 import { installDiagnostics } from './lib/diagnostics';
 import { dedupeCards } from './lib/discoveryExperience';
@@ -198,13 +199,24 @@ export default function App() {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
   }, []);
 
+  const hiveMode = useMemo(() => currentHiveMode(), []);
+  const hiveEnabled = hiveMode !== 'off';
+
   useEffect(() => {
     let cancelled = false;
     const apply = (text: string) => {
       if (cancelled || !text.trim()) return;
-      stashHiveShare(text);
-      setSheet('hive');
-      showToast(tr('Shared text saved to a Hive draft.', '分享内容已放入蜂巢草稿。'));
+      if (hiveEnabled) {
+        stashHiveShare(text);
+        setSheet('hive');
+        showToast(tr('Shared text saved to a Hive draft.', '分享内容已放入蜂巢草稿。'));
+      } else {
+        // Hive is off in this build, so shared text goes to the chat composer instead of nowhere.
+        setComposer(text);
+        setHome(false);
+        setTab('chat');
+        showToast(tr('Shared text added to the composer.', '已把分享内容放入输入框。'));
+      }
       // The share target arrives as query params; drop them so a reload does not re-seed a draft.
       if (window.location.search) window.history.replaceState(null, '', window.location.pathname);
     };
@@ -225,14 +237,17 @@ export default function App() {
   useEffect(() => {
     sheetRef.current = sheet;
   }, [sheet]);
-  useEffect(() => installHiveNotifications({
-    transport: currentHiveTransport(),
-    isSheetOpen: () => sheetRef.current === 'hive',
-    onOpen: (taskId: string) => {
-      currentHiveTransport().selectTask(taskId);
-      setSheet('hive');
-    }
-  }), []);
+  useEffect(() => {
+    if (!hiveEnabled) return;
+    return installHiveNotifications({
+      transport: currentHiveTransport(),
+      isSheetOpen: () => sheetRef.current === 'hive',
+      onOpen: (taskId: string) => {
+        currentHiveTransport().selectTask(taskId);
+        setSheet('hive');
+      }
+    });
+  }, [hiveEnabled]);
 
   useEffect(() => {
     if (!isNativeApp()) return;
@@ -1333,11 +1348,11 @@ export default function App() {
               setSheet('tasks');
             }}
             onLabs={() => setSheet('labs')}
-            onHive={() => setSheet('hive')}
+            onHive={hiveEnabled ? () => setSheet('hive') : undefined}
           />
         ) : null}
         {sheet === 'labs' ? <LabsSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
-        {sheet === 'hive' ? <HiveSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
+        {sheet === 'hive' && hiveEnabled ? <HiveSheet onClose={() => setSheet(null)} onNotice={showToast} /> : null}
         {sheet === 'skills' ? (
           <SkillsSheet
             skills={skills}

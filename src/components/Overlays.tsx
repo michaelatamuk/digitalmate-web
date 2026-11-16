@@ -248,7 +248,8 @@ export function MoreSheet({
   onArtifacts: () => void;
   onTasks: () => void;
   onLabs: () => void;
-  onHive: () => void;
+  /** Omitted when Hive is turned off for this build. */
+  onHive?: () => void;
 }) {
   const { tr } = useI18n();
   const items = [
@@ -257,7 +258,9 @@ export function MoreSheet({
     { icon: 'clock' as const, title: tr('Sessions & tasks', '会话与任务'), subtitle: tr('Local task rows with retry and details', '本地任务行，可重试与查看详情'), onClick: onTasks },
     { icon: 'bookmark' as const, title: tr('Artifacts', '成果'), subtitle: tr('Saved replies with local preview and export', '已保存的回复，可本地预览与导出'), onClick: onArtifacts },
     { icon: 'grid' as const, title: tr('Labs', '实验室'), subtitle: tr('BIM, multi-task, maps and demo flows', 'BIM、多任务、地图与演示流程'), onClick: onLabs },
-    { icon: 'spark' as const, title: tr('Hive', '蜂巢'), subtitle: tr('Beebou, Bees, tasks and steering', 'Beebou、Bee、任务与补充指令'), onClick: onHive },
+    ...(onHive
+      ? [{ icon: 'spark' as const, title: tr('Hive', '蜂巢'), subtitle: tr('Beebou, Bees, tasks and steering', 'Beebou、Bee、任务与补充指令'), onClick: onHive }]
+      : []),
     { icon: 'spark' as const, title: tr('Skill center', '技能中心'), subtitle: tr('Install, enable and manage skills', '安装、启用和管理技能'), onClick: onSkills },
     { icon: 'heart' as const, title: tr('About you', '关于你'), subtitle: tr('Long-term memory and public profile', '长期记忆与公开画像'), onClick: onMemory },
     { icon: 'clock' as const, title: tr('History', '历史记录'), subtitle: tr('Return to a previous task', '回到之前完成的任务'), onClick: onHistory },

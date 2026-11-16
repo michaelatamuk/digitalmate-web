@@ -642,6 +642,21 @@ test('the Hive demo keeps working offline', async ({ page, context }) => {
   await context.setOffline(false);
 });
 
+test('a build can turn Hive off and shared text falls back to chat', async ({ page }) => {
+  await page.goto('/?hive=off');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Hive/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Skill center/ })).toBeVisible();
+  await page.locator('.sheet-head .icon-button').click();
+
+  await page.goto('/?hive=off&title=Note&text=Read%20this');
+  await expect(page.locator('.composer-wrap textarea')).toHaveValue(/Read this/);
+  await expect(page.locator('.hive')).toHaveCount(0);
+});
+
 test('notifies when a Bee finishes with the sheet closed, and a tap opens the task', async ({ page }) => {
   await page.addInitScript(() => {
     class FakeNotification {

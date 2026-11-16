@@ -215,6 +215,18 @@ Shipped:
   that stubs `Notification`, closes the sheet, waits for the background completion, then taps the
   notification and asserts the task is open
 
+## Implementation slice 15 (2026-11-16): Hive feature flag
+
+Shipped:
+
+- `HiveMode` (`off | mock | bridge`) in `src/lib/hiveMode.ts`, resolved most-specific first:
+  `?hive=` override → stored choice → `VITE_HIVE_MODE` → presence of `VITE_HIVE_BRIDGE_URL` → `mock`
+- `off` hides the Hive entry in **More**, refuses to render the sheet, and skips the notification
+  watcher; shared text falls back to the chat composer instead of vanishing
+- A `?hive=` override is remembered in `localStorage` (`digitalmate.hive.mode`) for the session
+- Tests: mode resolution (override/storage/env/url/junk) and an E2E that loads `?hive=off`, asserts
+  the More menu has no Hive row, and that a share then lands in the chat composer
+
 Still to do in the Hive slice:
 
 - share **files** into a Bee draft (text is routed today)
