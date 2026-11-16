@@ -574,6 +574,8 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
     timeout: 10_000
   });
   await expect(page.locator('.hive-artifact')).toHaveCount(1);
+  await expect(page.locator('.hive-meta-line .hive-ref').first()).toHaveText(/^T-/);
+  await expect(page.locator('.hive-meta-line .hive-version')).toHaveText(/^v\d+/);
   await expect(page.locator('.hive-lane-time').first()).toBeVisible();
   await expect(page.locator('.hive-task-row').first()).toContainText('T-');
 

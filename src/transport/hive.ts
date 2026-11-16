@@ -365,6 +365,7 @@ export class MockHiveTransport implements HiveTransport {
     task.step = 'Using your answer';
     task.steering.push(answer);
     task.updatedAt = Date.now();
+    this.bumpVersion(task);
     this.record('answer', task.laneId, task.id, `Answered · ${answer}`);
     this.recordMemory('decision', task.laneId, task.id, `User decided: ${answer}`);
     this.messages.push({
@@ -592,6 +593,8 @@ export class MockHiveTransport implements HiveTransport {
       steering: [],
       attachments: attachments.slice(0, 5),
       operationId,
+      runId: id('run'),
+      version: 1,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       artifacts: []
@@ -608,6 +611,11 @@ export class MockHiveTransport implements HiveTransport {
       this.activity = this.activity.slice(this.activity.length - MAX_ACTIVITY);
       this.activityTrimmed = true;
     }
+  }
+
+  /** Upstream rows carry a version; every state change bumps it here too. */
+  private bumpVersion(task: HiveTask): void {
+    task.version = (task.version ?? 0) + 1;
   }
 
   private recordMemory(kind: HiveMemoryKind, laneId: string, taskId: string, text: string): void {
@@ -637,6 +645,7 @@ export class MockHiveTransport implements HiveTransport {
     next.status = 'running';
     next.step = 'Reading the request';
     next.updatedAt = Date.now();
+    this.bumpVersion(next);
     this.selectedTaskId = next.id;
     this.emit('task');
     this.schedule(() => this.advance(next.id, 0), 500);
@@ -678,6 +687,7 @@ export class MockHiveTransport implements HiveTransport {
     task.status = 'waiting_user';
     task.step = 'Waiting for your decision';
     task.updatedAt = Date.now();
+    this.bumpVersion(task);
     this.record('question', task.laneId, task.id, `Needs you · ${question.question}`);
     this.emit('task');
   }
@@ -688,6 +698,7 @@ export class MockHiveTransport implements HiveTransport {
     task.status = 'done';
     task.step = 'Done';
     task.updatedAt = Date.now();
+    this.bumpVersion(task);
     const steering = task.steering.length > 0 ? ` I also used your steer: ${task.steering.join('; ')}.` : '';
     const remembered = this.memoryInUseCount(task.laneId);
     const memoryNote = remembered > 0
@@ -761,6 +772,7 @@ export class MockHiveTransport implements HiveTransport {
         task.status = 'stopped';
         task.step = step;
         task.updatedAt = Date.now();
+        this.bumpVersion(task);
         this.record('stop', laneId, task.id, `Stopped · ${task.title}`);
       }
     }

@@ -28,7 +28,7 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
 - Hive preview (**More → Hive**): Beebou + Bees, activity lanes, steering, memory, local mock only
 - Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`
-- 162 unit tests plus 42 Playwright UI, mobile and accessibility checks
+- 163 unit tests plus 42 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 

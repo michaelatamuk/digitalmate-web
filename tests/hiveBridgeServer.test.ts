@@ -78,6 +78,8 @@ describe('Hive bridge service', () => {
     const snapshot = await get('/api/hive/snapshot');
     const task = snapshot.tasks.find((item: { id: string }) => item.id === created.taskId);
     expect(task.artifacts).toHaveLength(1);
+    expect(task.runId).toMatch(/^run_/);
+    expect(task.version).toBeGreaterThanOrEqual(2);
     expect(snapshot.activity.some((entry: { kind: string }) => entry.kind === 'task_status')).toBe(true);
     expect(snapshot.memory.some((entry: { kind: string }) => entry.kind === 'task_summary')).toBe(true);
   });

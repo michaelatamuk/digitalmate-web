@@ -620,6 +620,15 @@ export function HiveSheet({
                           {taskStatusLabel(selectedTask.status, tr)}
                         </span>
                         <h3>{selectedTask.title}</h3>
+                        <p className="hive-meta-line">
+                          <code className="hive-ref">{taskRef(selectedTask)}</code>
+                          {selectedTask.runId ? (
+                            <code className="hive-ref">{`R-${selectedTask.runId.slice(-4).toUpperCase()}`}</code>
+                          ) : null}
+                          {selectedTask.version ? (
+                            <span className="hive-version">{`v${selectedTask.version}`}</span>
+                          ) : null}
+                        </p>
                       </div>
                       {selectedTask.status === 'running' || selectedTask.status === 'waiting_user' ? (
                         confirmStopId === selectedTask.id ? (

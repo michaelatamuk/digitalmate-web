@@ -233,6 +233,21 @@ describe('Hive local transport', () => {
     expect(hive.snapshot().tasks.filter(task => task.operationId === 'op-1').length).toBe(1);
   });
 
+  it('gives every task a run identity and a version that advances with state', async () => {
+    const hive = new MockHiveTransport(0);
+    const taskId = await hive.send({ laneId: 'scout', text: 'Build an artifact' });
+    const done = hive.snapshot().tasks.find(task => task.id === taskId)!;
+    expect(done.runId).toMatch(/^run_/);
+    expect(done.version).toBeGreaterThanOrEqual(3);
+
+    const emailTask = await hive.send({ laneId: 'forge', text: 'Draft an email to Alice' });
+    const waiting = hive.snapshot().tasks.find(task => task.id === emailTask)!;
+    const waitingVersion = waiting.version!;
+    await hive.stop(emailTask);
+    const stopped = hive.snapshot().tasks.find(task => task.id === emailTask)!;
+    expect(stopped.version).toBeGreaterThan(waitingVersion);
+  });
+
   it('keeps an answer draft with its question until the question is answered', async () => {    const hive = new MockHiveTransport(0);
     const taskId = await hive.send({ laneId: 'scout', text: 'Draft an email to Bob' });
     const question = hive.snapshot().tasks.find(task => task.id === taskId)!.question!;

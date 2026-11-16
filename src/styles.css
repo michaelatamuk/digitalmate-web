@@ -7293,3 +7293,6 @@ a {
 .hive-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .hive-preview-head strong { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hive-preview-card img { max-width: 100%; height: auto; border-radius: 10px; }
+
+.hive-meta-line { display: flex; align-items: center; gap: 6px; margin: 6px 0 0; }
+.hive-version { font: 9px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; color: var(--ink-muted, #6f625a); opacity: 0.8; }

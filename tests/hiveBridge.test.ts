@@ -52,6 +52,8 @@ describe('Hive bridge transport', () => {
 
     await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
     expect(transport.snapshot().tasks.map(task => task.id)).toEqual(['task_bridge_1']);
+    expect(transport.snapshot().tasks[0].runId).toBe('run_bridge_1');
+    expect(transport.snapshot().tasks[0].version).toBe(4);
     expect(transport.snapshot().selectedLaneId).toBe('scout');
     expect(fetchImpl).toHaveBeenCalledWith(
       'https://bridge.test/api/hive/snapshot',

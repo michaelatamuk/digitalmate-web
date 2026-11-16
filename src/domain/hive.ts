@@ -63,6 +63,10 @@ export interface HiveTask {
   output: string;
   steering: string[];
   attachments: HiveAttachmentMeta[];
+  /** Server run identity for this task attempt (upstream `run_id`). */
+  runId?: string;
+  /** Monotonic version of the task row, bumped on every state change (upstream `version`). */
+  version?: number;
   /** Stable id for the command that created the task, so a retry does not create a second one. */
   operationId?: string;
   createdAt: number;

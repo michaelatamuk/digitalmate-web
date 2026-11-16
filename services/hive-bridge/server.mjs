@@ -113,6 +113,11 @@ export class HiveBridgeState {
     this.lanes = this.lanes.map(lane => (lane.id === laneId ? { ...lane, lastActivityAt: this.now() } : lane));
   }
 
+  /** Upstream task rows carry a monotonic version; every state change bumps it here too. */
+  bump(task) {
+    task.version = (task.version ?? 0) + 1;
+  }
+
   createTask(laneId, text, operationId, attachments = []) {
     const kept = Array.isArray(attachments)
       ? attachments
@@ -136,6 +141,8 @@ export class HiveBridgeState {
       steering: [],
       attachments: kept,
       operationId,
+      runId: id('run'),
+      version: 1,
       createdAt: this.now(),
       updatedAt: this.now(),
       artifacts: []
@@ -158,6 +165,7 @@ export class HiveBridgeState {
       return;
     }
     task.step = 'Writing the result';
+    this.bump(task);
     this.emit();
     this.schedule(() => this.finish(task.id), this.stepDelayMs);
   }
@@ -177,6 +185,7 @@ export class HiveBridgeState {
     task.status = 'waiting_user';
     task.step = 'Waiting for your decision';
     task.updatedAt = this.now();
+    this.bump(task);
     this.activityEntry(task.laneId, task.id, 'question', `Needs you · ${task.question.question}`);
     this.emit();
   }
@@ -187,6 +196,7 @@ export class HiveBridgeState {
     task.status = 'done';
     task.step = 'Done';
     task.updatedAt = this.now();
+    this.bump(task);
     task.output = `Bridge finished: ${task.title}`;
     const cutoff = this.memoryCutoffAt[task.laneId] ?? 0;
     const reused = this.memory.filter(entry => entry.laneId === task.laneId && entry.at > cutoff).length;
@@ -238,6 +248,7 @@ export class HiveBridgeState {
       task.steering.push(text);
       task.step = 'Applying your steer';
       task.updatedAt = this.now();
+      this.bump(task);
       this.activityEntry(task.laneId, task.id, 'steer', `Steer · ${text}`);
       this.emit();
       return { ok: true };
@@ -264,6 +275,7 @@ export class HiveBridgeState {
     task.status = 'running';
     task.step = 'Using your answer';
     task.updatedAt = this.now();
+    this.bump(task);
     this.activityEntry(task.laneId, task.id, 'answer', `Answered · ${text}`);
     this.memoryEntry(task.laneId, task.id, 'decision', `User decided: ${text}`);
     this.emit();
@@ -277,6 +289,7 @@ export class HiveBridgeState {
     task.status = 'stopped';
     task.step = 'Stopped by you.';
     task.updatedAt = this.now();
+    this.bump(task);
     this.activityEntry(task.laneId, task.id, 'stop', `Stopped · ${task.title}`);
     this.emit();
     return { ok: true, status: 'STOPPED', taskRef: task.id };

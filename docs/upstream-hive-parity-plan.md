@@ -339,9 +339,21 @@ Shipped:
 - Tests: three inbox unit cases (read-once, text-only, damaged entries) and an E2E that seeds the
   inbox, sees text + `shot.png` in the draft, and confirms a second load starts clean
 
-Still to do in the Hive slice:
+## Implementation slice 23 (2026-11-16): run and session identity
 
-- session/run mapping in the bridge (tasks are per lane today; there is no run/session identity)
+Shipped:
+
+- `HiveTask.runId` and `HiveTask.version` (the upstream `run_id` / `version` pair). The mock assigns a
+  run id at creation and bumps the version on every state change; the reference bridge does the same
+- `mapUpstreamTaskRow()` now preserves `run_id` and `version`, so a real server row keeps its attempt
+  identity instead of collapsing to a bare task
+- The task detail shows a short `R-XXXX` handle and `vN` next to the task ref, so a retry or a
+  second attempt is distinguishable
+- Tests: mock run identity + version advance across states; upstream rows keep both; the bridge
+  assigns them (version ≥ 2 by `done`); the client fixture carries them through `readHiveSnapshot`;
+  the Hive E2E asserts the `T-`/`R-`/`v` line renders
+
+With this, **Phase 5 is complete**.
 
 ## 1. Goal
 

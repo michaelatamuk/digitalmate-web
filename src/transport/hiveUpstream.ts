@@ -111,6 +111,8 @@ export function mapUpstreamTaskRow(row: UpstreamTaskRow): HiveTask | null {
     output: '',
     steering: [],
     attachments: [],
+    runId: typeof row.run_id === 'string' && row.run_id ? row.run_id : undefined,
+    version: typeof row.version === 'number' && Number.isFinite(row.version) ? row.version : undefined,
     createdAt: at,
     updatedAt: at,
     artifacts: []

@@ -54,6 +54,10 @@ Required arrays: `lanes`, `tasks`, `messages`. Optional-with-defaults: `activity
 `activityReadAt`, `activityTrimmed`, `memory`, `memoryCutoffAt`, `selectedLaneId`,
 `selectedTaskId`.
 
+Tasks may carry `runId` and `version` (the upstream `run_id` / `version` pair). The mock and the
+reference bridge both set them, `mapUpstreamTaskRow()` preserves them, and the sheet shows a short
+`R-XXXX` handle plus `vN` so a task attempt is identifiable.
+
 A reference payload lives at `tests/fixtures/hive-bridge-snapshot.json` and is used by
 `tests/hiveBridge.test.ts`.
 

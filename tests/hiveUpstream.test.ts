@@ -75,6 +75,9 @@ describe('Upstream Hive payload mapping', () => {
 
     const waiting = mapUpstreamTaskRow(taskRefs.question_open.snapshot_waiting[0]);
     expect(waiting?.status).toBe('waiting_user');
+    // Run identity and row version survive the conversion.
+    expect(waiting?.runId).toBe('<run-1>');
+    expect(waiting?.version).toBe(3);
 
     expect(mapUpstreamTaskRow({})).toBeNull();
     expect(mapUpstreamTaskRow({ task_ref: 't', bee_id: 'b', state: 'mystery' })).toBeNull();

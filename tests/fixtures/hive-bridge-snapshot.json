@@ -36,6 +36,8 @@
       "attachments": [],
       "createdAt": 1763000000000,
       "updatedAt": 1763000100000,
+      "runId": "run_bridge_1",
+      "version": 4,
       "artifacts": []
     }
   ],
