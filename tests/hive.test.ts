@@ -1,6 +1,28 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MockHiveTransport } from '../src/transport/hive';
 import { currentTask, taskIsOpen } from '../src/domain/hive';
+
+function memoryStorage(): Storage {
+  const data = new Map<string, string>();
+  return {
+    get length() {
+      return data.size;
+    },
+    clear: () => data.clear(),
+    getItem: key => data.get(key) ?? null,
+    key: index => Array.from(data.keys())[index] ?? null,
+    removeItem: key => {
+      data.delete(key);
+    },
+    setItem: (key, value) => {
+      data.set(key, value);
+    }
+  };
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('Hive local transport', () => {
   it('starts with Beebou and active Bees', () => {
@@ -35,5 +57,13 @@ describe('Hive local transport', () => {
     hive.eraseArtifact(artifactId);
     expect(hive.snapshot().tasks.find(item => item.id === taskId)?.artifacts[0].erasedAt).toBeTruthy();
     expect(taskIsOpen(task!)).toBe(false);
+  });
+
+  it('restores completed work after a reload', async () => {
+    vi.stubGlobal('window', { localStorage: memoryStorage() });
+    const first = new MockHiveTransport(0);
+    const taskId = await first.send({ laneId: 'scout', text: 'Build an artifact' });
+    const second = new MockHiveTransport(0);
+    expect(second.snapshot().tasks.find(task => task.id === taskId)?.status).toBe('done');
   });
 });

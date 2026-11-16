@@ -11,6 +11,7 @@ Shipped:
 
 - `src/domain/hive.ts`: lanes, Bees, tasks, questions, artifacts, working state helpers
 - `src/transport/hive.ts`: local Hive transport, Bee tasks, queue/steer/preempt, question/answer, Stop, artifacts
+- localStorage persistence and interrupted-task recovery
 - `src/components/HiveSheet.tsx`: Hive Home, Beebou, Bee lanes, activity, task detail, report/artifact cards, attachments and composer
 - More → Hive entry, local-only demo
 - Unit tests for the Hive transport and an E2E question flow
@@ -18,7 +19,7 @@ Shipped:
 Still to do in the Hive slice:
 
 - activity lanes with cursor history/gaps (current task list is the first activity view)
-- persistent Hive store and backup
+- versioned Hive store, backup/restore and cross-device sync
 - live `BridgeHiveTransport`
 - report generation and memory cut-off
 - Android notification routing and share intake

@@ -80,6 +80,12 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+const STORAGE_KEY = 'digitalmate.hive.v1';
+
+function canPersist(): boolean {
+  return typeof window !== 'undefined' && Boolean(window.localStorage);
+}
+
 /** Local Hive demo. It mirrors the event and control shape of a real Hive bridge. */
 export class MockHiveTransport implements HiveTransport {
   readonly id = 'mock' as const;
@@ -97,14 +103,26 @@ export class MockHiveTransport implements HiveTransport {
       ...lane,
       lastActivityAt: Date.now() - Math.floor(Math.random() * 8_000)
     }));
-    this.messages.push({
-      id: id('msg'),
-      laneId: 'beebou',
-      role: 'beebou',
-      text: 'I am Beebou. I keep the Hive in order and hand work to the right Bee.',
-      createdAt: Date.now() - 60_000
-    });
-    this.seed();
+    const restored = this.restore();
+    if (restored) {
+      this.lanes = restored.lanes.length > 0 ? restored.lanes : this.lanes;
+      this.tasks = restored.tasks;
+      this.messages = restored.messages;
+      this.selectedLaneId = this.lanes.some(lane => lane.id === restored.selectedLaneId)
+        ? restored.selectedLaneId
+        : 'beebou';
+      this.selectedTaskId = restored.selectedTaskId;
+      this.normalizeRestored();
+    } else {
+      this.messages.push({
+        id: id('msg'),
+        laneId: 'beebou',
+        role: 'beebou',
+        text: 'I am Beebou. I keep the Hive in order and hand work to the right Bee.',
+        createdAt: Date.now() - 60_000
+      });
+      this.seed();
+    }
   }
 
   subscribe(listener: (event: HiveEvent) => void): () => void {
@@ -261,9 +279,53 @@ export class MockHiveTransport implements HiveTransport {
     this.listeners.clear();
   }
 
+  private restore(): HiveSnapshot | null {
+    if (!canPersist()) return null;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as Partial<HiveSnapshot>;
+      if (!Array.isArray(parsed.lanes) || !Array.isArray(parsed.tasks) || !Array.isArray(parsed.messages)) {
+        return null;
+      }
+      return {
+        lanes: parsed.lanes,
+        tasks: parsed.tasks,
+        messages: parsed.messages,
+        selectedLaneId: typeof parsed.selectedLaneId === 'string' ? parsed.selectedLaneId : 'beebou',
+        selectedTaskId: typeof parsed.selectedTaskId === 'string' ? parsed.selectedTaskId : ''
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  private normalizeRestored(): void {
+    this.tasks = this.tasks.map(task => {
+      const interrupted = task.status === 'running' || task.status === 'waiting_user';
+      return {
+        ...task,
+        attachments: Array.isArray(task.attachments) ? task.attachments : [],
+        steering: Array.isArray(task.steering) ? task.steering : [],
+        artifacts: Array.isArray(task.artifacts) ? task.artifacts : [],
+        question: interrupted ? undefined : task.question,
+        status: interrupted ? 'stopped' : task.status,
+        step: interrupted ? 'Interrupted by reload' : task.step
+      };
+    });
+  }
+
+  private persist(): void {
+    if (!canPersist()) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.snapshot()));
+    } catch {
+      // The local demo still works when storage is unavailable.
+    }
+  }
+
   private seed(): void {
-    const now = Date.now();
-    const task: HiveTask = {
+    const now = Date.now();    const task: HiveTask = {
       id: 'task_seed_scout',
       laneId: 'scout',
       title: 'What is moving in on-device agents?',
@@ -475,6 +537,7 @@ export class MockHiveTransport implements HiveTransport {
 
   private emit(type: HiveEvent['type']): void {
     const event: HiveEvent = { type, snapshot: this.snapshot() };
+    this.persist();
     for (const listener of this.listeners) listener(event);
   }
 }
