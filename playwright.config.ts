@@ -2,6 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 
 const port = 5175;
 const baseURL = `http://127.0.0.1:${port}`;
+// A second dev server is pointed at the reference Hive bridge, so the client↔server path is covered
+// in CI instead of only by hand. `--mode bridge` loads `.env.bridge`.
+const bridgePort = 8788;
+const bridgedPort = 5176;
+const bridgeBase = `http://127.0.0.1:${bridgePort}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -23,10 +28,25 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] }
     }
   ],
-  webServer: {
-    command: `npm run dev -- --port ${port}`,
-    url: baseURL,
-    reuseExistingServer: false,
-    timeout: 120_000
-  }
+  webServer: [
+    {
+      command: `npm run dev -- --port ${port}`,
+      url: baseURL,
+      reuseExistingServer: false,
+      timeout: 120_000
+    },
+    {
+      command: 'node services/hive-bridge/server.mjs',
+      url: `${bridgeBase}/api/hive/health`,
+      env: { HIVE_BRIDGE_PORT: String(bridgePort) },
+      reuseExistingServer: false,
+      timeout: 60_000
+    },
+    {
+      command: `npm run dev -- --port ${bridgedPort} --mode bridge`,
+      url: `http://127.0.0.1:${bridgedPort}`,
+      reuseExistingServer: false,
+      timeout: 120_000
+    }
+  ]
 });

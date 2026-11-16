@@ -8,6 +8,8 @@ playwright-report/
 .env
 .env.*
 !.env.example
+# Points the Hive sheet at the local reference bridge; no secrets.
+!.env.bridge
 *.log
 .DS_Store
 Thumbs.db
