@@ -329,6 +329,7 @@ docs/
   hive-user-guide.md      Hive lanes, controls, memory, artifacts and bridge mode
   hive-bridge-contract.md frozen Hive bridge endpoints and vocabulary
   hive-performance.md     feed and task rendering budget
+  release-0.5.0.md        Android 0.5.0 upgrade notes and what users see
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
