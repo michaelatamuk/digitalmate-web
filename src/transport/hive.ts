@@ -23,6 +23,13 @@ export type HiveFeature = 'steer' | 'queue' | 'preempt' | 'artifacts' | 'memoryC
 
 export const HIVE_FEATURES: HiveFeature[] = ['steer', 'queue', 'preempt', 'artifacts', 'memoryCutoff'];
 
+export interface HiveConflict {
+  kind: 'conflict' | 'stale';
+  /** Task the refused command targeted, when the command named one. */
+  taskId?: string;
+  at: number;
+}
+
 export interface HiveTransportStatus {
   mode: HiveTransportMode;
   state: HiveTransportState;
@@ -34,6 +41,8 @@ export interface HiveTransportStatus {
   features?: HiveFeature[];
   /** True when the bridge answered the capability probe; false when the v1 baseline was assumed. */
   negotiated?: boolean;
+  /** Last refused command, kept so the UI can explain that its view was refreshed. */
+  lastConflict?: HiveConflict;
 }
 
 export interface HiveTransport {
@@ -46,6 +55,8 @@ export interface HiveTransport {
   hasFailedOperation: () => boolean;
   /** Re-sends the failed command with the same operation id, so the bridge can dedupe it. */
   retryLastOperation: () => Promise<void>;
+  /** Drops the "your view was refreshed" notice after a conflict. */
+  clearConflict: () => void;
   retry: () => void;
   selectLane: (laneId: string) => void;
   selectTask: (taskId: string) => void;
@@ -211,6 +222,10 @@ export class MockHiveTransport implements HiveTransport {
 
   async retryLastOperation(): Promise<void> {
     // The local demo has no transport to retry.
+  }
+
+  clearConflict(): void {
+    // The mock cannot conflict with itself.
   }
 
   retry(): void {

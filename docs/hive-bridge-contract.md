@@ -59,6 +59,14 @@ A reference payload lives at `tests/fixtures/hive-bridge-snapshot.json` and is u
 
 ## Error handling
 
+A refusal and an outage are different things:
+
+- **Refusals** (`conflict` 409, `stale` 410/412) leave the transport `ready`. The client records the
+  conflict (`HiveTransportStatus.lastConflict`, with the task it targeted), refreshes the snapshot,
+  and the sheet says `That task changed on the bridge. The latest state is shown.` — so a retry
+  afterwards targets current state.
+- **Transient failures** (network, timeout, 5xx) mark the bridge `unavailable` and keep the command
+  for **Retry** with the same operation id.
 - Non-2xx responses throw `HiveTransportError` with a `kind`:
 
   | HTTP | `kind` | Message shown |

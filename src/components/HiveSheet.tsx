@@ -716,6 +716,25 @@ export function HiveSheet({
                 rows={2}
               />
               <div className="hive-actions">
+                {status.lastConflict ? (
+                  <div className="hive-conflict" role="status">
+                    <span>
+                      {status.lastConflict.kind === 'stale'
+                        ? tr('That target was out of date. The latest state is shown.', '目标已过期，已显示最新状态。')
+                        : tr('That task changed on the bridge. The latest state is shown.', '任务在桥接上已变化，已显示最新状态。')}
+                    </span>
+                    <button
+                      type="button"
+                      className="hive-link"
+                      onClick={() => {
+                        hive.clearConflict();
+                        setStatus(hive.status());
+                      }}
+                    >
+                      {tr('Dismiss', '知道了')}
+                    </button>
+                  </div>
+                ) : null}
                 {hive.hasFailedOperation() ? (
                   <div className="hive-retry">
                     <span>{tr('The last action did not reach the bridge.', '上一个操作未送达桥接。')}</span>

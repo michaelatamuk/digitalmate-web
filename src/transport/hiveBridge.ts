@@ -1,8 +1,8 @@
 import type { HiveBackup, HiveEvent, HiveSendInput, HiveSnapshot } from '../domain/hive';
 import { emptyHiveSnapshot, readHiveSnapshot } from '../domain/hive';
 import type { HiveTransport, HiveTransportStatus } from './hive';
+import type { HiveConflict, HiveFeature } from './hive';
 import { HIVE_FEATURES, MockHiveTransport, newOperationId } from './hive';
-import type { HiveFeature } from './hive';
 
 /**
  * Contract between the web app and the Hive bridge.
@@ -112,6 +112,8 @@ export class BridgeHiveTransport implements HiveTransport {
   private resumeAttempt = 0;
   /** Last command that failed in a retryable way, kept so Retry reuses its operation id. */
   private failed: { path: string; body: Record<string, unknown> } | null = null;
+  /** Last refused command: its task changed under us, so the snapshot was refreshed. */
+  private lastConflict: HiveConflict | undefined = undefined;
   private readonly fetchImpl: typeof fetch;
   private readonly eventSourceFactory: (url: string) => EventSourceLike;
   private readonly timeoutMs: number;
@@ -139,6 +141,12 @@ export class BridgeHiveTransport implements HiveTransport {
 
   status(): HiveTransportStatus {
     return this.statusValue;
+  }
+
+  clearConflict(): void {
+    if (!this.lastConflict) return;
+    this.lastConflict = undefined;
+    this.setStatus({ ...this.statusValue, lastConflict: undefined });
   }
 
   /**
@@ -423,24 +431,67 @@ export class BridgeHiveTransport implements HiveTransport {
         body: JSON.stringify(body)
       });
     } catch (error) {
-      // Only transient failures are worth replaying; a conflict or a refusal means the command
-      // itself is wrong and repeating it changes nothing.
-      if (error instanceof HiveTransportError && (error.kind === 'unavailable' || error.kind === 'timeout')) {
-        this.failed = { path, body: body as Record<string, unknown> };
+      if (error instanceof HiveTransportError) {
+        if (error.kind === 'conflict' || error.kind === 'stale') {
+          const target = (body as { taskId?: unknown }).taskId;
+          this.lastConflict = {
+            kind: error.kind,
+            taskId: typeof target === 'string' ? target : undefined,
+            at: Date.now()
+          };
+          this.setStatus({
+            mode: 'bridge',
+            state: 'ready',
+            message: '',
+            version: this.version,
+            negotiated: this.negotiated,
+            features: this.capabilities
+              ? HIVE_FEATURES.filter(feature => this.capabilities!.has(feature))
+              : [...HIVE_FEATURES],
+            lastConflict: this.lastConflict
+          });
+          this.emit('snapshot');
+          // The command was refused because our view is stale, so refresh it: the retry the user
+          // sees afterwards must be meaningful.
+          void this.refreshSnapshot();
+        } else if (error.kind === 'unavailable' || error.kind === 'timeout') {
+          this.failed = { path, body: body as Record<string, unknown> };
+        }
       }
       throw error;
     }
     const parsed = response as SnapshotResponse;
     this.failed = null;
+    this.lastConflict = undefined;
     const snapshot = readHiveSnapshot(parsed.snapshot);
     if (snapshot) {
       this.snapshotValue = snapshot;
       this.emit('snapshot');
     }
-    if (this.statusValue.state !== 'ready') {
-      this.setStatus({ mode: 'bridge', state: 'ready', message: '' });
-    }
+    this.setStatus({
+      mode: 'bridge',
+      state: 'ready',
+      message: '',
+      version: this.version,
+      negotiated: this.negotiated,
+      features: this.capabilities
+        ? HIVE_FEATURES.filter(feature => this.capabilities!.has(feature))
+        : [...HIVE_FEATURES]
+    });
     return parsed;
+  }
+
+  /** Re-reads the snapshot after a refusal, so the next action targets the current state. */
+  private async refreshSnapshot(): Promise<void> {
+    try {
+      const response = await this.request('/api/hive/snapshot', { method: 'GET' });
+      const snapshot = readHiveSnapshot(response);
+      if (!snapshot) return;
+      this.snapshotValue = snapshot;
+      this.emit('snapshot');
+    } catch (_error) {
+      // Keeping the previous snapshot is better than blanking the UI; the status already explains.
+    }
   }
 
   private async request(path: string, init: RequestInit): Promise<unknown> {
@@ -462,10 +513,14 @@ export class BridgeHiveTransport implements HiveTransport {
       }
       return await response.json();
     } catch (error) {
+      // Only transient failures mark the whole bridge unavailable; a 409 means the transport is
+      // fine and the command is stale.
       if (error instanceof HiveTransportError) {
-        this.setStatus({
-          mode: 'bridge', state: 'unavailable', message: error.message, version: this.version
-        });
+        if (error.kind === 'unavailable' || error.kind === 'timeout') {
+          this.setStatus({
+            mode: 'bridge', state: 'unavailable', message: error.message, version: this.version
+          });
+        }
         throw error;
       }
       const kind: HiveBridgeErrorKind = error instanceof Error && error.name === 'AbortError'

@@ -159,6 +159,19 @@ Shipped:
 - Tests: answer draft lifecycle in the mock, an E2E that types an answer, switches lanes, returns
   and finds it, and an E2E that cancels then confirms a Stop
 
+## Implementation slice 11 (2026-11-16): conflicts refresh instead of failing
+
+Shipped:
+
+- Refusals (409/410/412) no longer mark the bridge `unavailable`; the transport stays `ready`,
+  re-reads `/api/hive/snapshot`, and records `lastConflict` (`kind`, target task, time)
+- The sheet shows `That task changed on the bridge. The latest state is shown.` with **Dismiss**,
+  so a retry afterwards targets current state
+- Transient failures keep their old behaviour: `unavailable` + command retained for **Retry** with
+  the same operation id
+- Tests: a 410 Stop leaves the transport ready, flags the task and triggers exactly one extra
+  snapshot fetch; a 409 records the conflict and `clearConflict()` drops it
+
 Still to do in the Hive slice:
 
 - server-side `/api/hive/*` implementation, run/task mapping and dedupe (contract frozen)

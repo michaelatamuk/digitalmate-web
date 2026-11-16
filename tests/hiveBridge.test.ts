@@ -260,8 +260,32 @@ describe('Hive bridge transport', () => {
     transport.dispose();
   });
 
-  it('retries a transient failure with the same operation id', async () => {
-    const bodies: Array<Record<string, unknown>> = [];
+  it('refreshes the snapshot and flags the task when a command is refused', async () => {
+    let snapshots = 0;
+    const fetchImpl = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
+      if (url.endsWith('/api/hive/snapshot')) {
+        snapshots += 1;
+        return jsonResponse(fixture);
+      }
+      if (url.endsWith('/api/hive/stop')) return jsonResponse({}, 410);
+      return jsonResponse({});
+    });
+    const transport = bridge(fetchImpl);
+    transport.subscribe(() => {});
+    await vi.waitFor(() => expect(transport.status().state).toBe('ready'));
+    const before = snapshots;
+
+    await expect(transport.stop('task_bridge_1')).rejects.toMatchObject({ kind: 'stale' });
+    expect(transport.status().state).toBe('ready');
+    expect(transport.status().lastConflict).toMatchObject({ kind: 'stale', taskId: 'task_bridge_1' });
+    // The refused command proves the view is stale, so the client re-reads it.
+    await vi.waitFor(() => expect(snapshots).toBe(before + 1));
+    transport.dispose();
+  });
+
+  it('retries a transient failure with the same operation id', async () => {    const bodies: Array<Record<string, unknown>> = [];
     let failNext = true;
     const fetchImpl = vi.fn(async (input: unknown, init?: { body?: string }) => {
       const url = String(input);
@@ -306,7 +330,8 @@ describe('Hive bridge transport', () => {
     transport.dispose();
   });
 
-  it('maps bridge failures onto typed errors and readable messages', async () => {    const conflictFetch = vi.fn(async (input: unknown) => {
+  it('maps bridge failures onto typed errors and readable messages', async () => {
+    const conflictFetch = vi.fn(async (input: unknown) => {
       const url = String(input);
       if (url.endsWith('/api/hive/capabilities')) return jsonResponse({ version: 1 });
       if (url.endsWith('/api/hive/snapshot')) return jsonResponse(fixture);
@@ -316,7 +341,11 @@ describe('Hive bridge transport', () => {
     conflict.subscribe(() => {});
     await vi.waitFor(() => expect(conflict.status().state).toBe('ready'));
     await expect(conflict.send({ laneId: 'scout', text: 'x' })).rejects.toMatchObject({ kind: 'conflict' });
-    expect(conflict.status().message).toContain('changed on the bridge');
+    // A refusal is not an outage: the transport stays ready and records what changed.
+    expect(conflict.status().state).toBe('ready');
+    expect(conflict.status().lastConflict?.kind).toBe('conflict');
+    conflict.clearConflict();
+    expect(conflict.status().lastConflict).toBeUndefined();
     conflict.dispose();
 
     const unsupportedFetch = vi.fn(async (input: unknown) => {
