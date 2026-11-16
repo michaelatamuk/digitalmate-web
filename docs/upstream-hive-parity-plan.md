@@ -355,6 +355,21 @@ Shipped:
 
 With this, **Phase 5 is complete**.
 
+## Implementation slice 24 (2026-11-16): failure state and the missing state coverage
+
+Shipped:
+
+- The local mock can now fail on purpose: a prompt starting with `!fail` ends the task with
+  `status: 'error'`, `step: 'Failed'`, a readable reason, an activity entry (`Failed · …`) and a Bee
+  message. The lane is freed for the next task, exactly like a completion.
+- Failure bumps the row version and records the message, so the error path exercises the same plumbing
+  as the happy path instead of a special case.
+- Coverage added where it was thin:
+  - mock: `!fail` reaches error and releases the lane
+  - bridge: `steer` applies, `queue` adds a second task, `preempt` stops the open one
+  - bridge: a second answer to a settled question returns **409 CONFLICT**
+  - E2E: `!fail` shows `Failed` with the reason, and a second send while one runs shows `Queued`
+
 ## 1. Goal
 
 Bring DigitalMate Web and the Android shell up to the **current user-visible

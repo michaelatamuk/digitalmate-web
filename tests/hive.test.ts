@@ -248,6 +248,18 @@ describe('Hive local transport', () => {
     expect(stopped.version).toBeGreaterThan(waitingVersion);
   });
 
+  it('reaches the failure state through the documented !fail trigger', async () => {
+    const hive = new MockHiveTransport(0);
+    const taskId = await hive.send({ laneId: 'ledger', text: '!fail Build the weekly numbers' });
+    const failed = hive.snapshot().tasks.find(task => task.id === taskId)!;
+    expect(failed.status).toBe('error');
+    expect(failed.step).toBe('Failed');
+    expect(failed.output).toContain('could not finish');
+    expect(laneActivity(hive.snapshot(), 'ledger').some(entry => entry.text.startsWith('Failed ·'))).toBe(true);
+    // A failure frees the lane for the next task.
+    expect(currentTask(hive.snapshot().tasks, 'ledger')).toBeUndefined();
+  });
+
   it('keeps an answer draft with its question until the question is answered', async () => {    const hive = new MockHiveTransport(0);
     const taskId = await hive.send({ laneId: 'scout', text: 'Draft an email to Bob' });
     const question = hive.snapshot().tasks.find(task => task.id === taskId)!.question!;

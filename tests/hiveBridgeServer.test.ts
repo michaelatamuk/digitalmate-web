@@ -129,6 +129,60 @@ describe('Hive bridge service', () => {
     expect(stale.status).toBe(410);
   });
 
+  it('queues, steers and preempts through the bridge', async () => {
+    // A question task holds the lane open so the next commands have something to act on.
+    const email = await post('/api/hive/send', { laneId: 'forge', text: 'Draft an email to Quinn' })
+      .then(response => response.json());
+    await waitFor(async () => {
+      const snapshot = await get('/api/hive/snapshot');
+      return snapshot.tasks.find((item: { id: string }) => item.id === email.taskId)?.status === 'waiting_user';
+    });
+
+    const steer = await post('/api/hive/control', {
+      taskId: email.taskId,
+      action: 'steer',
+      text: 'Keep it short'
+    });
+    expect(steer.status).toBe(200);
+    let snapshot = await get('/api/hive/snapshot');
+    expect(snapshot.tasks.find((item: { id: string }) => item.id === email.taskId)?.steering).toContain('Keep it short');
+
+    const queued = await post('/api/hive/control', {
+      taskId: email.taskId,
+      action: 'queue',
+      text: 'Second queued task'
+    });
+    expect(queued.status).toBe(200);
+    snapshot = await get('/api/hive/snapshot');
+    expect(snapshot.tasks.filter((task: { laneId: string }) => task.laneId === 'forge').length).toBeGreaterThanOrEqual(2);
+
+    const preempt = await post('/api/hive/control', {
+      taskId: email.taskId,
+      action: 'preempt',
+      text: 'Preempting task'
+    });
+    expect(preempt.status).toBe(200);
+    snapshot = await get('/api/hive/snapshot');
+    expect(snapshot.tasks.find((item: { id: string }) => item.id === email.taskId)?.status).toBe('stopped');
+  });
+
+  it('refuses a second answer to the same question', async () => {
+    const created = await post('/api/hive/send', { laneId: 'scout', text: 'Draft an email to Robin' })
+      .then(response => response.json());
+    await waitFor(async () => {
+      const snapshot = await get('/api/hive/snapshot');
+      return snapshot.tasks.find((item: { id: string }) => item.id === created.taskId)?.status === 'waiting_user';
+    });
+    const snapshot = await get('/api/hive/snapshot');
+    const task = snapshot.tasks.find((item: { id: string }) => item.id === created.taskId);
+    const body = { taskId: created.taskId, questionId: task.question.id, text: 'Keep it as a draft' };
+
+    expect((await post('/api/hive/answer', body)).status).toBe(200);
+    // The question is settled, so the second answer is a conflict, not a silent success.
+    const second = await post('/api/hive/answer', body);
+    expect(second.status).toBe(409);
+  });
+
   it('stores attachment bytes and serves them back', async () => {
     const bytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
     const uploaded = await fetch(`${base}/api/hive/attachment`, {

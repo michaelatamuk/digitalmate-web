@@ -858,6 +858,30 @@ test('notifies when a Bee finishes with the sheet closed, and a tap opens the ta
   await expect(page.locator('.hive-detail h3')).toContainText('Build an artifact');
 });
 
+test('shows failed and queued Bee states', async ({ page }) => {
+  await page.goto('/');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+
+  // `!fail` is the documented way to reach the error state in the local demo.
+  await page.getByRole('tab', { name: /Ledger/ }).click();
+  await page.locator('.hive-composer textarea').fill('!fail Build the weekly numbers');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Failed', { timeout: 10_000 });
+  await expect(page.locator('.hive-output').first()).toContainText('could not finish');
+
+  // A second request while one is running is queued, not dropped.
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer textarea').fill('Build an artifact one');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await page.locator('.hive-composer textarea').fill('Build an artifact two');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-status.is-queued').first()).toBeVisible({ timeout: 10_000 });
+});
+
 test('stops a Bee only after confirming', async ({ page }) => {  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Hive/ }).click();
   await page.getByRole('tab', { name: /Ledger/ }).click();

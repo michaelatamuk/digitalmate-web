@@ -654,6 +654,12 @@ export class MockHiveTransport implements HiveTransport {
   private advance(taskId: string, index: number): void {
     const task = this.tasks.find(item => item.id === taskId);
     if (!task || task.status !== 'running' || this.disposed) return;
+    // A deliberate, documented way to reach the failure state in the local demo: start the prompt
+    // with `!fail`. Everything else about the flow stays the same, so the error UI is testable.
+    if (/^\s*!fail\b/i.test(task.prompt)) {
+      this.fail(task, 'The Bee could not finish this request.');
+      return;
+    }
     const steps = ['Gathering context', 'Comparing sources', 'Writing the result'];
     if (index >= steps.length) {
       this.finish(task.id);
@@ -667,6 +673,25 @@ export class MockHiveTransport implements HiveTransport {
     }
     this.emit('task');
     this.schedule(() => this.advance(task.id, index + 1), 900);
+  }
+
+  private fail(task: HiveTask, reason: string): void {
+    task.status = 'error';
+    task.step = 'Failed';
+    task.updatedAt = Date.now();
+    task.output = reason;
+    this.bumpVersion(task);
+    this.record('task_status', task.laneId, task.id, `Failed · ${task.title}`);
+    this.messages.push({
+      id: id('msg'),
+      laneId: task.laneId,
+      role: 'bee',
+      text: reason,
+      createdAt: Date.now()
+    });
+    this.touchLane(task.laneId);
+    this.emit('task');
+    this.pump(task.laneId);
   }
 
   private needsConfirmation(task: HiveTask): boolean {
