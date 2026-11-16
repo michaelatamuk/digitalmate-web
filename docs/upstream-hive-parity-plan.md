@@ -67,10 +67,25 @@ Shipped:
 - Unit coverage for refs, lane activity and relative stamps; the Hive E2E flow asserts the lane
   stamp, the `T-` ref and a real browser download for artifact export
 
+## Implementation slice 5 (2026-11-16): shared memory with a cut-off
+
+Shipped:
+
+- `HiveMemoryEntry` (`task_summary`, `decision`, `artifact`) in `src/domain/hive.ts` with
+  `laneMemory`, `laneCutoff` and `memoryInUse` helpers; store version bumped to **3**, and v1/v2
+  payloads load with empty memory instead of failing
+- `MockHiveTransport` writes a summary when a task finishes and a decision when a question is
+  answered, reuses the lane's live memory in later answers ("I reused N memory entries"), and
+  exposes `cutOffMemory(laneId, before)` / `restoreMemory(laneId)`
+- Third lane tab: **Tasks / Activity / Memory**, showing "in use" counts, each entry with its kind
+  and time, `Cut off here` per entry and `Restore all`, with cut entries visibly dimmed
+- Unit coverage for memory writes, reuse counts, cut-off/restore and v2→v3 migration; the Hive E2E
+  flow opens Memory, cuts off an entry, confirms the dimmed state and restores it
+
 Still to do in the Hive slice:
 
 - live `BridgeHiveTransport` and `/api/hive/*`
-- report generation and memory cut-off
+- report generation (beyond the mock report card)
 - Android notification routing and share intake
 
 ## 1. Goal
