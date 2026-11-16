@@ -15,6 +15,7 @@ import {
   taskStatusLabel
 } from '../domain/hive';
 import { currentHiveTransport } from '../transport/hiveBridge';
+import { consumeHiveShare } from '../lib/hiveShare';
 import type { HiveTransport, HiveTransportStatus } from '../transport/hive';
 import { Sheet } from './Overlays';
 import { Icon } from './Icons';
@@ -78,6 +79,23 @@ export function HiveSheet({
       setSnapshot(event.snapshot);
       setStatus(hive.status());
     });
+  }, [hive]);
+
+  // A share launched the app: put the text in the Bee that is selected, or the first Bee.
+  useEffect(() => {
+    const shared = consumeHiveShare();
+    if (!shared) return;
+    const snap = hive.snapshot();
+    const selected = snap.lanes.find(item => item.id === snap.selectedLaneId);
+    const target = selected && selected.kind === 'bee'
+      ? selected.id
+      : snap.lanes.find(item => item.kind === 'bee' && item.lifecycle === 'active')?.id;
+    if (!target) return;
+    if (snap.selectedLaneId !== target) hive.selectLane(target);
+    setDrafts(current => ({
+      ...current,
+      [target]: current[target] ? `${current[target]}\n${shared}` : shared
+    }));
   }, [hive]);
 
   const lane = snapshot.lanes.find(item => item.id === snapshot.selectedLaneId) ?? snapshot.lanes[0];

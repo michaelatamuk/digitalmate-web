@@ -34,6 +34,7 @@ import { formatFileSize, readAttachment, releaseAttachment, summarizeAttachment,
 import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell, consumeSharedText, onNativeNotificationTap, consumeLaunchTab } from './lib/native';
+import { stashHiveShare, readShareText } from './lib/hiveShare';
 import { installDiagnostics } from './lib/diagnostics';
 import { dedupeCards } from './lib/discoveryExperience';
 import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
@@ -199,13 +200,13 @@ export default function App() {
     let cancelled = false;
     const apply = (text: string) => {
       if (cancelled || !text.trim()) return;
-      setComposer(text.trim());
-      setHome(false);
-      setTab('chat');
-      showToast(tr('Shared text added to the composer.', '已把分享内容放入输入框。'));
+      stashHiveShare(text);
+      setSheet('hive');
+      showToast(tr('Shared text saved to a Hive draft.', '分享内容已放入蜂巢草稿。'));
+      // The share target arrives as query params; drop them so a reload does not re-seed a draft.
+      if (window.location.search) window.history.replaceState(null, '', window.location.pathname);
     };
-    const params = new URLSearchParams(window.location.search);
-    const shared = params.get('text') || params.get('url') || '';
+    const shared = readShareText(new URLSearchParams(window.location.search));
     if (shared) apply(shared);
     void consumeSharedText().then(apply);
     return () => {

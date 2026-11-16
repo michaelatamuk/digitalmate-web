@@ -186,11 +186,24 @@ Shipped:
   and the Hive E2E attaches six files, sees the limit notice, removes one and finds the rest on the
   sent task
 
+## Implementation slice 13 (2026-11-16): share target and offline Hive
+
+Shipped:
+
+- `src/lib/hiveShare.ts`: share-target params are joined into one draft (`title`, `text`, `url`,
+  de-duplicated), stashed once and consumed once
+- A share launch opens the Hive sheet and seeds the selected Bee's draft (or the first active Bee),
+  then drops the query params so a reload cannot seed a second draft; the native shell's shared
+  text follows the same path
+- The previously declared `share_target` in `manifest.webmanifest` is now actually consumed
+- Offline is verified for Hive: the mock task flow completes with the browser offline
+- Tests: share-text join/consume unit cases; E2E for a shared link landing in a Hive draft with the
+  URL cleaned, and for a task running to Done while the context is offline
+
 Still to do in the Hive slice:
 
-- upload the bytes themselves once a bridge upload endpoint exists (today they never leave the
-  device)
-- busy/refused composer states
+- upload the bytes themselves once a bridge upload endpoint exists
+- Hive completion notifications and tap routing
 - server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
 - Android notification routing and share intake

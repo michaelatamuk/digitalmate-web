@@ -615,8 +615,34 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
   await expect(page.locator('.hive-task-row').first()).toBeVisible();
 });
 
-test('stops a Bee only after confirming', async ({ page }) => {
+test('a shared link lands in a Hive draft and is consumed once', async ({ page }) => {
+  await page.goto('/?title=Launch%20notes&text=Read%20this&url=https%3A%2F%2Fexample.com%2Fx');
+  await expect(page.locator('.hive')).toBeVisible();
+  await expect(page.locator('.hive-composer textarea')).toHaveValue(/Launch notes/);
+  await expect(page.locator('.hive-composer textarea')).toHaveValue(/example\.com\/x/);
+  // The share params are dropped so a reload cannot seed the draft twice.
+  expect(new URL(page.url()).search).toBe('');
+
+  await page.reload();
+  await expect(page.locator('.hive')).toHaveCount(0);
+});
+
+test('the Hive demo keeps working offline', async ({ page, context }) => {
+  await page.goto('/');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  await context.setOffline(true);
   await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer textarea').fill('Summarise the offline mode');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.locator('.hive-detail .hive-status').first()).toContainText('Done', { timeout: 10_000 });
+  await context.setOffline(false);
+});
+
+test('stops a Bee only after confirming', async ({ page }) => {  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Hive/ }).click();
   await page.getByRole('tab', { name: /Ledger/ }).click();
   await page.locator('.hive-composer textarea').fill('Draft an email to Carol about the contract');

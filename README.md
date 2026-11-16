@@ -26,7 +26,7 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
-- 135 unit tests plus 35 Playwright UI, mobile and accessibility checks
+- 138 unit tests plus 37 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
