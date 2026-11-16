@@ -200,13 +200,27 @@ Shipped:
 - Tests: share-text join/consume unit cases; E2E for a shared link landing in a Hive draft with the
   URL cleaned, and for a task running to Done while the context is offline
 
+## Implementation slice 14 (2026-11-16): Hive notifications and tap routing
+
+Shipped:
+
+- `src/lib/hiveNotifications.ts` watches the shared transport and raises **one** notification per
+  task transition into `done` (`<Bee> finished`) or `waiting_user` (`<Bee> needs you`), with the task
+  title as the body
+- Notifications only fire while the Hive sheet is closed; installing the watcher over existing work
+  primes the state instead of replaying notifications
+- Tapping a notification focuses the app, opens the Hive sheet and selects that task
+- Permission is requested on the first Hive send (a real user gesture), never on load
+- Tests: three unit cases (finish once, quiet while open + no replay, question attention) and an E2E
+  that stubs `Notification`, closes the sheet, waits for the background completion, then taps the
+  notification and asserts the task is open
+
 Still to do in the Hive slice:
 
-- upload the bytes themselves once a bridge upload endpoint exists
-- Hive completion notifications and tap routing
+- share **files** into a Bee draft (text is routed today)
+- upload attachment bytes once a bridge upload endpoint exists
 - server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
-- Android notification routing and share intake
 
 ## 1. Goal
 

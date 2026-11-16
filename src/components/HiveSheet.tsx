@@ -16,6 +16,7 @@ import {
 } from '../domain/hive';
 import { currentHiveTransport } from '../transport/hiveBridge';
 import { consumeHiveShare } from '../lib/hiveShare';
+import { requestHiveNotificationPermission } from '../lib/hiveNotifications';
 import type { HiveTransport, HiveTransportStatus } from '../transport/hive';
 import { Sheet } from './Overlays';
 import { Icon } from './Icons';
@@ -243,6 +244,8 @@ export function HiveSheet({
         () => hive.send({ laneId: lane.id, text, attachments: metas }),
         tr('Sent to the Bee.', '已发送给 Bee。')
       );
+      // A send is the user gesture that legitimately asks for notification permission.
+      requestHiveNotificationPermission();
     } else if (openTask) {
       await act(
         () => hive.control(openTask.id, mode, text),

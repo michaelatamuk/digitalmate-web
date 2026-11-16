@@ -35,6 +35,8 @@ import { mergeSkills } from './lib/skillBundle';
 import { artifactFromText, findDuplicateArtifact } from './lib/artifacts';
 import { nativeNotification, nativeShare, isNativeApp, configureNativeShell, consumeSharedText, onNativeNotificationTap, consumeLaunchTab } from './lib/native';
 import { stashHiveShare, readShareText } from './lib/hiveShare';
+import { installHiveNotifications } from './lib/hiveNotifications';
+import { currentHiveTransport } from './transport/hiveBridge';
 import { installDiagnostics } from './lib/diagnostics';
 import { dedupeCards } from './lib/discoveryExperience';
 import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
@@ -217,6 +219,20 @@ export default function App() {
   }, []);
 
   useEffect(() => onNativeNotificationTap(() => setSheet('tasks')), []);
+
+  // Hive keeps working while its sheet is closed; tell the user, and route a tap to the task.
+  const sheetRef = useRef(sheet);
+  useEffect(() => {
+    sheetRef.current = sheet;
+  }, [sheet]);
+  useEffect(() => installHiveNotifications({
+    transport: currentHiveTransport(),
+    isSheetOpen: () => sheetRef.current === 'hive',
+    onOpen: (taskId: string) => {
+      currentHiveTransport().selectTask(taskId);
+      setSheet('hive');
+    }
+  }), []);
 
   useEffect(() => {
     if (!isNativeApp()) return;

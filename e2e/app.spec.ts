@@ -642,6 +642,60 @@ test('the Hive demo keeps working offline', async ({ page, context }) => {
   await context.setOffline(false);
 });
 
+test('notifies when a Bee finishes with the sheet closed, and a tap opens the task', async ({ page }) => {
+  await page.addInitScript(() => {
+    class FakeNotification {
+      static permission = 'granted';
+      static requestPermission = async (): Promise<string> => 'granted';
+      onclick: (() => void) | null = null;
+      constructor(public title: string, public options?: { body?: string }) {
+        const store = window as unknown as {
+          __hiveNotifications?: Array<{ title: string; body?: string; instance: FakeNotification }>;
+        };
+        store.__hiveNotifications = store.__hiveNotifications ?? [];
+        store.__hiveNotifications.push({ title, body: options?.body, instance: this });
+      }
+      close(): void {}
+    }
+    // @ts-expect-error test stub replaces the platform API
+    window.Notification = FakeNotification;
+  });
+  await page.goto('/');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer textarea').fill('Build an artifact for the launch');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  // Background work only notifies while the sheet is closed.
+  await page.locator('.sheet-head .icon-button').click();
+
+  await expect
+    .poll(async () => page.evaluate(() => {
+      const store = window as unknown as { __hiveNotifications?: unknown[] };
+      return store.__hiveNotifications?.length ?? 0;
+    }), { timeout: 10_000 })
+    .toBeGreaterThan(0);
+  const notice = await page.evaluate(() => {
+    const store = window as unknown as {
+      __hiveNotifications?: Array<{ title: string; body?: string }>;
+    };
+    return store.__hiveNotifications?.[0] ?? null;
+  });
+  expect(notice?.title).toContain('Forge');
+
+  await page.evaluate(() => {
+    const store = window as unknown as {
+      __hiveNotifications?: Array<{ instance: { onclick: (() => void) | null } }>;
+    };
+    store.__hiveNotifications?.[0]?.instance.onclick?.();
+  });
+  await expect(page.locator('.hive')).toBeVisible();
+  await expect(page.locator('.hive-detail h3')).toContainText('Build an artifact');
+});
+
 test('stops a Bee only after confirming', async ({ page }) => {  await page.getByRole('button', { name: 'More', exact: true }).click();
   await page.getByRole('button', { name: /Hive/ }).click();
   await page.getByRole('tab', { name: /Ledger/ }).click();
