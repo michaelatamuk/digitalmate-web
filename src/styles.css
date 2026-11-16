@@ -7050,3 +7050,88 @@ a {
   color: #8c5644;
   cursor: pointer;
 }
+
+/* Hive activity lanes: view tabs, unread badge, bounded feed with an explicit gap notice */
+.hive-view-tabs { display: inline-flex; gap: 4px; }
+.hive-view-tab {
+  position: relative;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-muted, #6f625a);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.hive-view-tab.is-active { background: rgba(153, 95, 76, 0.12); color: #6b4636; }
+.hive-unread {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #b0503c;
+  color: #fff;
+  font-size: 9px;
+  line-height: 1;
+}
+.hive-unread.is-inline { margin-left: 5px; }
+.hive-activity { display: flex; flex-direction: column; gap: 2px; }
+.hive-activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.hive-activity-row.is-active { border-color: rgba(153, 95, 76, 0.2); background: rgba(255, 255, 255, 0.85); }
+.hive-activity-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #b07a45;
+}
+.hive-activity-dot.is-question { background: #a05a72; }
+.hive-activity-dot.is-answer { background: #5d7f73; }
+.hive-activity-dot.is-steer { background: #6b6fa8; }
+.hive-activity-dot.is-artifact { background: #5b7fa8; }
+.hive-activity-dot.is-report { background: #8c5644; }
+.hive-activity-dot.is-stop { background: #a05a5a; }
+.hive-activity-dot.is-task_status { background: #5d7f73; }
+.hive-activity-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.hive-activity-copy strong {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hive-activity-copy em { font-size: 9px; font-style: normal; color: var(--ink-muted, #6f625a); }
+.hive-new {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(176, 80, 60, 0.12);
+  color: #a04a36;
+  font-size: 9px;
+}
+.hive-gap {
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(176, 122, 69, 0.1);
+  color: #8c5644;
+  font-size: 10px;
+  line-height: 1.5;
+}

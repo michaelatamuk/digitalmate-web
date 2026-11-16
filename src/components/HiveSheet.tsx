@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { HiveSnapshot } from '../domain/hive';
-import { currentTask, latestTask, taskStatusLabel } from '../domain/hive';
+import {
+  currentTask,
+  laneActivity,
+  laneHasActivityGap,
+  laneUnreadCount,
+  latestTask,
+  taskStatusLabel
+} from '../domain/hive';
 import { MockHiveTransport } from '../transport/hive';
 import { Sheet } from './Overlays';
 import { Icon } from './Icons';
@@ -27,6 +34,8 @@ export function HiveSheet({
   const [busy, setBusy] = useState(false);
   const [attachments, setAttachments] = useState<string[]>([]);
   const [openArtifact, setOpenArtifact] = useState('');
+  const [view, setView] = useState<'tasks' | 'activity'>('tasks');
+  const [activitySeenAt, setActivitySeenAt] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => hive.subscribe(event => setSnapshot(event.snapshot)), [hive]);
@@ -48,6 +57,16 @@ export function HiveSheet({
     .filter(message => message.laneId === lane?.id)
     .slice(-6);
   const activeLanes = snapshot.lanes.filter(item => item.kind === 'bee' && item.lifecycle === 'active');
+  const laneFeed = lane ? laneActivity(snapshot, lane.id) : [];
+  const laneUnread = lane ? laneUnreadCount(snapshot, lane.id) : 0;
+  const laneGap = lane ? laneHasActivityGap(snapshot, lane.id) : false;
+
+  const openActivity = (laneId: string): void => {
+    // Freeze the cursor before marking read so the entries added in this session stay marked "new".
+    setActivitySeenAt(snapshot.activityReadAt[laneId] ?? 0);
+    setView('activity');
+    transport.current?.markActivityRead(laneId);
+  };
 
   if (!lane) {
     return (
@@ -132,10 +151,16 @@ export function HiveSheet({
                   transport.current?.selectLane(item.id);
                   setAnswer('');
                   setDraft('');
+                  setView('tasks');
                 }}
               >
                 <span className="hive-avatar" style={{ background: item.color }}>{item.avatar}</span>
                 <span>{item.label}</span>
+                {laneUnreadCount(snapshot, item.id) > 0 ? (
+                  <span className="hive-unread" aria-label={tr('Unread activity', '未读动态')}>
+                    {laneUnreadCount(snapshot, item.id)}
+                  </span>
+                ) : null}
                 {currentTask(snapshot.tasks, item.id) ? <span className="hive-pulse" /> : null}
               </button>
             ))}
@@ -186,7 +211,27 @@ export function HiveSheet({
             <div className="hive-body">
               <div className="hive-task-list">
                 <div className="hive-section-head">
-                  <span>{tr('Activity', '动态')}</span>
+                  <div className="hive-view-tabs" role="tablist" aria-label={tr('Lane view', '工作线视图')}>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={view === 'tasks'}
+                      className={`hive-view-tab ${view === 'tasks' ? 'is-active' : ''}`}
+                      onClick={() => setView('tasks')}
+                    >
+                      {tr('Tasks', '任务')}
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={view === 'activity'}
+                      className={`hive-view-tab ${view === 'activity' ? 'is-active' : ''}`}
+                      onClick={() => openActivity(lane.id)}
+                    >
+                      {tr('Activity', '动态')}
+                      {laneUnread > 0 ? <span className="hive-unread is-inline">{laneUnread}</span> : null}
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className="hive-link"
@@ -198,7 +243,37 @@ export function HiveSheet({
                     {tr('Reset', '重置')}
                   </button>
                 </div>
-                {laneTasks.length === 0 ? (
+                {view === 'activity' ? (
+                  <div className="hive-activity" role="feed" aria-label={tr('Lane activity', '工作线动态')}>
+                    {laneGap ? (
+                      <p className="hive-gap">
+                        {tr('Older activity was not kept in this demo.', '此演示未保留更早的动态。')}
+                      </p>
+                    ) : null}
+                    {laneFeed.length === 0 ? (
+                      <p className="settings-note">{tr('No activity in this lane yet.', '这条工作线还没有动态。')}</p>
+                    ) : (
+                      laneFeed.map(item => {
+                        const isNew = item.at > activitySeenAt;
+                        return (
+                          <button
+                            type="button"
+                            className={`hive-activity-row is-${item.kind} ${selectedTask?.id === item.taskId ? 'is-active' : ''}`}
+                            key={item.id}
+                            onClick={() => transport.current?.selectTask(item.taskId)}
+                          >
+                            <span className={`hive-activity-dot is-${item.kind}`} />
+                            <span className="hive-activity-copy">
+                              <strong>{item.text}</strong>
+                              <em>{shortTime(item.at, locale)}</em>
+                            </span>
+                            {isNew ? <span className="hive-new">{tr('New', '新')}</span> : null}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                ) : laneTasks.length === 0 ? (
                   <p className="settings-note">{tr('No tasks in this lane yet.', '这条工作线还没有任务。')}</p>
                 ) : (
                   laneTasks.slice(0, 6).map(task => (

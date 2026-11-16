@@ -16,9 +16,23 @@ Shipped:
 - More → Hive entry, local-only demo
 - Unit tests for the Hive transport and an E2E question flow
 
+## Implementation slice 2 (2026-11-16): activity lanes with a cursor
+
+Shipped:
+
+- `HiveActivity` log in `src/domain/hive.ts` (`task_created`, `task_status`, `question`, `answer`,
+  `steer`, `artifact`, `report`, `stop`) with `laneActivity`, `laneUnreadCount` and
+  `laneHasActivityGap` helpers
+- `MockHiveTransport` records every transition, keeps a bounded 60-entry log, and persists the
+  per-lane read cursor (`activityReadAt`) with the rest of the snapshot
+- Tasks / Activity tabs inside a Bee lane, unread badges on the lane chips, `New` markers on
+  entries added since the feed was opened, and an explicit "older activity was not kept" notice
+  once the bounded log trims
+- Unit coverage for recording, read cursors, trimming/gaps and stop/answer activity; the Hive E2E
+  flow now also checks the unread badge, the feed and the return to Tasks
+
 Still to do in the Hive slice:
 
-- activity lanes with cursor history/gaps (current task list is the first activity view)
 - versioned Hive store, backup/restore and cross-device sync
 - live `BridgeHiveTransport`
 - report generation and memory cut-off

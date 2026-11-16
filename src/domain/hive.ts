@@ -76,10 +76,38 @@ export interface HiveMessage {
   createdAt: number;
 }
 
+export type HiveActivityKind =
+  | 'task_created'
+  | 'task_status'
+  | 'question'
+  | 'answer'
+  | 'steer'
+  | 'artifact'
+  | 'report'
+  | 'stop';
+
+/**
+ * One line in a lane's activity feed. Cursor history is kept as a bounded log: when older entries
+ * are dropped the feed reports a gap instead of pretending the log starts at the beginning.
+ */
+export interface HiveActivity {
+  id: string;
+  laneId: string;
+  taskId: string;
+  kind: HiveActivityKind;
+  text: string;
+  at: number;
+}
+
 export interface HiveSnapshot {
   lanes: HiveLane[];
   tasks: HiveTask[];
   messages: HiveMessage[];
+  activity: HiveActivity[];
+  /** Per-lane timestamp up to which the reader has seen the feed. */
+  activityReadAt: Record<string, number>;
+  /** True when the bounded log dropped earlier entries, so the feed is not continuous. */
+  activityTrimmed: boolean;
   selectedLaneId: string;
   selectedTaskId: string;
 }
@@ -126,4 +154,23 @@ export function latestTask(tasks: HiveTask[], laneId: string): HiveTask | undefi
   return [...tasks]
     .filter(task => task.laneId === laneId)
     .sort((left, right) => right.createdAt - left.createdAt)[0];
+}
+
+/** Newest first, as the feed renders it. */
+export function laneActivity(snapshot: HiveSnapshot, laneId: string): HiveActivity[] {
+  return [...snapshot.activity]
+    .filter(item => item.laneId === laneId)
+    .sort((left, right) => right.at - left.at);
+}
+
+export function laneUnreadCount(snapshot: HiveSnapshot, laneId: string): number {
+  const readAt = snapshot.activityReadAt[laneId] ?? 0;
+  return snapshot.activity.filter(item => item.laneId === laneId && item.at > readAt).length;
+}
+
+/** True when this lane's feed may have lost older entries, so the UI must say so. */
+export function laneHasActivityGap(snapshot: HiveSnapshot, laneId: string): boolean {
+  if (!snapshot.activityTrimmed) return false;
+  const items = laneActivity(snapshot, laneId);
+  return items.length > 0;
 }

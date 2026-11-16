@@ -551,6 +551,16 @@ test('shows the Hive demo with Bees and a question flow', async ({ page }) => {
     timeout: 10_000
   });
   await expect(page.locator('.hive-artifact')).toHaveCount(1);
+
+  // Activity lane: the run is logged, counts as unread until the feed is opened, and older
+  // entries are not silently implied — the feed is a bounded cursor log.
+  await expect(page.locator('.hive-lane .hive-unread').first()).toBeVisible();
+  await page.getByRole('tab', { name: /Activity/ }).click();
+  await expect(page.locator('.hive-activity-row').first()).toBeVisible();
+  await expect(page.getByText('Done ·', { exact: false }).first()).toBeVisible();
+  await expect(page.locator('.hive-lane .hive-unread')).toHaveCount(0);
+  await page.getByRole('tab', { name: 'Tasks', exact: true }).click();
+  await expect(page.locator('.hive-task-row').first()).toBeVisible();
 });
 
 test('core screens have no serious accessibility violations', async ({ page }) => {

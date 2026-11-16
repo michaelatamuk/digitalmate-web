@@ -1,4 +1,6 @@
 import type {
+  HiveActivity,
+  HiveActivityKind,
   HiveArtifact,
   HiveEvent,
   HiveLane,
@@ -21,6 +23,7 @@ export interface HiveTransport {
   answer: (taskId: string, questionId: string, text: string) => Promise<void>;
   stop: (taskId: string) => Promise<void>;
   eraseArtifact: (artifactId: string) => void;
+  markActivityRead: (laneId: string) => void;
   reset: () => void;
   dispose: () => void;
 }
@@ -81,6 +84,8 @@ function clone<T>(value: T): T {
 }
 
 const STORAGE_KEY = 'digitalmate.hive.v1';
+/** Bounded so the local store cannot grow without limit; dropping entries is reported as a gap. */
+const MAX_ACTIVITY = 60;
 
 function canPersist(): boolean {
   return typeof window !== 'undefined' && Boolean(window.localStorage);
@@ -92,6 +97,9 @@ export class MockHiveTransport implements HiveTransport {
   private lanes: HiveLane[];
   private tasks: HiveTask[] = [];
   private messages: HiveMessage[] = [];
+  private activity: HiveActivity[] = [];
+  private activityReadAt: Record<string, number> = {};
+  private activityTrimmed = false;
   private selectedLaneId = 'beebou';
   private selectedTaskId = '';
   private listeners = new Set<(event: HiveEvent) => void>();
@@ -108,6 +116,9 @@ export class MockHiveTransport implements HiveTransport {
       this.lanes = restored.lanes.length > 0 ? restored.lanes : this.lanes;
       this.tasks = restored.tasks;
       this.messages = restored.messages;
+      this.activity = restored.activity;
+      this.activityReadAt = restored.activityReadAt;
+      this.activityTrimmed = restored.activityTrimmed;
       this.selectedLaneId = this.lanes.some(lane => lane.id === restored.selectedLaneId)
         ? restored.selectedLaneId
         : 'beebou';
@@ -136,6 +147,9 @@ export class MockHiveTransport implements HiveTransport {
       lanes: clone(this.lanes),
       tasks: clone(this.tasks),
       messages: clone(this.messages),
+      activity: clone(this.activity),
+      activityReadAt: { ...this.activityReadAt },
+      activityTrimmed: this.activityTrimmed,
       selectedLaneId: this.selectedLaneId,
       selectedTaskId: this.selectedTaskId
     };
@@ -145,6 +159,15 @@ export class MockHiveTransport implements HiveTransport {
     if (!this.lanes.some(lane => lane.id === laneId)) return;
     this.selectedLaneId = laneId;
     this.selectedTaskId = '';
+    this.markActivityRead(laneId);
+    this.emit('lane');
+  }
+
+  /** Moves the lane's read cursor to now, so the unread badge clears. */
+  markActivityRead(laneId: string): void {
+    const latest = this.activity.reduce((max, item) => (item.laneId === laneId ? Math.max(max, item.at) : max), 0);
+    if (latest === 0 || (this.activityReadAt[laneId] ?? 0) >= latest) return;
+    this.activityReadAt = { ...this.activityReadAt, [laneId]: latest };
     this.emit('lane');
   }
 
@@ -185,6 +208,7 @@ export class MockHiveTransport implements HiveTransport {
       task.steering.push(prompt);
       task.step = 'Applying your steer';
       task.updatedAt = Date.now();
+      this.record('steer', task.laneId, task.id, `Steer · ${prompt}`);
       this.messages.push({
         id: id('msg'),
         laneId: task.laneId,
@@ -235,6 +259,7 @@ export class MockHiveTransport implements HiveTransport {
     task.step = 'Using your answer';
     task.steering.push(answer);
     task.updatedAt = Date.now();
+    this.record('answer', task.laneId, task.id, `Answered · ${answer}`);
     this.messages.push({
       id: id('msg'),
       laneId: task.laneId,
@@ -257,6 +282,7 @@ export class MockHiveTransport implements HiveTransport {
       const artifact = task.artifacts.find(item => item.id === artifactId);
       if (artifact) {
         artifact.erasedAt = Date.now();
+        this.record('artifact', task.laneId, task.id, `Erased · ${artifact.title}`);
         this.emit('task');
         return;
       }
@@ -266,6 +292,9 @@ export class MockHiveTransport implements HiveTransport {
   reset(): void {
     this.tasks = [];
     this.messages = [];
+    this.activity = [];
+    this.activityReadAt = {};
+    this.activityTrimmed = false;
     this.selectedLaneId = 'beebou';
     this.selectedTaskId = '';
     this.seed();
@@ -292,6 +321,11 @@ export class MockHiveTransport implements HiveTransport {
         lanes: parsed.lanes,
         tasks: parsed.tasks,
         messages: parsed.messages,
+        activity: Array.isArray(parsed.activity) ? parsed.activity : [],
+        activityReadAt: parsed.activityReadAt && typeof parsed.activityReadAt === 'object'
+          ? parsed.activityReadAt as Record<string, number>
+          : {},
+        activityTrimmed: parsed.activityTrimmed === true,
         selectedLaneId: typeof parsed.selectedLaneId === 'string' ? parsed.selectedLaneId : 'beebou',
         selectedTaskId: typeof parsed.selectedTaskId === 'string' ? parsed.selectedTaskId : ''
       };
@@ -379,7 +413,17 @@ export class MockHiveTransport implements HiveTransport {
       artifacts: []
     };
     this.tasks.push(task);
+    this.record('task_created', laneId, task.id,
+      queued ? `Queued · ${task.title}` : `Started · ${task.title}`);
     return task;
+  }
+
+  private record(kind: HiveActivityKind, laneId: string, taskId: string, text: string): void {
+    this.activity.push({ id: id('act'), laneId, taskId, kind, text, at: Date.now() });
+    if (this.activity.length > MAX_ACTIVITY) {
+      this.activity = this.activity.slice(this.activity.length - MAX_ACTIVITY);
+      this.activityTrimmed = true;
+    }
   }
 
   private pump(laneId: string): void {
@@ -438,6 +482,7 @@ export class MockHiveTransport implements HiveTransport {
     task.status = 'waiting_user';
     task.step = 'Waiting for your decision';
     task.updatedAt = Date.now();
+    this.record('question', task.laneId, task.id, `Needs you · ${question.question}`);
     this.emit('task');
   }
 
@@ -451,6 +496,11 @@ export class MockHiveTransport implements HiveTransport {
     task.output = `${this.answerFor(task)}${steering}`;
     task.artifacts = this.artifactsFor(task);
     task.report = this.reportFor(task);
+    this.record('task_status', task.laneId, task.id, `Done · ${task.title}`);
+    for (const artifact of task.artifacts) {
+      this.record('artifact', task.laneId, task.id, `Artifact · ${artifact.title}`);
+    }
+    if (task.report) this.record('report', task.laneId, task.id, `Report · ${task.report.title}`);
     this.messages.push({
       id: id('msg'),
       laneId: task.laneId,
@@ -510,6 +560,7 @@ export class MockHiveTransport implements HiveTransport {
         task.status = 'stopped';
         task.step = step;
         task.updatedAt = Date.now();
+        this.record('stop', laneId, task.id, `Stopped · ${task.title}`);
       }
     }
     this.emit('task');
