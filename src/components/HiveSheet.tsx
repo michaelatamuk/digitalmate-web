@@ -14,7 +14,8 @@ import {
   taskRef,
   taskStatusLabel
 } from '../domain/hive';
-import { MockHiveTransport } from '../transport/hive';
+import { currentHiveTransport } from '../transport/hiveBridge';
+import type { HiveTransport, HiveTransportStatus } from '../transport/hive';
 import { Sheet } from './Overlays';
 import { Icon } from './Icons';
 import { useI18n } from '../i18n/I18nContext';
@@ -42,10 +43,12 @@ export function HiveSheet({
   onNotice: (message: string) => void;
 }) {
   const { lang, locale, tr } = useI18n();
-  const transport = useRef<MockHiveTransport | null>(null);
-  if (!transport.current) transport.current = new MockHiveTransport();
-  const hive = transport.current;
+  // One transport for the session: StrictMode double-mounts effects, so disposing on unmount would
+  // hand the second mount a dead transport. A configured bridge also keeps its stream open, which
+  // is what later notification work needs.
+  const hive = currentHiveTransport();
   const [snapshot, setSnapshot] = useState<HiveSnapshot>(() => hive.snapshot());
+  const [status, setStatus] = useState<HiveTransportStatus>(() => hive.status());
   const [draft, setDraft] = useState('');
   const [answer, setAnswer] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,7 +59,12 @@ export function HiveSheet({
   const importRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => hive.subscribe(event => setSnapshot(event.snapshot)), [hive]);
+  useEffect(() => {
+    return hive.subscribe(event => {
+      setSnapshot(event.snapshot);
+      setStatus(hive.status());
+    });
+  }, [hive]);
 
   const lane = snapshot.lanes.find(item => item.id === snapshot.selectedLaneId) ?? snapshot.lanes[0];
   const now = Date.now();
@@ -87,11 +95,11 @@ export function HiveSheet({
     // Freeze the cursor before marking read so the entries added in this session stay marked "new".
     setActivitySeenAt(snapshot.activityReadAt[laneId] ?? 0);
     setView('activity');
-    transport.current?.markActivityRead(laneId);
+    hive.markActivityRead(laneId);
   };
 
   const exportHive = (): void => {
-    const backup = transport.current?.exportBackup();
+    const backup = hive.exportBackup();
     if (!backup) return;
     downloadText(
       `digitalmate-hive-${new Date().toISOString().slice(0, 10)}.json`,
@@ -111,7 +119,7 @@ export function HiveSheet({
   const importHive = async (file: File | undefined): Promise<void> => {
     if (!file) return;
     const text = await file.text();
-    const result = transport.current?.importBackup(text);
+    const result = hive.importBackup(text);
     if (result?.ok) {
       setView('tasks');
       onNotice(tr('Hive backup imported.', '蜂巢备份已导入。'));
@@ -149,10 +157,10 @@ export function HiveSheet({
     if (!lane || lane.kind !== 'bee' || !draft.trim()) return;
     const text = draft.trim();
     if (mode === 'send') {
-      await act(() => transport.current!.send({ laneId: lane.id, text, attachments }), tr('Sent to the Bee.', '已发送给 Bee。'));
+      await act(() => hive.send({ laneId: lane.id, text, attachments }), tr('Sent to the Bee.', '已发送给 Bee。'));
     } else if (openTask) {
       await act(
-        () => transport.current!.control(openTask.id, mode, text),
+        () => hive.control(openTask.id, mode, text),
         mode === 'steer'
           ? tr('Steer applied.', '补充已应用。')
           : mode === 'queue'
@@ -168,7 +176,7 @@ export function HiveSheet({
     if (!selectedTask?.question || !answer.trim()) return;
     const question = selectedTask.question;
     await act(
-      () => transport.current!.answer(selectedTask.id, question.id, answer),
+      () => hive.answer(selectedTask.id, question.id, answer),
       tr('Answer sent.', '答复已发送。')
     );
     setAnswer('');
@@ -189,8 +197,34 @@ export function HiveSheet({
               <strong>Beebou</strong>
               <em>{tr('Routes work, keeps the lanes calm', '分派任务，保持各条工作线有序')}</em>
             </div>
-            <span className="hive-live"><span className="live-dot" />{tr('Local mock', '本地模拟')}</span>
+            <span className="hive-live">
+              <span className="live-dot" />
+              {status.mode === 'bridge'
+                ? status.state === 'ready'
+                  ? tr('Hive bridge', '蜂巢桥接')
+                  : tr('Bridge offline', '桥接离线')
+                : tr('Local mock', '本地模拟')}
+            </span>
           </div>
+          {status.mode === 'bridge' && status.state !== 'ready' ? (
+            <div className="hive-bridge-banner" role="status">
+              <span>
+                {status.state === 'connecting'
+                  ? tr('Connecting to the Hive bridge…', '正在连接蜂巢桥接…')
+                  : tr(`Hive bridge unavailable: ${status.message}`, `蜂巢桥接不可用：${status.message}`)}
+              </span>
+              <button
+                type="button"
+                className="hive-link"
+                onClick={() => {
+                  hive.retry();
+                  setStatus(hive.status());
+                }}
+              >
+                {tr('Retry', '重试')}
+              </button>
+            </div>
+          ) : null}
           <div className="hive-backup-actions">
             <input
               ref={importRef}
@@ -219,7 +253,7 @@ export function HiveSheet({
                 className={`hive-lane ${lane?.id === item.id ? 'is-active' : ''}`}
                 key={item.id}
                 onClick={() => {
-                  transport.current?.selectLane(item.id);
+                  hive.selectLane(item.id);
                   setAnswer('');
                   setDraft('');
                   setView('tasks');
@@ -246,7 +280,7 @@ export function HiveSheet({
               aria-selected={lane?.id === 'beebou'}
               className={`hive-lane ${lane?.id === 'beebou' ? 'is-active' : ''}`}
               onClick={() => {
-                transport.current?.selectLane('beebou');
+                hive.selectLane('beebou');
                 setAnswer('');
                 setDraft('');
               }}
@@ -275,7 +309,7 @@ export function HiveSheet({
                     type="button"
                     className="hive-bee-card"
                     key={item.id}
-                    onClick={() => transport.current?.selectLane(item.id)}
+                    onClick={() => hive.selectLane(item.id)}
                   >
                     <span className="hive-avatar" style={{ background: item.color }}>{item.avatar}</span>
                     <strong>{item.label}</strong>
@@ -337,7 +371,7 @@ export function HiveSheet({
                     type="button"
                     className="hive-link"
                     onClick={() => {
-                      transport.current?.reset();
+                      hive.reset();
                       onNotice(tr('Hive demo reset.', '蜂巢演示已重置。'));
                     }}
                   >
@@ -361,7 +395,7 @@ export function HiveSheet({
                             type="button"
                             className={`hive-activity-row is-${item.kind} ${selectedTask?.id === item.taskId ? 'is-active' : ''}`}
                             key={item.id}
-                            onClick={() => transport.current?.selectTask(item.taskId)}
+                            onClick={() => hive.selectTask(item.taskId)}
                           >
                             <span className={`hive-activity-dot is-${item.kind}`} />
                             <span className="hive-activity-copy">
@@ -388,7 +422,7 @@ export function HiveSheet({
                           type="button"
                           className="hive-link"
                           onClick={() => {
-                            transport.current?.restoreMemory(lane.id);
+                            hive.restoreMemory(lane.id);
                             onNotice(tr('Memory cut-off cleared.', '记忆截断已清除。'));
                           }}
                         >
@@ -416,7 +450,7 @@ export function HiveSheet({
                                 type="button"
                                 className="hive-link"
                                 onClick={() => {
-                                  transport.current?.cutOffMemory(lane.id, entry.at);
+                                  hive.cutOffMemory(lane.id, entry.at);
                                   onNotice(tr('Memory before this entry is cut off.', '此条之前的记忆已截断。'));
                                 }}
                               >
@@ -436,7 +470,7 @@ export function HiveSheet({
                       type="button"
                       className={`hive-task-row ${selectedTask?.id === task.id ? 'is-active' : ''}`}
                       key={task.id}
-                      onClick={() => transport.current?.selectTask(task.id)}
+                      onClick={() => hive.selectTask(task.id)}
                     >
                       <span className={`hive-status-dot is-${task.status}`} />
                       <span>
@@ -465,7 +499,7 @@ export function HiveSheet({
                         <button
                           type="button"
                           className="secondary-action"
-                          onClick={() => act(() => transport.current!.stop(selectedTask.id), tr('Stopped.', '已停止。'))}
+                          onClick={() => act(() => hive.stop(selectedTask.id), tr('Stopped.', '已停止。'))}
                         >
                           <Icon name="close" size={13} />
                           {tr('Stop', '停止')}
@@ -551,7 +585,7 @@ export function HiveSheet({
                                     type="button"
                                     className="hive-link"
                                     onClick={() => {
-                                      transport.current?.eraseArtifact(artifact.id);
+                                      hive.eraseArtifact(artifact.id);
                                       onNotice(tr('Artifact erased.', '成果已清除。'));
                                     }}
                                   >

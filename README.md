@@ -26,7 +26,7 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
-- 117 unit tests plus 34 Playwright UI, mobile and accessibility checks
+- 122 unit tests plus 34 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
@@ -256,7 +256,9 @@ cd android
 
 Local mode needs no account. The native shell adds share, local notifications and a
 home-screen widget. RSS/Orbit require `VITE_API_BASE` pointing at a hosted bridge; otherwise
-they fail gracefully while all local features keep working. See
+they fail gracefully while all local features keep working. Hive runs on its local mock unless
+`VITE_HIVE_BRIDGE_URL` (and optionally `VITE_HIVE_BRIDGE_TOKEN`) is set — see
+[docs/hive-bridge-contract.md](docs/hive-bridge-contract.md). See
 [docs/android-build.md](docs/android-build.md).
 
 ## Repository layout

@@ -82,10 +82,29 @@ Shipped:
 - Unit coverage for memory writes, reuse counts, cut-off/restore and v2→v3 migration; the Hive E2E
   flow opens Memory, cuts off an entry, confirms the dimmed state and restores it
 
+## Implementation slice 6 (2026-11-16): bridge transport and contract
+
+Shipped:
+
+- `src/transport/hiveBridge.ts`: `BridgeHiveTransport` implementing the same `HiveTransport`
+  interface as the mock — snapshot load, SSE stream, all commands, 12 s timeout, bearer auth and an
+  explicit `unavailable` status carrying the failure reason
+- `HiveTransportStatus` (`mock|bridge`, `ready|connecting|unavailable`) and `status()` / `retry()`
+  on the interface; the mock reports `ready` with mode `mock`
+- Transport selection from `VITE_HIVE_BRIDGE_URL` / `VITE_HIVE_BRIDGE_TOKEN`; without a URL the app
+  keeps the offline mock, and a broken bridge is reported in the sheet with a **Retry** button
+  instead of falling back to fake data
+- The sheet uses one session-wide transport (StrictMode-safe) and shows `Hive bridge` / `Bridge
+  offline` in place of `Local mock`
+- `docs/hive-bridge-contract.md` documents endpoints, payloads, auth, error handling, and
+  `tests/fixtures/hive-bridge-snapshot.json` is the reference snapshot used by the bridge tests
+- Bridge unit tests cover snapshot load + stream updates, command payloads, failure status and
+  transport selection
+
 Still to do in the Hive slice:
 
-- live `BridgeHiveTransport` and `/api/hive/*`
-- report generation (beyond the mock report card)
+- server-side `/api/hive/*` implementation and run/task mapping (contract is frozen client-side)
+- capability probes and version negotiation
 - Android notification routing and share intake
 
 ## 1. Goal

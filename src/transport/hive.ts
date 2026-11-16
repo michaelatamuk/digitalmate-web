@@ -15,10 +15,22 @@ import type {
 } from '../domain/hive';
 import { currentTask, HIVE_STORE_VERSION, readHiveBackup, taskIsOpen } from '../domain/hive';
 
+export type HiveTransportMode = 'mock' | 'bridge';
+export type HiveTransportState = 'ready' | 'connecting' | 'unavailable';
+
+export interface HiveTransportStatus {
+  mode: HiveTransportMode;
+  state: HiveTransportState;
+  /** Human-readable reason, empty when ready. */
+  message: string;
+}
+
 export interface HiveTransport {
   readonly id: 'mock' | 'bridge';
   subscribe: (listener: (event: HiveEvent) => void) => () => void;
   snapshot: () => HiveSnapshot;
+  status: () => HiveTransportStatus;
+  retry: () => void;
   selectLane: (laneId: string) => void;
   selectTask: (taskId: string) => void;
   send: (input: HiveSendInput) => Promise<string>;
@@ -158,6 +170,14 @@ export class MockHiveTransport implements HiveTransport {
     this.listeners.add(listener);
     listener({ type: 'snapshot', snapshot: this.snapshot() });
     return () => this.listeners.delete(listener);
+  }
+
+  status(): HiveTransportStatus {
+    return { mode: 'mock', state: 'ready', message: '' };
+  }
+
+  retry(): void {
+    // The local demo has nothing to reconnect to.
   }
 
   snapshot(): HiveSnapshot {

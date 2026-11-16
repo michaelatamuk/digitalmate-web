@@ -1,0 +1,59 @@
+{
+  "lanes": [
+    {
+      "id": "beebou",
+      "kind": "beebou",
+      "label": "Beebou",
+      "avatar": "✦",
+      "color": "#a06b58",
+      "lifecycle": "active",
+      "lastActivityAt": 1763000000000,
+      "capabilities": { "steer": false, "queue": false, "preempt": false },
+      "description": "The host. Routes work to the right Bee."
+    },
+    {
+      "id": "scout",
+      "kind": "bee",
+      "label": "Scout",
+      "avatar": "⌕",
+      "color": "#5b7fa8",
+      "lifecycle": "active",
+      "lastActivityAt": 1763000100000,
+      "capabilities": { "steer": true, "queue": true, "preempt": true },
+      "description": "Research, sources and summaries."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_bridge_1",
+      "laneId": "scout",
+      "title": "Bridge smoke task",
+      "prompt": "Say hello from the bridge",
+      "status": "done",
+      "step": "Done",
+      "output": "Hello from the bridge.",
+      "steering": [],
+      "attachments": [],
+      "createdAt": 1763000000000,
+      "updatedAt": 1763000100000,
+      "artifacts": []
+    }
+  ],
+  "messages": [],
+  "activity": [
+    {
+      "id": "act_bridge_1",
+      "laneId": "scout",
+      "taskId": "task_bridge_1",
+      "kind": "task_status",
+      "text": "Done · Bridge smoke task",
+      "at": 1763000100000
+    }
+  ],
+  "activityReadAt": {},
+  "activityTrimmed": false,
+  "memory": [],
+  "memoryCutoffAt": {},
+  "selectedLaneId": "scout",
+  "selectedTaskId": "task_bridge_1"
+}
