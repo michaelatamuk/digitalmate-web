@@ -657,6 +657,80 @@ test('a build can turn Hive off and shared text falls back to chat', async ({ pa
   await expect(page.locator('.hive')).toHaveCount(0);
 });
 
+test('Hive opens and renders a long feed within budget', async ({ page }) => {
+  await page.goto('/');
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+  // Seed once so the store exists, then fatten it with 60 tasks and 60 activity entries.
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await expect(page.locator('.hive')).toBeVisible();
+  await page.getByRole('tab', { name: /Forge/ }).click();
+  await page.locator('.hive-composer textarea').fill('Perf seed task');
+  await page.locator('.hive-actions').getByRole('button', { name: 'Send', exact: true }).click();
+  // The store is written on the first mutation, not on open.
+  await expect.poll(async () => page.evaluate(() => localStorage.getItem('digitalmate.hive.v2') !== null)).toBe(true);
+  await page.locator('.sheet-head .icon-button').click();
+
+  await page.evaluate(() => {
+    const raw = localStorage.getItem('digitalmate.hive.v2');
+    if (!raw) throw new Error('hive store missing');
+    const backup = JSON.parse(raw);
+    const laneId = 'forge';
+    const now = Date.now();
+    backup.snapshot.tasks = Array.from({ length: 60 }, (_, index) => ({
+      id: `perf_task_${index}`,
+      laneId,
+      title: `Perf task ${index}`,
+      prompt: `Perf task ${index}`,
+      status: index % 7 === 0 ? 'running' : 'done',
+      step: 'Done',
+      output: 'ok',
+      steering: [],
+      attachments: [],
+      createdAt: now - index * 60_000,
+      updatedAt: now - index * 60_000,
+      artifacts: []
+    }));
+    backup.snapshot.activity = Array.from({ length: 60 }, (_, index) => ({
+      id: `perf_act_${index}`,
+      laneId,
+      taskId: `perf_task_${index}`,
+      kind: 'task_status',
+      text: `Done · Perf task ${index}`,
+      at: now - index * 60_000
+    }));
+    backup.snapshot.activityTrimmed = true;
+    backup.snapshot.memory = [];
+    backup.snapshot.selectedLaneId = laneId;
+    backup.snapshot.selectedTaskId = '';
+    localStorage.setItem('digitalmate.hive.v2', JSON.stringify(backup));
+  });
+  await page.reload();
+  if (await page.getByText('Start with a real task').isVisible().catch(() => false)) {
+    await page.getByRole('button', { name: 'Skip' }).click();
+  }
+
+  const openedAt = Date.now();
+  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: /Hive/ }).click();
+  await expect(page.locator('.hive')).toBeVisible();
+  await expect(page.locator('.hive-task-row').first()).toBeVisible();
+  const openMs = Date.now() - openedAt;
+
+  const activityAt = Date.now();
+  await page.getByRole('tab', { name: /Activity/ }).click();
+  await expect(page.locator('.hive-activity-row')).toHaveCount(60);
+  const activityMs = Date.now() - activityAt;
+
+  // Budgets are deliberately generous so slow CI runners do not flake, but they still catch a
+  // regression that makes the sheet hang or the feed render per-row synchronously.
+  console.log(`[hive-perf] open=${openMs}ms activity=${activityMs}ms rows=60`);
+  expect(openMs).toBeLessThan(2500);
+  expect(activityMs).toBeLessThan(1500);
+});
+
 test('notifies when a Bee finishes with the sheet closed, and a tap opens the task', async ({ page }) => {
   await page.addInitScript(() => {
     class FakeNotification {

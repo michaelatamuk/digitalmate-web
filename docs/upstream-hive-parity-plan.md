@@ -227,12 +227,25 @@ Shipped:
 - Tests: mode resolution (override/storage/env/url/junk) and an E2E that loads `?hive=off`, asserts
   the More menu has no Hive row, and that a share then lands in the chat composer
 
+## Implementation slice 16 (2026-11-16): performance budget
+
+Shipped:
+
+- `e2e/app.spec.ts` measures opening Hive with **60 tasks** and rendering a **60-row activity feed**
+  after a reload, with budgets of 2500 ms and 1500 ms; the test logs
+  `[hive-perf] open=<ms> activity=<ms> rows=60`
+- `docs/hive-performance.md` records the method, the budgets and the measured numbers
+  (open **458 ms**, activity **54 ms** locally), plus what the check does not model (low-end phones,
+  a streaming bridge needing a virtualised feed)
+- Tests: the budget check runs in the normal suite, so a regression fails CI rather than a doc
+
 Still to do in the Hive slice:
 
 - share **files** into a Bee draft (text is routed today)
 - upload attachment bytes once a bridge upload endpoint exists
 - server-side `/api/hive/*`, run/task mapping and dedupe
 - health endpoint behind the client diagnostics line
+- release `0.5.0` (version bump, changelog, Hive flag default)
 
 ## 1. Goal
 
