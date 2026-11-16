@@ -67,33 +67,53 @@ below is cumulative: the 0.5.0 **Hive** workspace first, then the 0.5.1 polish o
 | Local access panel | Settings shows what the browser really allows, row by row |
 | Report cards | Reports have a **Sources** side listing each claim and its origin |
 
+### Where everything lives
+
+- The app opens on **Chat**. The round **⋯/More** button is at the **top right** of the Chat screen.
+- **More** opens a list: Sessions & tasks, Artifacts, Settings, **Hive**, Labs, Skills. Every one of
+  them is a sheet; close it with the **X** at the top right.
+- **Hive is a single screen.** It has three layers, top to bottom:
+  1. **Lane tabs** — Beebou · Scout · Forge · Ledger
+  2. **View tabs** — Tasks · Activity · Memory (for the selected lane)
+  3. **Composer** — at the bottom, with **Attach** on the left and **Send** on the right
+  Task detail (question card, Stop, artifacts, report card) is in the same screen, next to the task
+  list on wide screens and below it on phones. Scenarios 1–6 and the report half of 10 never leave
+  this sheet, except to press More again.
+- Chat attachments use the **+** button on the left of the Chat composer, then **Files**.
+
 ### Ten things to try
 
-1. **Meet the Bees** — More → Hive. Switch between Beebou, Scout, Forge, Ledger; each lane keeps its
-   own tasks and drafts.
-2. **Run a job** — in Scout, send “Summarise the notes from this week”. Watch the steps change, then
-   read the output and any artifact.
-3. **Queue and steer** — in Forge, start a long request, then send another: it shows **Queued**. On
-   the running one, use **Steer** with “keep it short”.
-4. **Answer a question** — send “Draft an email to Alice”. A card asks whether to send or keep it as a
-   draft; answer, and the task finishes.
-5. **Stop something** — press **Stop**, confirm “Stop this task?”, and see everything produced so far
-   kept.
-6. **Memory and artifacts** — open **Memory** in a lane and use **Cut off here**; open **Artifacts** and
-   export one.
-7. **Share into Hive** — share a link from another app into DigitalMate; it appears in a Bee draft,
-   unsent.
-8. **Word and zoom (0.5.1)** — attach a `.docx` and read it; attach a screenshot and zoom in.
-9. **Calendar (0.5.1)** — ask “What’s on my calendar this week?”, tap **New event**, then
-   **Add to phone calendar (.ics)** and accept it in your calendar app.
-10. **Settings and reports (0.5.1)** — More → Settings → **Local access** for permission states; then
-    Hive → Ledger → “Prepare the weekly report” and flip the report card to **Sources**.
+1. **Meet the Bees** — Chat → **More** (top right) → **Hive**. Tap **Scout**, **Forge**, **Ledger** in
+   the lane strip; only that lane's tasks and drafts change beneath it.
+2. **Run a job** — still in Hive, select **Scout**, type “Summarise the notes from this week” in the
+   composer at the bottom, press **Send**. Stay on **Tasks** and watch the status steps; the result
+   appears in the task detail on the same screen.
+3. **Queue and steer** — select **Forge**, send “Build a launch checklist”, then immediately send
+   “Draft the announcement”. The second task shows **Queued**. Click the running task, type
+   “keep it short” in the composer and press **Steer**.
+4. **Answer a question** — in **Scout** or **Forge**, send “Draft an email to Alice”. A question card
+   appears in the task detail; type an answer and press **Send answer**.
+5. **Stop something** — while a task is running, open its detail and press **Stop**, then **Stop task**
+   in the confirmation (**Keep working** cancels). Work produced so far stays.
+6. **Memory and artifacts** — same Hive screen: **Memory** tab → **Cut off here** on an entry;
+   **Tasks** tab → open the task → **Artifacts** block → **Export**.
+7. **Share into Hive** — from any other app, share a link to DigitalMate. It opens **Hive** with the
+   text already in the last Bee's composer, unsent until you press **Send**.
+8. **Word and zoom (0.5.1)** — back on **Chat**: press **+** next to the composer → **Files** → pick a
+   `.docx`. Tap the file chip to preview. Repeat with a screenshot, then use **+** / double-tap to zoom,
+   drag to pan, **Reset** to return.
+9. **Calendar (0.5.1)** — on **Chat**, send “What’s on my calendar this week?”. In the reply card,
+   press **New event**, adjust the title/time, then **Add to phone calendar (.ics)**. Open the
+   downloaded file and confirm in your calendar app.
+10. **Settings and reports (0.5.1)** — **More** → **Settings** → scroll to **Local access** for the
+    permission rows. Then **More** → **Hive** → **Ledger** → send “Prepare the weekly report”; in the
+    task detail, flip the report card’s **Sources** tab.
 
 ### Demo extras
 
-- Type `!fail Build the weekly numbers` in a Bee to see the failure path and a released lane.
-- With a screen reader on, scenario 4 should speak “A Bee needs your answer”, and the completion
-  should be announced too.
+- In any Hive lane, send `!fail Build the weekly numbers` to see the failure path and a released lane.
+- With TalkBack/VoiceOver on, scenario 4 speaks “A Bee needs your answer”, and finishing the task is
+  announced too.
 
 ## New
 
