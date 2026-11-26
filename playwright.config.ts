@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const port = 5175;
 const baseURL = `http://127.0.0.1:${port}`;
-// A second dev server is pointed at the reference Hive bridge, so the client↔server path is covered
+// A second dev server is pointed at the reference Hive bridge, so the clientâ†”server path is covered
 // in CI instead of only by hand. `--mode bridge` loads `.env.bridge`.
 const bridgePort = 8788;
 const bridgedPort = 5176;
@@ -33,6 +33,7 @@ export default defineConfig({
       command: `npm run dev -- --port ${port}`,
       url: baseURL,
       reuseExistingServer: false,
+      env: { VITE_AUTO_BACKEND: 'off' },
       timeout: 120_000
     },
     {
@@ -46,6 +47,7 @@ export default defineConfig({
       command: `npm run dev -- --port ${bridgedPort} --mode bridge`,
       url: `http://127.0.0.1:${bridgedPort}`,
       reuseExistingServer: false,
+      env: { VITE_AUTO_BACKEND: 'off' },
       timeout: 120_000
     }
   ]

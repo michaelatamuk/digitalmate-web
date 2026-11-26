@@ -38,7 +38,7 @@ import { stashHiveShare, stashHiveShareFiles, readShareText } from './lib/hiveSh
 import { readSharedDraft } from './lib/shareTargetCache';
 import { installHiveNotifications } from './lib/hiveNotifications';
 import { currentHiveMode } from './lib/hiveMode';
-import { currentHiveTransport } from './transport/hiveBridge';
+import { currentHiveTransport, resetSharedHiveTransport } from './transport/hiveBridge';
 import { installDiagnostics } from './lib/diagnostics';
 import { dedupeCards } from './lib/discoveryExperience';
 import { DEFAULT_PERSONA, PERSONAS, DEFAULT_PROJECTS, personaById, personaName, personaSuggestions } from './data/personas';
@@ -54,7 +54,7 @@ import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
 import { A11yAnnouncer } from './components/A11yAnnouncer';
-import { readLiveBackend } from './lib/liveBackend';
+import { hasLiveBackend, readAutoBackend, readLiveBackend, writeAutoBackend } from './lib/liveBackend';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
@@ -157,6 +157,28 @@ export default function App() {
   }, []);
 
   useEffect(() => installDiagnostics(), []);
+
+  // Find a local runtime automatically: one probe, remembered until it stops answering. This is
+  // what lets a developer run `npm run dev` next to a bridge and get real answers with no setting.
+  useEffect(() => {
+    if (import.meta.env.VITE_AUTO_BACKEND === 'off') return;
+    if (hasLiveBackend()) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 2500);
+    fetch('/api/orbit/health', { headers: { accept: 'application/json' }, signal: controller.signal })
+      .then(response => (response.ok ? response.json() : null))
+      .then(payload => {
+        const found = Boolean(payload?.configured);
+        writeAutoBackend(found);
+        if (found) resetSharedHiveTransport();
+      })
+      .catch(() => writeAutoBackend(false))
+      .finally(() => window.clearTimeout(timer));
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
@@ -461,7 +483,7 @@ export default function App() {
 
     let transport: ChatTransport | null = new MockChatTransport(calendarEvents);
     const liveUrl = (settings.liveBackendUrl || readLiveBackend()).trim();
-    const liveConfigured = Boolean(liveUrl) || settings.cloudBackend === 'orbit';
+    const liveConfigured = Boolean(liveUrl) || settings.cloudBackend === 'orbit' || readAutoBackend();
     if (liveConfigured) {
       try {
         const health = await orbitHealth(controller.signal);

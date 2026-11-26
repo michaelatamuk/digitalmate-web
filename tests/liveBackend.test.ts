@@ -4,7 +4,9 @@ import {
   hasLiveBackend,
   liveBackendBase,
   normalizeBackendUrl,
+  readAutoBackend,
   readLiveBackend,
+  writeAutoBackend,
   writeLiveBackend
 } from '../src/lib/liveBackend';
 
@@ -59,5 +61,23 @@ describe('live backend setting', () => {
     vi.stubGlobal('window', { localStorage: storage });
     expect(readLiveBackend()).toBe('');
     expect(liveBackendBase()).toBe('');
+  });
+
+  it('remembers an auto-detected bridge as same-origin', () => {
+    vi.stubGlobal('window', { localStorage: memoryStorage() });
+    expect(readAutoBackend()).toBe(false);
+    writeAutoBackend(true);
+    expect(readAutoBackend()).toBe(true);
+    // Same-origin: apiUrl() then returns relative paths.
+    expect(liveBackendBase()).toBe('');
+    writeAutoBackend(false);
+    expect(readAutoBackend()).toBe(false);
+  });
+
+  it('lets an explicit URL win over auto detection', async () => {
+    vi.stubGlobal('window', { localStorage: memoryStorage() });
+    writeAutoBackend(true);
+    writeLiveBackend('https://oj.example.com');
+    expect(liveBackendBase()).toBe('https://oj.example.com');
   });
 });

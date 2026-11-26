@@ -85,3 +85,14 @@ exposing it.
 
 Runtime logs: `~/.jiuwenswarm/agent/.logs/full.log` (the bridge adds no logs of its own
 unless started in a terminal).
+
+## Zero-configuration development
+
+With the runtime and bridge running locally, `npm run dev` needs no setting: Vite proxies
+`/api/orbit` and `/api/hive` to `http://127.0.0.1:8790` (override with `VITE_DEV_API_TARGET`), and
+the app probes `/api/orbit/health` on load. When a bridge answers, chat and Hive use it automatically
+and the result is remembered in `digitalmate.liveBackendAuto`. When it does not, the app stays on the
+local demo. "Use local demo" in Settings clears the remembered choice.
+
+Tests set `VITE_AUTO_BACKEND=off`, so the in-process Orbit mock and the mock Hive transport remain the
+subjects of the existing suites.

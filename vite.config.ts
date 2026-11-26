@@ -23,7 +23,22 @@ export default defineConfig(({ mode }) => {
     server: {
       host: '127.0.0.1',
       port: 5173,
-      strictPort: true
+      strictPort: true,
+      // With a local runtime bridge, let the app find it without any setting. Tests set
+      // VITE_AUTO_BACKEND=off so they keep exercising the in-process mocks.
+      proxy:
+        process.env.VITE_AUTO_BACKEND === 'off'
+          ? undefined
+          : {
+              '/api/orbit': {
+                target: process.env.VITE_DEV_API_TARGET ?? 'http://127.0.0.1:8790',
+                changeOrigin: false
+              },
+              '/api/hive': {
+                target: process.env.VITE_DEV_API_TARGET ?? 'http://127.0.0.1:8790',
+                changeOrigin: false
+              }
+            }
     }
   };
 });

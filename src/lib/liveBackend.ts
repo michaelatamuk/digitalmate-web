@@ -6,6 +6,8 @@
  * it, and a failure is reported as unavailable rather than silently replaced by mock data.
  */
 export const LIVE_BACKEND_KEY = 'digitalmate.liveBackend';
+/** Set when a same-origin bridge answered the health probe; cleared when it stops answering. */
+export const LIVE_BACKEND_AUTO_KEY = 'digitalmate.liveBackendAuto';
 
 /** Trims whitespace and trailing slashes; returns '' for anything that is not http(s). */
 export function normalizeBackendUrl(value: unknown): string {
@@ -50,13 +52,37 @@ export function writeLiveBackend(value: unknown): string {
 }
 
 /**
- * Base for API calls: the user's choice first, then the build-time override. This is what makes a
- * single APK able to point at a different server without a rebuild.
+ * Base for API calls: an explicit URL, then an auto-detected same-origin bridge, then the build-time
+ * override. Auto detection returns '' (same origin) so a dev server proxy or a served bridge works.
  */
 export function liveBackendBase(): string {
-  return readLiveBackend() || normalizeBackendUrl(import.meta.env.VITE_API_BASE ?? '');
+  const explicit = readLiveBackend();
+  if (explicit) return explicit;
+  if (readAutoBackend()) return '';
+  return normalizeBackendUrl(import.meta.env.VITE_API_BASE ?? '');
 }
 
 export function hasLiveBackend(): boolean {
   return Boolean(readLiveBackend());
+}
+
+export function readAutoBackend(): boolean {
+  const target = storage();
+  if (!target) return false;
+  try {
+    return target.getItem(LIVE_BACKEND_AUTO_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function writeAutoBackend(found: boolean): void {
+  const target = storage();
+  if (!target) return;
+  try {
+    if (found) target.setItem(LIVE_BACKEND_AUTO_KEY, '1');
+    else target.removeItem(LIVE_BACKEND_AUTO_KEY);
+  } catch {
+    // Not remembering the probe result only means probing again next time.
+  }
 }

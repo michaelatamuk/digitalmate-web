@@ -4,7 +4,7 @@ import type { HiveTransport, HiveTransportStatus } from './hive';
 import type { HiveConflict, HiveFeature } from './hive';
 import type { HiveAttachmentMeta } from '../domain/hive';
 import { HIVE_FEATURES, MockHiveTransport, newOperationId } from './hive';
-import { readLiveBackend } from '../lib/liveBackend';
+import { readAutoBackend, readLiveBackend } from '../lib/liveBackend';
 
 /**
  * Contract between the web app and the Hive bridge.
@@ -619,8 +619,10 @@ export class BridgeHiveTransport implements HiveTransport {
  */
 export function createHiveTransport(env?: { url?: string; token?: string }): HiveTransport {
   const builtIn = (import.meta.env?.VITE_HIVE_BRIDGE_URL as string | undefined) ?? '';
-  // `||`, not `??`: an empty stored value must fall through to the build-time URL.
-  const url = env?.url ?? (readLiveBackend() || builtIn);
+  // `||`, not `??`: an empty stored value must fall through to the next source.
+  const auto =
+    readAutoBackend() && typeof window !== 'undefined' ? window.location.origin : '';
+  const url = env?.url ?? (readLiveBackend() || auto || builtIn);
   if (!url.trim()) return new MockHiveTransport();
   const token = env?.token ?? (import.meta.env?.VITE_HIVE_BRIDGE_TOKEN as string | undefined) ?? '';
   return new BridgeHiveTransport({ baseUrl: url.trim(), token: token.trim() || undefined });

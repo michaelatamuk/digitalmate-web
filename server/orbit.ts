@@ -634,10 +634,17 @@ export async function handleOrbitRequest(request: IncomingMessage, response: Ser
 }
 
 export function orbitBridgePlugin(): Plugin {
+  // With auto-detection on, `/api/orbit` is proxied to the local OpenJiuwen bridge instead of the
+  // in-process Orbit mock. Tests and deliberate Orbit runs set VITE_AUTO_BACKEND=off.
+  const auto = process.env.VITE_AUTO_BACKEND !== 'off';
   return {
     name: 'digitalmate-orbit-bridge',
     configureServer(server) {
       server.middlewares.use((request, response, next) => {
+        if (auto) {
+          next();
+          return;
+        }
         void handleOrbitRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });
@@ -645,6 +652,10 @@ export function orbitBridgePlugin(): Plugin {
     },
     configurePreviewServer(server) {
       server.middlewares.use((request, response, next) => {
+        if (auto) {
+          next();
+          return;
+        }
         void handleOrbitRequest(request, response).then(() => {
           if (!response.writableEnded) next();
         });

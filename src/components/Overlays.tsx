@@ -11,7 +11,7 @@ import { parseMemoryProfile } from '../lib/memoryProfile';
 import { coverForCard, fallbackCoverForCard } from '../lib/covers';
 import { cardKind } from '../lib/discoveryExperience';
 import { requestNativeNotificationPermission } from '../lib/native';
-import { normalizeBackendUrl, readLiveBackend, writeLiveBackend } from '../lib/liveBackend';
+import { normalizeBackendUrl, readLiveBackend, writeAutoBackend, writeLiveBackend } from '../lib/liveBackend';
 import { resetSharedHiveTransport } from '../transport/hiveBridge';
 import {
   browserCapabilityEnvironment,
@@ -814,6 +814,7 @@ export function SettingsSheet({
 
   const clearBackend = (): void => {
     writeLiveBackend('');
+    writeAutoBackend(false);
     onChange({ ...settings, liveBackendUrl: '', cloudBackend: 'local' });
     resetSharedHiveTransport();
     setBackendDraft('');
