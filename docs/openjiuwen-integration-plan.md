@@ -157,3 +157,16 @@ Implemented in `services/oj-bridge/hive.mjs`, verified against a live JiuwenSwar
 
 Still open for Phase 3: OJ questions/approvals mapped to the question card, history replay via
 `/sessions/{id}/history/stream`, and per-agent (not just per-lane) routing.
+
+### Phase 3 status (2026-11-26)
+
+- **Questions and answers** — `chat.ask_user_question` becomes the task's question card with its options;
+  answering sends `chat.answer` (`request_id` + `answers[{question_id, answer}]`) and continues the same
+  OJ session. Wrong/duplicate answers surface the runtime's error instead of being ignored.
+- **History across restarts** — the bridge stores tasks, messages, activity and memory to
+  `OJ_BRIDGE_STATE` (JSON file, optional); tasks that were running when it stopped resume as
+  “Interrupted by restart”. `reset` clears the file.
+- **Stop/steer/preempt** already exercised; steer is recorded on the task, preempt stops and replaces.
+
+Still open: OJ-native permissions/approvals UI beyond ask_user_question, and replaying a full OJ session
+history (`/sessions/{id}/history/stream`) instead of the bridge's own record.

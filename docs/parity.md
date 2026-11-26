@@ -105,7 +105,7 @@ No components from the tracked native list remain. Future native additions may s
 | Tool gateway / MCP / Composio | ❌ | Not connected |
 | Account isolation / secure storage | 🟡 | Bearer token stays server-side; chat data in localStorage |
 | Automated UI tests | ✅ | Playwright: chat, tasks, approvals, attachments/PDF, artifacts, sharing, memory, skills, discovery search, covers, natural-language topics, sources, labs, welcome, offline banner, language, protocol, RSS, backup, Orbit fallback, Hive mock and bridged flows, share target, notifications, performance budget, mobile and axe |
-| Unit tests | ✅ | 207 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments (incl. DOCX), skills, artifacts, profiles, discovery, Hive domain/store/bridge/replay accessibility announcements, .ics export and capability probing |
+| Unit tests | ✅ | 209 tests for mock logic, scenarios, A2UI, RSS, transport, sessions, backup, attachments (incl. DOCX), skills, artifacts, profiles, discovery, Hive domain/store/bridge/replay accessibility announcements, .ics export and capability probing |
 | Accessibility audit | ✅ | Critical and serious axe checks across home, chat, discovery, skills, settings and Hive; polite and assertive live regions announce task state |
 | Deployment / PWA | ✅ | GitHub Pages, Dockerfile and compose self-hosting |
 | Android shell | ✅ | Capacitor 8 shell, widget, share and notifications |

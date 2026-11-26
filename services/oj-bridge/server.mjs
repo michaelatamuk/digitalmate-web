@@ -135,7 +135,7 @@ export function createOjBridge(options = {}) {
   const now = options.now ?? (() => Date.now());
   const session = options.session ?? new OjSession();
   const fetchImpl = options.fetch ?? globalThis.fetch;
-  const hive = options.hive ?? new HiveOverOj({ ojBase, fetchImpl, now, token });
+  const hive = options.hive ?? new HiveOverOj({ ojBase, fetchImpl, now, token, statePath: options.statePath });
   const files = new Map();
 
   async function readJsonBody(request) {

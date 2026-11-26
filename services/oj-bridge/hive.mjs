@@ -7,6 +7,8 @@
  * and errors come from OJ events.
  */
 import { randomUUID } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { parseOjFrames } from './server.mjs';
 
 const HOST_LANE = {
@@ -65,17 +67,44 @@ export function mapHiveFrame(frame) {
               ? payload.message
               : 'The agent reported an error.'
       };
+    case 'chat.ask_user_question': {
+      const questions = Array.isArray(payload?.questions) ? payload.questions : [];
+      const first = questions[0] && typeof questions[0] === 'object' ? questions[0] : {};
+      const text =
+        (typeof first.question === 'string' && first.question) ||
+        (typeof payload?.query === 'string' && payload.query) ||
+        'The agent needs an answer.';
+      const options = Array.isArray(first.options)
+        ? first.options
+            .map(option =>
+              typeof option === 'string'
+                ? option
+                : option && typeof option === 'object' && typeof option.label === 'string'
+                  ? option.label
+                  : ''
+            )
+            .filter(Boolean)
+        : [];
+      return {
+        kind: 'question',
+        requestId: String(payload?.request_id ?? ''),
+        questionId: String(first.id ?? payload?.request_id ?? ''),
+        question: text,
+        options
+      };
+    }
     default:
       return null;
   }
 }
 
 export class HiveOverOj {
-  constructor({ ojBase, fetchImpl, now = () => Date.now(), token = '' }) {
+  constructor({ ojBase, fetchImpl, now = () => Date.now(), token = '', statePath = '' }) {
     this.ojBase = ojBase.replace(/\/+$/, '');
     this.fetchImpl = fetchImpl ?? globalThis.fetch;
     this.now = now;
     this.token = token;
+    this.statePath = statePath;
     this.lanes = [{ ...HOST_LANE, lastActivityAt: this.now() }];
     this.tasks = [];
     this.messages = [];
@@ -93,6 +122,58 @@ export class HiveOverOj {
     this.events = [];
     this.agentsLoaded = false;
     this.controllers = new Map();
+    this.loadState();
+  }
+
+  /** Restores the last snapshot so a bridge restart does not lose tasks. */
+  loadState() {
+    if (!this.statePath || !existsSync(this.statePath)) return;
+    try {
+      const data = JSON.parse(readFileSync(this.statePath, 'utf8'));
+      const revive = task => {
+        const interrupted = task.status === 'running' || task.status === 'waiting_user';
+        return {
+          ...task,
+          status: interrupted ? 'stopped' : task.status,
+          step: interrupted ? 'Interrupted by restart' : task.step,
+          attachments: Array.isArray(task.attachments) ? task.attachments : [],
+          steering: Array.isArray(task.steering) ? task.steering : [],
+          artifacts: Array.isArray(task.artifacts) ? task.artifacts : []
+        };
+      };
+      if (Array.isArray(data.tasks)) this.tasks = data.tasks.map(revive);
+      if (Array.isArray(data.messages)) this.messages = data.messages;
+      if (Array.isArray(data.activity)) this.activity = data.activity;
+      if (Array.isArray(data.memory)) this.memory = data.memory;
+      if (data.activityReadAt) this.activityReadAt = data.activityReadAt;
+      if (data.memoryCutoffAt) this.memoryCutoffAt = data.memoryCutoffAt;
+      if (typeof data.selectedLaneId === 'string') this.selectedLaneId = data.selectedLaneId;
+      if (typeof data.selectedTaskId === 'string') this.selectedTaskId = data.selectedTaskId;
+    } catch {
+      // A damaged state file must not stop the bridge from starting.
+    }
+  }
+
+  saveState() {
+    if (!this.statePath) return;
+    try {
+      mkdirSync(dirname(this.statePath), { recursive: true });
+      writeFileSync(
+        this.statePath,
+        JSON.stringify({
+          tasks: this.tasks,
+          messages: this.messages,
+          activity: this.activity,
+          memory: this.memory,
+          activityReadAt: this.activityReadAt,
+          memoryCutoffAt: this.memoryCutoffAt,
+          selectedLaneId: this.selectedLaneId,
+          selectedTaskId: this.selectedTaskId
+        })
+      );
+    } catch {
+      // Persistence is best-effort; the live state stays authoritative.
+    }
   }
 
   /** Loads lanes from the runtime's agent list; keeps Beebou as the host. */
@@ -165,6 +246,7 @@ export class HiveOverOj {
     const event = { type, snapshot: this.snapshot(), id: ++this.seq };
     this.events.push(event);
     if (this.events.length > MAX_EVENTS) this.events.splice(0, this.events.length - MAX_EVENTS);
+    this.saveState();
     for (const listener of this.listeners) listener(event);
   }
 
@@ -279,8 +361,8 @@ export class HiveOverOj {
 
   pump(laneId) {
     const active = this.activeIn(laneId);
-    // A task that already has a controller is executing; anything else is started here.
-    if (active && this.controllers.get(active.id)) return;
+    // A running task with a controller is executing; a waiting task is paused for an answer.
+    if (active && (this.controllers.get(active.id) || active.status === 'waiting_user')) return;
     const next =
       active ?? this.tasks.find(task => task.laneId === laneId && task.status === 'queued');
     if (!next) return;
@@ -299,8 +381,6 @@ export class HiveOverOj {
     // A follow-up turn (steer/answer) continues the same OJ session.
     const sessionId = task.sessionId || randomUUID();
     task.sessionId = sessionId;
-    let emitted = '';
-
     const request = {
       request_id: randomUUID(),
       channel_id: 'web',
@@ -310,7 +390,6 @@ export class HiveOverOj {
       timestamp: this.now() / 1000,
       params: { query: task.prompt }
     };
-
     try {
       const response = await this.fetchImpl(`${this.ojBase}/api/v1/chat`, {
         method: 'POST',
@@ -325,47 +404,7 @@ export class HiveOverOj {
       if (!response.ok || !response.body) {
         throw new Error(`OpenJiuwen returned HTTP ${response.status}`);
       }
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let failed = false;
-      for await (const part of response.body) {
-        buffer += decoder.decode(part, { stream: true });
-        const { frames, rest } = parseOjFrames(buffer);
-        buffer = rest;
-        for (const frame of frames) {
-          const payload = frame?.payload && typeof frame.payload === 'object' ? frame.payload : frame;
-          if (frame?.ok === false && payload?.error) {
-            failed = true;
-            this.fail(task, String(payload.error));
-            continue;
-          }
-          const mapped = mapHiveFrame(frame);
-          if (!mapped) continue;
-          if (mapped.kind === 'step') {
-            if (task.status === 'running') {
-              task.step = mapped.step;
-              this.bump(task);
-              this.emit('task');
-            }
-          } else if (mapped.kind === 'text') {
-            if (task.status === 'running') {
-              emitted += mapped.text;
-              task.output = emitted;
-              this.emit('task');
-            }
-          } else if (mapped.kind === 'final') {
-            if (mapped.text && !emitted.startsWith(mapped.text)) {
-              emitted = mapped.text;
-              task.output = emitted;
-            }
-          } else if (mapped.kind === 'error') {
-            failed = true;
-            this.fail(task, mapped.message);
-          }
-        }
-        if (failed) break;
-      }
-      if (task.status === 'running') this.finish(task);
+      await this.consume(task, response, task.output || '');
     } catch (error) {
       if (controller.signal.aborted) return;
       this.fail(task, String(error?.message ?? error));
@@ -373,6 +412,106 @@ export class HiveOverOj {
       this.controllers.delete(task.id);
       this.pump(task.laneId);
     }
+  }
+
+  /** Sends the answer as `chat.answer` and keeps consuming the same conversation. */
+  async runAnswer(task, question, text) {
+    const controller = new AbortController();
+    this.controllers.set(task.id, controller);
+    const request = {
+      request_id: randomUUID(),
+      channel_id: 'web',
+      session_id: task.sessionId,
+      req_method: 'chat.answer',
+      is_stream: true,
+      timestamp: this.now() / 1000,
+      params: {
+        request_id: question.requestId,
+        answers: [{ question_id: question.questionId ?? question.id, answer: text }]
+      }
+    };
+    try {
+      const response = await this.fetchImpl(`${this.ojBase}/api/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'text/event-stream',
+          ...(this.token ? { authorization: `Bearer ${this.token}` } : {})
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal
+      });
+      if (!response.ok || !response.body) {
+        throw new Error(`OpenJiuwen returned HTTP ${response.status}`);
+      }
+      await this.consume(task, response, task.output || '');
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      this.fail(task, String(error?.message ?? error));
+    } finally {
+      this.controllers.delete(task.id);
+      this.pump(task.laneId);
+    }
+  }
+
+  async consume(task, response, start) {
+    let emitted = start;
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let failed = false;
+    for await (const part of response.body) {
+      buffer += decoder.decode(part, { stream: true });
+      const { frames, rest } = parseOjFrames(buffer);
+      buffer = rest;
+      for (const frame of frames) {
+        const payload = frame?.payload && typeof frame.payload === 'object' ? frame.payload : frame;
+        if (frame?.ok === false && payload?.error) {
+          failed = true;
+          this.fail(task, String(payload.error));
+          continue;
+        }
+        const mapped = mapHiveFrame(frame);
+        if (!mapped) continue;
+        if (mapped.kind === 'step') {
+          if (task.status === 'running') {
+            task.step = mapped.step;
+            this.bump(task);
+            this.emit('task');
+          }
+        } else if (mapped.kind === 'text') {
+          if (task.status === 'running') {
+            emitted += mapped.text;
+            task.output = emitted;
+            this.emit('task');
+          }
+        } else if (mapped.kind === 'final') {
+          if (mapped.text && !emitted.startsWith(mapped.text)) {
+            emitted = mapped.text;
+            task.output = emitted;
+          }
+        } else if (mapped.kind === 'question') {
+          task.question = {
+            id: mapped.requestId || mapped.questionId || id('question'),
+            requestId: mapped.requestId,
+            questionId: mapped.questionId,
+            interactionId: mapped.requestId,
+            question: mapped.question,
+            answerable: true,
+            options: mapped.options
+          };
+          task.status = 'waiting_user';
+          task.step = 'Waiting for your decision';
+          this.bump(task);
+          this.activityEntry('question', task.laneId, task.id, `Needs you · ${mapped.question}`);
+          this.emit('task');
+        } else if (mapped.kind === 'error') {
+          failed = true;
+          this.fail(task, mapped.message);
+        }
+      }
+      if (failed) break;
+    }
+    if (task.status === 'running') this.finish(task);
   }
 
   finish(task) {
@@ -470,16 +609,16 @@ export class HiveOverOj {
   answer(taskId, text) {
     const task = this.tasks.find(item => item.id === taskId);
     if (!task) return;
-    task.question = undefined;
+    const question = task.question;
+    const value = String(text || '').trim();
+    if (!question || !value) return;
+    task.question = { ...question, answer: value, draft: undefined };
     task.status = 'running';
     task.step = 'Using your answer';
     this.bump(task);
+    this.activityEntry('answer', task.laneId, task.id, `Answered · ${value}`);
     this.emit('task');
-    // OJ keeps the conversation; the answer is sent as the next turn on the same session.
-    if (task.sessionId) {
-      task.prompt = `${task.prompt}\n\nUser answer: ${String(text || '').trim()}`;
-      void this.run(task);
-    }
+    void this.runAnswer(task, question, value);
   }
 
   cutOff(laneId, at) {
@@ -518,6 +657,11 @@ export class HiveOverOj {
     this.selectedTaskId = '';
     this.selectedLaneId = 'beebou';
     this.operations.clear();
+    try {
+      if (this.statePath && existsSync(this.statePath)) rmSync(this.statePath);
+    } catch {
+      // Nothing to clean up.
+    }
     this.emit('snapshot');
   }
 }

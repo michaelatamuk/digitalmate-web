@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createServer } from 'node:http';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { startOjBridge } from '../services/oj-bridge/server.mjs';
 
 interface FakeOj {
@@ -9,7 +12,7 @@ interface FakeOj {
 }
 
 /** A minimal OJ stand-in: agent list plus a streamed chat that echoes "HIVE OK". */
-async function startFakeOj(options: { delayMs?: number } = {}): Promise<FakeOj> {
+async function startFakeOj(options: { delayMs?: number; askQuestion?: boolean } = {}): Promise<FakeOj> {
   const delay = options.delayMs ?? 5;
   const chats: FakeOj['chats'] = [];
   const server = createServer(async (request, response) => {
@@ -37,8 +40,30 @@ async function startFakeOj(options: { delayMs?: number } = {}): Promise<FakeOj> 
     if (url.pathname === '/api/v1/chat') {
       const chunks: Buffer[] = [];
       for await (const chunk of request) chunks.push(chunk as Buffer);
-      chats.push(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}'));
+      const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+      chats.push(body);
       response.writeHead(200, { 'content-type': 'text/event-stream' });
+      if (body.req_method === 'chat.answer') {
+        response.write(
+          `data: ${JSON.stringify({ payload: { event_type: 'chat.final', content: 'ANSWERED OK' } })}\n\n`
+        );
+        response.end();
+        return;
+      }
+      if (options.askQuestion) {
+        response.write(
+          `data: ${JSON.stringify({
+            payload: {
+              event_type: 'chat.ask_user_question',
+              request_id: 'req-ask-1',
+              questions: [{ id: 'q-1', question: 'Which draft should I send?' }],
+              source: 'ask_user_interrupt'
+            }
+          })}\n\n`
+        );
+        response.end();
+        return;
+      }
       response.write(
         `data: ${JSON.stringify({ payload: { event_type: 'chat.delta', content: 'HIVE ' } })}\n\n`
       );
@@ -77,6 +102,17 @@ async function waitForTask(port: number, taskId: string, timeoutMs = 4000) {
     await new Promise(resolve => setTimeout(resolve, 20));
   }
   throw new Error(`task ${taskId} did not finish`);
+}
+
+async function waitForStatus(port: number, taskId: string, status: string, timeoutMs = 4000) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    const snap = await snapshot(port);
+    const task = snap.tasks.find((item: { id: string }) => item.id === taskId);
+    if (task && task.status === status) return task;
+    await new Promise(resolve => setTimeout(resolve, 20));
+  }
+  throw new Error(`task ${taskId} never reached ${status}`);
 }
 
 describe('Hive over OpenJiuwen', () => {
@@ -182,6 +218,72 @@ describe('Hive over OpenJiuwen', () => {
       expect(caps.capabilities).toContain('steer');
     } finally {
       await bridge.server.close();
+      await oj.close();
+    }
+  });
+
+  it('turns an OJ question into a task question and answers it', async () => {
+    const oj = await startFakeOj({ askQuestion: true });
+    const bridge = await startOjBridge({ ojBase: `http://127.0.0.1:${oj.port}`, port: 0 });
+    try {
+      const send = await fetch(`http://127.0.0.1:${bridge.port}/api/hive/send`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ laneId: 'general-purpose', text: 'Ask me something' })
+      }).then(response => response.json());
+
+      const waiting = await waitForStatus(bridge.port, send.taskId, 'waiting_user');
+      expect(waiting.question.question).toContain('Which draft');
+
+      await fetch(`http://127.0.0.1:${bridge.port}/api/hive/answer`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ taskId: send.taskId, text: 'Send the first one' })
+      });
+
+      const done = await waitForTask(bridge.port, send.taskId);
+      expect(done.status).toBe('done');
+      expect(done.output).toBe('ANSWERED OK');
+      expect(oj.chats[1]).toMatchObject({
+        req_method: 'chat.answer',
+        session_id: (oj.chats[0] as { session_id: string }).session_id,
+        params: {
+          request_id: 'req-ask-1',
+          answers: [{ question_id: 'q-1', answer: 'Send the first one' }]
+        }
+      });
+    } finally {
+      await bridge.server.close();
+      await oj.close();
+    }
+  });
+
+  it('restores tasks from the state file after a restart', async () => {
+    const oj = await startFakeOj();
+    const statePath = join(mkdtempSync(join(tmpdir(), 'oj-hive-')), 'state.json');
+    const first = await startOjBridge({ ojBase: `http://127.0.0.1:${oj.port}`, port: 0, statePath });
+    let taskId = '';
+    try {
+      const send = await fetch(`http://127.0.0.1:${first.port}/api/hive/send`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ laneId: 'general-purpose', text: 'Persist me' })
+      }).then(response => response.json());
+      taskId = send.taskId;
+      await waitForTask(first.port, send.taskId);
+    } finally {
+      await first.server.close();
+    }
+
+    const second = await startOjBridge({ ojBase: `http://127.0.0.1:${oj.port}`, port: 0, statePath });
+    try {
+      const snap = await snapshot(second.port);
+      const restored = snap.tasks.find((item: { id: string }) => item.id === taskId);
+      expect(restored).toBeTruthy();
+      expect(restored.status).toBe('done');
+      expect(restored.output).toBe('HIVE OK');
+    } finally {
+      await second.server.close();
       await oj.close();
     }
   });
