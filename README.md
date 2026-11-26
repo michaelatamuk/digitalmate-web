@@ -30,7 +30,7 @@ optionally stream through a Jiuwen/Orbit bridge.
   attachments on a local mock; see [docs/hive-user-guide.md](docs/hive-user-guide.md)
 - Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`; the contract
   is frozen in [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md)
-- 202 unit tests plus 50 Playwright UI, mobile and accessibility checks
+- 207 unit tests plus 50 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 

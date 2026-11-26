@@ -140,3 +140,20 @@ demo instead. No silent mocking anywhere in the real path.
   the frame mapper and the bridge endpoints; Playwright for the live and unreachable paths.
 - **Next:** Phase 2 (lanes as OJ agents, Hive tasks as sessions), then Phase 3 (approvals, stop,
   steer, history).
+
+### Phase 2 status (2026-11-26)
+
+Implemented in `services/oj-bridge/hive.mjs`, verified against a live JiuwenSwarm:
+
+- **Lanes from OJ agents** — `/api/v1/agents/list` becomes the Bee list; internal utility agents are
+  filtered; Beebou stays the host lane.
+- **Tasks are OJ sessions** — `send` starts a real streamed turn; status, step and output come from
+  OJ (`chat.delta`, `chat.final`, `chat.reasoning`, `chat.tool_call`, `chat.error`).
+- **Queue, stop, preempt, steer** — queued work waits for the lane; stop aborts the stream; a steer is
+  recorded on the task and a preempt stops and replaces the run.
+- **Artifacts and memory** — a finished task keeps its output as an artifact and a memory entry;
+  cut-off/restore work per lane.
+- **Attachments** — uploaded bytes are kept by the bridge and served back to the app.
+
+Still open for Phase 3: OJ questions/approvals mapped to the question card, history replay via
+`/sessions/{id}/history/stream`, and per-agent (not just per-lane) routing.

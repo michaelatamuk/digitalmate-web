@@ -15,6 +15,7 @@
  */
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
+import { HiveOverOj } from './hive.mjs';
 
 export const OJ_BRIDGE_VERSION = 1;
 const DEFAULT_OJ_BASE = 'http://127.0.0.1:8770';
@@ -134,6 +135,15 @@ export function createOjBridge(options = {}) {
   const now = options.now ?? (() => Date.now());
   const session = options.session ?? new OjSession();
   const fetchImpl = options.fetch ?? globalThis.fetch;
+  const hive = options.hive ?? new HiveOverOj({ ojBase, fetchImpl, now, token });
+  const files = new Map();
+
+  async function readJsonBody(request) {
+    const chunks = [];
+    for await (const part of request) chunks.push(part);
+    const text = Buffer.concat(chunks).toString('utf8');
+    return text ? JSON.parse(text) : {};
+  }
 
   const authorised = request => {
     if (!token) return true;
@@ -226,6 +236,122 @@ export function createOjBridge(options = {}) {
     response.end();
   }
 
+  async function handleHive(url, request, response) {
+    const path = url.pathname;
+    const method = request.method;
+    try {
+      if (path === '/api/hive/capabilities' && method === 'GET') {
+        await hive.ensureAgents();
+        json(response, 200, {
+          version: 1,
+          capabilities: ['steer', 'queue', 'preempt', 'artifacts', 'memoryCutoff']
+        });
+        return;
+      }
+      if (path === '/api/hive/snapshot' && method === 'GET') {
+        await hive.ensureAgents();
+        json(response, 200, hive.snapshot());
+        return;
+      }
+      if (path === '/api/hive/events' && method === 'GET') {
+        const since = Number(url.searchParams.get('since') ?? '0') || 0;
+        sse(response);
+        for (const event of hive.eventsSince(since)) {
+          response.write(
+            `id: ${event.id}\ndata: ${JSON.stringify({ type: event.type, snapshot: event.snapshot })}\n\n`
+          );
+        }
+        const unsubscribe = hive.subscribe(event => {
+          response.write(
+            `id: ${event.id}\ndata: ${JSON.stringify({ type: event.type, snapshot: event.snapshot })}\n\n`
+          );
+        });
+        const keepalive = setInterval(() => response.write(': keepalive\n\n'), 15000);
+        request.on('close', () => {
+          clearInterval(keepalive);
+          unsubscribe();
+        });
+        return;
+      }
+      if (path.startsWith('/api/hive/attachment/') && method === 'GET') {
+        const file = files.get(decodeURIComponent(path.slice('/api/hive/attachment/'.length)));
+        if (!file) {
+          json(response, 404, { error: { code: 'NOT_FOUND' } });
+          return;
+        }
+        response.writeHead(200, {
+          'content-type': file.type,
+          'content-length': file.buffer.length,
+          ...CORS_HEADERS
+        });
+        response.end(file.buffer);
+        return;
+      }
+
+      const body = method === 'POST' ? await readJsonBody(request) : {};
+      switch (path) {
+        case '/api/hive/send': {
+          const taskId = await hive.send(body);
+          json(response, 200, { taskId, snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/control': {
+          hive.control(body.taskId, body.action, body.text);
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/answer': {
+          hive.answer(body.taskId, body.text);
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/answer/draft': {
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/stop': {
+          hive.stop(body.taskId);
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/artifact/erase': {
+          hive.erase(body.artifactId);
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/memory/cutoff': {
+          if (Number(body.before) > 0) hive.cutOff(body.laneId, body.before);
+          else hive.restoreMemory(body.laneId);
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/reset': {
+          hive.reset();
+          json(response, 200, { snapshot: hive.snapshot() });
+          return;
+        }
+        case '/api/hive/attachment': {
+          const buffer = Buffer.from(String(body.data ?? ''), 'base64');
+          if (!buffer.length) {
+            json(response, 400, { error: { code: 'BAD_PARAMS' } });
+            return;
+          }
+          const fileId = `file_${randomUUID()}`;
+          const type = String(body.type || 'application/octet-stream');
+          const name = String(body.name || 'attachment');
+          files.set(fileId, { buffer, type, name });
+          json(response, 200, { id: fileId, name, size: buffer.length, type });
+          return;
+        }
+        default:
+          break;
+      }
+      json(response, 404, { error: { code: 'UNKNOWN_METHOD' } });
+    } catch (error) {
+      json(response, 503, { error: { code: 'UNAVAILABLE', message: String(error?.message ?? error) } });
+    }
+  }
+
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
     if (request.method === 'OPTIONS') {
@@ -246,6 +372,7 @@ export function createOjBridge(options = {}) {
             configured: true,
             mode: 'live',
             backend: 'openjiuwen',
+            hive: true,
             gatewayHost: new URL(ojBase).host,
             authMode: token ? 'bridge-token' : 'none',
             version: OJ_BRIDGE_VERSION
@@ -292,13 +419,18 @@ export function createOjBridge(options = {}) {
         return;
       }
 
+      if (url.pathname.startsWith('/api/hive/')) {
+        await handleHive(url, request, response);
+        return;
+      }
+
       json(response, 404, { error: { code: 'NOT_FOUND' } });
     } catch (error) {
       json(response, 500, { error: { code: 'INTERNAL', message: String(error?.message ?? error) } });
     }
   });
 
-  return { server, session, ojBase };
+  return { server, session, hive, ojBase };
 }
 
 export function startOjBridge(options = {}) {
