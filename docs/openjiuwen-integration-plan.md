@@ -170,3 +170,14 @@ Still open for Phase 3: OJ questions/approvals mapped to the question card, hist
 
 Still open: OJ-native permissions/approvals UI beyond ask_user_question, and replaying a full OJ session
 history (`/sessions/{id}/history/stream`) instead of the bridge's own record.
+
+## Live validation notes (2026-11-26)
+
+- A real `chat.ask_user_question` was produced by JiuwenSwarm and matched the bridge's mapping
+  (`questions[{question, header, options}]`, `request_id`, `interrupt_id`, `source: ask_user_interrupt`).
+- Resuming it works: the bridge sends `chat.send` with `query: ''`, `source: ask_user_interrupt`, the
+  question's `request_id`, its `interrupt_id`, and
+  `answers: [{question, selected_options: [], custom_input}]`. The runtime accepted the answer and
+  finished the turn with a real model reply (verified end to end against the local runtime).
+- If the runtime asks the same question again, the bridge fails the task with a clear message rather
+  than looping.

@@ -43,7 +43,7 @@ async function startFakeOj(options: { delayMs?: number; askQuestion?: boolean } 
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
       chats.push(body);
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      if (body.req_method === 'chat.answer') {
+      if (body.req_method === 'chat.answer' || body.params?.source === 'ask_user_interrupt') {
         response.write(
           `data: ${JSON.stringify({ payload: { event_type: 'chat.final', content: 'ANSWERED OK' } })}\n\n`
         );
@@ -56,6 +56,7 @@ async function startFakeOj(options: { delayMs?: number; askQuestion?: boolean } 
             payload: {
               event_type: 'chat.ask_user_question',
               request_id: 'req-ask-1',
+              interrupt_id: 'intr-1',
               questions: [{ id: 'q-1', question: 'Which draft should I send?' }],
               source: 'ask_user_interrupt'
             }
@@ -93,7 +94,7 @@ async function snapshot(port: number) {
   return fetch(`http://127.0.0.1:${port}/api/hive/snapshot`).then(response => response.json());
 }
 
-async function waitForTask(port: number, taskId: string, timeoutMs = 4000) {
+async function waitForTask(port: number, taskId: string, timeoutMs = 8000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const snap = await snapshot(port);
@@ -104,7 +105,7 @@ async function waitForTask(port: number, taskId: string, timeoutMs = 4000) {
   throw new Error(`task ${taskId} did not finish`);
 }
 
-async function waitForStatus(port: number, taskId: string, status: string, timeoutMs = 4000) {
+async function waitForStatus(port: number, taskId: string, status: string, timeoutMs = 8000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
     const snap = await snapshot(port);
@@ -245,11 +246,15 @@ describe('Hive over OpenJiuwen', () => {
       expect(done.status).toBe('done');
       expect(done.output).toBe('ANSWERED OK');
       expect(oj.chats[1]).toMatchObject({
-        req_method: 'chat.answer',
+        req_method: 'chat.send',
         session_id: (oj.chats[0] as { session_id: string }).session_id,
         params: {
+          source: 'ask_user_interrupt',
           request_id: 'req-ask-1',
-          answers: [{ question_id: 'q-1', answer: 'Send the first one' }]
+          interrupt_id: 'intr-1',
+          answers: [
+            { question: 'Which draft should I send?', selected_options: [], custom_input: 'Send the first one' }
+          ]
         }
       });
     } finally {

@@ -89,6 +89,7 @@ export function mapHiveFrame(frame) {
         kind: 'question',
         requestId: String(payload?.request_id ?? ''),
         questionId: String(first.id ?? payload?.request_id ?? ''),
+        interruptId: String(payload?.interrupt_id ?? ''),
         question: text,
         options
       };
@@ -422,12 +423,18 @@ export class HiveOverOj {
       request_id: randomUUID(),
       channel_id: 'web',
       session_id: task.sessionId,
-      req_method: 'chat.answer',
+      req_method: 'chat.send',
       is_stream: true,
       timestamp: this.now() / 1000,
       params: {
+        // OJ resumes a paused ask_user turn through chat.send with the question's source.
+        query: '',
+        source: 'ask_user_interrupt',
         request_id: question.requestId,
-        answers: [{ question_id: question.questionId ?? question.id, answer: text }]
+        ...(question.interruptId ? { interrupt_id: question.interruptId } : {}),
+        answers: [
+          { question: question.question, selected_options: [], custom_input: text }
+        ]
       }
     };
     try {
@@ -490,10 +497,22 @@ export class HiveOverOj {
             task.output = emitted;
           }
         } else if (mapped.kind === 'question') {
+          const repeated =
+            task.question &&
+            task.question.answer &&
+            (task.question.requestId === mapped.requestId ||
+              task.question.question === mapped.question);
+          if (repeated) {
+            // The runtime asked the same thing again: the answer was not accepted.
+            this.fail(task, 'OpenJiuwen did not accept that answer; the question was asked again.');
+            failed = true;
+            continue;
+          }
           task.question = {
             id: mapped.requestId || mapped.questionId || id('question'),
             requestId: mapped.requestId,
             questionId: mapped.questionId,
+            interruptId: mapped.interruptId,
             interactionId: mapped.requestId,
             question: mapped.question,
             answerable: true,
