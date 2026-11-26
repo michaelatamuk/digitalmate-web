@@ -54,6 +54,7 @@ import { CalendarEventSheet } from './components/CalendarEventSheet';
 import { BrandMark, IconButton, StatusBar, TopBar } from './components/Chrome';
 import { Icon } from './components/Icons';
 import { A11yAnnouncer } from './components/A11yAnnouncer';
+import { readLiveBackend } from './lib/liveBackend';
 import { BottomNav, DetailView, HistorySheet, MemorySheet, MoreSheet, SettingsSheet, SkillsSheet, ArtifactsSheet, TaskShellSheet, Toast } from './components/Overlays';
 
 type Tab = 'chat' | 'discover';
@@ -61,6 +62,7 @@ type SheetName = 'history' | 'more' | 'skills' | 'settings' | 'memory' | 'artifa
 
 const defaultSettings: Settings = {
   cloudBackend: 'local',
+  liveBackendUrl: '',
   notifications: true,
   reducedMotion: false,
   showThinking: true,
@@ -457,12 +459,17 @@ export default function App() {
     const controller = new AbortController();
     activeController.current = controller;
 
-    let transport: ChatTransport = new MockChatTransport(calendarEvents);
-    if (settings.cloudBackend === 'orbit') {
+    let transport: ChatTransport | null = new MockChatTransport(calendarEvents);
+    const liveUrl = (settings.liveBackendUrl || readLiveBackend()).trim();
+    const liveConfigured = Boolean(liveUrl) || settings.cloudBackend === 'orbit';
+    if (liveConfigured) {
       try {
         const health = await orbitHealth(controller.signal);
         if (health.configured) {
           transport = new OrbitChatTransport();
+        } else if (liveUrl) {
+          // A backend the user configured must not be replaced by mock data.
+          transport = null;
         } else {
           showToast(
             tr(
@@ -472,12 +479,16 @@ export default function App() {
           );
         }
       } catch {
-        showToast(
-          tr(
-            'Orbit bridge is unreachable; this turn uses the local mock.',
-            '无法连接 Orbit 桥接，本轮使用本地模拟。'
-          )
-        );
+        if (liveUrl) {
+          transport = null;
+        } else {
+          showToast(
+            tr(
+              'Orbit bridge is unreachable; this turn uses the local mock.',
+              '无法连接 Orbit 桥接，本轮使用本地模拟。'
+            )
+          );
+        }
       }
     }
 
@@ -486,6 +497,14 @@ export default function App() {
     let accumulated = '';
 
     try {
+      if (!transport) {
+        throw new Error(
+          tr(
+            'The live backend is unreachable. Check Settings → Live backend.',
+            '无法连接实时后端，请检查“设置 → 实时后端”。'
+          )
+        );
+      }
       await transport.send(
         {
           text: prompt,

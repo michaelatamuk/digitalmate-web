@@ -11,6 +11,8 @@ import { parseMemoryProfile } from '../lib/memoryProfile';
 import { coverForCard, fallbackCoverForCard } from '../lib/covers';
 import { cardKind } from '../lib/discoveryExperience';
 import { requestNativeNotificationPermission } from '../lib/native';
+import { normalizeBackendUrl, readLiveBackend, writeLiveBackend } from '../lib/liveBackend';
+import { resetSharedHiveTransport } from '../transport/hiveBridge';
 import {
   browserCapabilityEnvironment,
   probeLocalCapabilities,
@@ -578,6 +580,8 @@ export function SettingsSheet({
   const [releaseBusy, setReleaseBusy] = useState(false);
   const [releaseError, setReleaseError] = useState('');
   const [capabilities, setCapabilities] = useState<LocalCapability[] | null>(null);
+  const [backendDraft, setBackendDraft] = useState(settings.liveBackendUrl || readLiveBackend());
+  const [backendNote, setBackendNote] = useState('');
   const backupInput = useRef<HTMLInputElement>(null);
   // What this browser lets the app do, shown as-is instead of pretending native permissions exist.
   useEffect(() => {
@@ -789,6 +793,59 @@ export function SettingsSheet({
     return tr('Not available', '不可用');
   };
 
+  const saveBackend = (): void => {
+    const raw = backendDraft.trim();
+    if (!raw) {
+      clearBackend();
+      return;
+    }
+    const url = normalizeBackendUrl(raw);
+    if (!url) {
+      setBackendNote(tr('Use a full http:// or https:// address.', '请填写完整的 http:// 或 https:// 地址。'));
+      return;
+    }
+    writeLiveBackend(url);
+    onChange({ ...settings, liveBackendUrl: url, cloudBackend: 'orbit' });
+    resetSharedHiveTransport();
+    setBackendDraft(url);
+    setBackendNote(tr('Saved. Chat and Hive use this server.', '已保存。对话和蜂巢将使用此服务。'));
+    onNotice(tr('Live backend saved.', '已保存实时后端。'));
+  };
+
+  const clearBackend = (): void => {
+    writeLiveBackend('');
+    onChange({ ...settings, liveBackendUrl: '', cloudBackend: 'local' });
+    resetSharedHiveTransport();
+    setBackendDraft('');
+    setBackendNote(tr('Local demo selected.', '已切换为本地演示。'));
+  };
+
+  const testBackend = async (): Promise<void> => {
+    const url = normalizeBackendUrl(backendDraft) || settings.liveBackendUrl || '';
+    if (!url) {
+      setBackendNote(tr('No server URL set.', '未设置服务地址。'));
+      return;
+    }
+    setBackendNote(tr('Checking…', '正在检查…'));
+    try {
+      const response = await fetch(`${url}/api/orbit/health`, { headers: { accept: 'application/json' } });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = (await response.json()) as { configured?: boolean };
+      setBackendNote(
+        payload.configured
+          ? tr('Reachable and configured.', '可访问且已配置。')
+          : tr('Reachable, but it reports no live mode.', '可访问，但未报告实时模式。')
+      );
+    } catch (error) {
+      setBackendNote(
+        tr(
+          `Unreachable: ${error instanceof Error ? error.message : 'error'}`,
+          `无法连接：${error instanceof Error ? error.message : '错误'}`
+        )
+      );
+    }
+  };
+
   return (
     <Sheet title={tr('Settings', '设置')} subtitle={tr('Local demo · nothing is uploaded', '本地演示 · 不会上传任何数据')} onClose={onClose} wide>
       <div className="account-card">
@@ -869,6 +926,42 @@ export function SettingsSheet({
         </div>
         <p className="settings-note">
           {tr('These are the same local choices shown above the composer.', '这些选项与输入框上方的本地选择相同。')}
+        </p>
+      </div>
+
+      <div className="settings-group">
+        <span className="settings-label">{tr('Live backend', '实时后端')}</span>
+        <label className="field">
+          <span>{tr('Server URL', '服务地址')}</span>
+          <input
+            value={backendDraft}
+            onChange={event => setBackendDraft(event.target.value)}
+            placeholder="https://oj.example.com"
+            inputMode="url"
+            autoCapitalize="none"
+            spellCheck={false}
+          />
+        </label>
+        <div className="settings-actions">
+          <button type="button" className="secondary-action" onClick={saveBackend}>
+            <Icon name="check" size={14} />
+            {tr('Save', '保存')}
+          </button>
+          <button type="button" className="secondary-action" onClick={() => void testBackend()}>
+            <Icon name="wifi" size={14} />
+            {tr('Test', '测试')}
+          </button>
+          <button type="button" className="secondary-action" onClick={clearBackend}>
+            <Icon name="refresh" size={14} />
+            {tr('Use local demo', '使用本地演示')}
+          </button>
+        </div>
+        {backendNote ? <p className="settings-note">{backendNote}</p> : null}
+        <p className="settings-note">
+          {tr(
+            'Leave empty for the offline demo. A server URL sends chat turns, Bee work and tasks through that service; if it cannot be reached the app says so instead of inventing an answer.',
+            '留空则使用离线演示。填写服务地址后，对话、Bee 任务和任务流都会经过该服务；无法连接时应用会明确提示，而不是编造回答。'
+          )}
         </p>
       </div>
 

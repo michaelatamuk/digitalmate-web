@@ -4,6 +4,7 @@ import type { HiveTransport, HiveTransportStatus } from './hive';
 import type { HiveConflict, HiveFeature } from './hive';
 import type { HiveAttachmentMeta } from '../domain/hive';
 import { HIVE_FEATURES, MockHiveTransport, newOperationId } from './hive';
+import { readLiveBackend } from '../lib/liveBackend';
 
 /**
  * Contract between the web app and the Hive bridge.
@@ -612,12 +613,14 @@ export class BridgeHiveTransport implements HiveTransport {
 }
 
 /**
- * Picks the transport at runtime. Without `VITE_HIVE_BRIDGE_URL` the local mock is used, so the
- * app stays fully usable offline; a configured-but-broken bridge is reported, never silently
+ * Picks the transport at runtime: an explicit URL, then the user's live backend, then the build-time
+ * Hive bridge, then the local mock. A configured-but-broken bridge is reported, never silently
  * swapped for fake data.
  */
 export function createHiveTransport(env?: { url?: string; token?: string }): HiveTransport {
-  const url = env?.url ?? (import.meta.env?.VITE_HIVE_BRIDGE_URL as string | undefined) ?? '';
+  const builtIn = (import.meta.env?.VITE_HIVE_BRIDGE_URL as string | undefined) ?? '';
+  // `||`, not `??`: an empty stored value must fall through to the build-time URL.
+  const url = env?.url ?? (readLiveBackend() || builtIn);
   if (!url.trim()) return new MockHiveTransport();
   const token = env?.token ?? (import.meta.env?.VITE_HIVE_BRIDGE_TOKEN as string | undefined) ?? '';
   return new BridgeHiveTransport({ baseUrl: url.trim(), token: token.trim() || undefined });

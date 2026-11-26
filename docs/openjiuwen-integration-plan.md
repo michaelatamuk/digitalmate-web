@@ -125,3 +125,18 @@ Two rules, borrowed from `openjiuwen-works`:
 With OJ running, every user-visible model action — a chat reply, a Bee task, a question — is produced
 by the real runtime; with OJ stopped, DM-web reports it as unavailable and offers the explicit local
 demo instead. No silent mocking anywhere in the real path.
+
+## Status (2026-11-26)
+
+- **Phase 0 — done.** JiuwenSwarm runs locally with the HTTP API enabled (`AGENT_HTTP_ENABLED=1`,
+  port `8770`) and a real model (`deepseek-v4-flash`). `/api/v1/health`, `/api/v1/agents/list` and a
+  unary chat turn were verified.
+- **Phase 1 — done.** `services/oj-bridge` implements the app's chat contract against OJ:
+  `/api/orbit/health`, `/api/orbit/turn` (SSE), `/api/orbit/reset`, plus `/api/oj/agents`. A real
+  streamed turn through the bridge returned OJ's answer. The app gains a runtime **Settings → Live
+  backend** URL (stored in `digitalmate.liveBackend`) that overrides `VITE_API_BASE`; an unreachable
+  backend is reported instead of mocked.
+- **Verified with OJ running:** health probe, streamed text, one thinking step, `done`; unit tests for
+  the frame mapper and the bridge endpoints; Playwright for the live and unreachable paths.
+- **Next:** Phase 2 (lanes as OJ agents, Hive tasks as sessions), then Phase 3 (approvals, stop,
+  steer, history).

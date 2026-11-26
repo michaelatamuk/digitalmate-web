@@ -16,6 +16,7 @@
     "android:open": "cap open android",
     "bridge:fake": "node scripts/fake-orbit.mjs",
     "bridge:hive": "node services/hive-bridge/server.mjs",
+    "bridge:oj": "node services/oj-bridge/server.mjs",
     "check:offline": "node scripts/check-offline.mjs",
     "preview": "vite preview --host 127.0.0.1 --port 4173"
   },

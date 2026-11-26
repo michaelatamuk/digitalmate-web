@@ -172,3 +172,33 @@ Security headers are applied to every response: CSP, `nosniff`, `DENY` framing,
       to hide it — and the Hive smoke checks above pass for `bridge`
 - [ ] Old gateway token revoked after a successful rotation
 - [ ] Pages deploy and Android artifact are green
+
+## Live backend (OpenJiuwen)
+
+The app runs on the local demo by default. A user can point it at a real service at runtime from
+**Settings → Live backend**; the value is stored in `digitalmate.liveBackend` and wins over
+`VITE_API_BASE`, so one APK can address any deployment.
+
+What a live backend must serve:
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/orbit/health` | `{configured:true, mode:"live", backend:"openjiuwen"}` when the service is ready |
+| `POST /api/orbit/turn` | Chat turn, streamed as SSE events (`thinking`, `text`, `surface`, `error`, `done`) |
+| `POST /api/orbit/reset` | Start a fresh session (optional) |
+
+`services/oj-bridge` is a dependency-free reference implementation that forwards those endpoints to
+JiuwenSwarm's `POST /api/v1/chat` and maps its frames:
+
+```bash
+OJ_BASE_URL=http://127.0.0.1:8770 npm run bridge:oj     # http://127.0.0.1:8790
+```
+
+Optional: `BRIDGE_TOKEN` requires `Authorization: Bearer …`; `OJ_BRIDGE_PORT` changes the port.
+
+Behaviour when the backend is unreachable: chat shows "The live backend is unreachable" instead of
+inventing an answer, and Hive reports the bridge as unavailable. Clearing the URL returns to the local
+demo.
+
+For a phone, the URL must be reachable from the device (LAN address or HTTPS). Android blocks
+cleartext HTTP by default, so use HTTPS or a tunnel for anything beyond local testing.

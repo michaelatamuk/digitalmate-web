@@ -136,6 +136,8 @@ export type Reaction = 'like' | 'dislike' | 'save' | undefined;
 
 export interface Settings {
   cloudBackend: 'orbit' | 'local';
+  /** Runtime address of a live backend; empty keeps the local demo. */
+  liveBackendUrl: string;
   notifications: boolean;
   reducedMotion: boolean;
   showThinking: boolean;

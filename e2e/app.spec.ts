@@ -396,6 +396,42 @@ test('shows local capability states in settings', async ({ page }) => {
   await expect(page.getByText(/export them as an \.ics file/)).toBeVisible();
 });
 
+test('sends chat turns through a configured live backend', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('digitalmate.liveBackend', 'https://live.example');
+  });
+  await page.route('https://live.example/api/orbit/health', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ configured: true, mode: 'live', backend: 'openjiuwen' })
+    })
+  );
+  await page.route('https://live.example/api/orbit/turn', route =>
+    route.fulfill({
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+      body:
+        'data: {"type":"thinking","step":"Working","steps":["Working"],"index":0,"total":1}\n\n' +
+        'data: {"type":"text","text":"live answer from OpenJiuwen"}\n\n' +
+        'data: {"type":"done"}\n\n'
+    })
+  );
+  await page.reload();
+  await sendMessage(page, 'hello live backend');
+  await expect(page.locator('.message-assistant').last()).toContainText('live answer from OpenJiuwen');
+});
+
+test('reports an unreachable live backend instead of faking a reply', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.localStorage.setItem('digitalmate.liveBackend', 'https://down.example');
+  });
+  await page.route('https://down.example/api/orbit/health', route => route.abort());
+  await page.reload();
+  await sendMessage(page, 'hello down backend');
+  await expect(page.locator('.message-assistant').last()).toContainText(/unreachable/i);
+});
+
 test('is installable and advertises account-free offline access', async ({ page }) => {
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute('href', '/manifest.webmanifest');
   await page.getByRole('button', { name: 'More', exact: true }).click();

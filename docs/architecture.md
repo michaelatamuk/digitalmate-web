@@ -92,6 +92,13 @@ The reference bridge in `services/hive-bridge/server.mjs` is dependency-free Nod
 prove the contract in `docs/hive-bridge-contract.md`, not to be the production Hive runtime; a real
 deployment implements the same endpoints in front of its own Bee service.
 
+**Live model backend.** `services/oj-bridge/server.mjs` adapts the same client contract to a real
+OpenJiuwen runtime: it forwards `POST /api/orbit/turn` to JiuwenSwarm's `POST /api/v1/chat`
+(streaming) and maps its frames into the app's events. The app selects it at runtime with
+**Settings → Live backend**; the choice lives in `localStorage.digitalmate.liveBackend` and overrides
+`VITE_API_BASE`, so one APK can address any deployment. If the service is unreachable the app says
+so — it never silently falls back to mock data once a URL is set.
+
 ## Why a bridge is needed for the browser
 
 The native app authenticates with Huawei Account Kit or AGC and obtains a Jiuwen Gateway
