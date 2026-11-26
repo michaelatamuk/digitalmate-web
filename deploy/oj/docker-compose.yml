@@ -1,0 +1,51 @@
+# OpenJiuwen + bridge, for a host that stays reachable from the phone.
+#
+# The runtime image is a placeholder: use the image or build your organisation ships
+# (JiuwenSwarm publishes a Dockerfile and role templates). Point OJ_IMAGE at it, or
+# replace the `jiuwenswarm` service with the deployment you already run.
+#
+#   OJ_IMAGE=your-registry/jiuwenswarm:tag \
+#   OJ_MODEL_API_KEY=... \
+#   docker compose -f deploy/oj/docker-compose.yml up -d
+#
+# Then set the app's Settings → Live backend to http://<host>:8790 (or an HTTPS URL
+# in front of it). Do not expose the bridge to the internet without TLS and a token.
+
+services:
+  jiuwenswarm:
+    image: ${OJ_IMAGE:?set OJ_IMAGE to your JiuwenSwarm image}
+    restart: unless-stopped
+    environment:
+      AGENT_HTTP_ENABLED: "1"
+      AGENT_HTTP_PORT: "8770"
+      # The runtime reads its own ~/.jiuwenswarm/config/.env. Provide the model settings
+      # the image expects (API_BASE / API_KEY / MODEL_NAME / MODEL_PROVIDER).
+    volumes:
+      - oj-data:/home/node/.jiuwenswarm
+    expose:
+      - "8770"
+
+  bridge:
+    build:
+      context: ../../services/oj-bridge
+    restart: unless-stopped
+    depends_on:
+      - jiuwenswarm
+    environment:
+      OJ_BASE_URL: http://jiuwenswarm:8770
+      OJ_BRIDGE_HOST: 0.0.0.0
+      OJ_BRIDGE_PORT: "8790"
+      OJ_BRIDGE_STATE: /data/hive-state.json
+      # "https://localhost" is the Capacitor origin used by the Android shell.
+      BRIDGE_ALLOWED_ORIGINS: ${BRIDGE_ALLOWED_ORIGINS:-https://localhost}
+      BRIDGE_TOKEN: ${BRIDGE_TOKEN:-}
+      BRIDGE_MAX_BODY_BYTES: "12582912"
+    ports:
+      # Bind to a private interface; put a TLS terminator (Caddy, tunnel) in front.
+      - "127.0.0.1:8790:8790"
+    volumes:
+      - bridge-state:/data
+
+volumes:
+  oj-data:
+  bridge-state:

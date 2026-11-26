@@ -181,3 +181,13 @@ history (`/sessions/{id}/history/stream`) instead of the bridge's own record.
   finished the turn with a real model reply (verified end to end against the local runtime).
 - If the runtime asks the same question again, the bridge fails the task with a clear message rather
   than looping.
+### Phase 4 status (2026-11-26)
+
+- **CORS allowlist** — `BRIDGE_ALLOWED_ORIGINS` (default `*` for local dev; set it to the exact
+  origins, e.g. `https://localhost` for the Android shell).
+- **Body cap** — `BRIDGE_MAX_BODY_BYTES` (default 12 MB); oversized requests get `413 PAYLOAD_TOO_LARGE`.
+- **Bridge bind/host** — `OJ_BRIDGE_HOST` (default `127.0.0.1`; compose sets `0.0.0.0`).
+- **Packaging** — `services/oj-bridge/Dockerfile` and `deploy/oj/docker-compose.yml` (runtime +
+  bridge, state volume, private port binding).
+- **Runbook** — `docs/openjiuwen-deployment.md`: local, LAN/phone, TLS, compose, troubleshooting.
+- **CI** — the bridge's fake-OJ unit tests run in `npm test`, which the existing CI job executes.

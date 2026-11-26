@@ -1,6 +1,6 @@
 # DigitalMate Web
 
-An independent, **bilingual (English / 简体中文)** web and Android companion for the
+An independent, **bilingual (English / ç®€ä½“ä¸­æ–‡)** web and Android companion for the
 DigitalMate HarmonyOS agent app. It runs fully locally without an account and can
 optionally stream through a Jiuwen/Orbit bridge.
 
@@ -18,7 +18,7 @@ optionally stream through a Jiuwen/Orbit bridge.
 ## Status
 
 - Local mode by default: data stays on-device, no account login required
-- Full English and Simplified Chinese UI, switchable in **Settings → Language**
+- Full English and Simplified Chinese UI, switchable in **Settings â†’ Language**
 - BeeBou mascot on the home screen, assistant avatar, execution trace and about card
 - Discovery covers with bundled stock photos, real RSS article images and offline fallbacks
 - Card detail sheets, local calendar event creation and a guided demo mode
@@ -26,11 +26,11 @@ optionally stream through a Jiuwen/Orbit bridge.
 - Transport layer with mock and Orbit implementations
 - Optional Orbit bridge: server-side Bearer token, WSS upstream, SSE to the browser, origin allowlist
 - Android Capacitor shell with widget, native share, notifications and safe-area handling
-- Hive (**More → Hive**): Beebou + Bees, activity lanes, steering, questions, memory, artifacts and
+- Hive (**More â†’ Hive**): Beebou + Bees, activity lanes, steering, questions, memory, artifacts and
   attachments on a local mock; see [docs/hive-user-guide.md](docs/hive-user-guide.md)
 - Optional Hive bridge: `npm run bridge:hive`, point the app with `VITE_HIVE_BRIDGE_URL`; the contract
   is frozen in [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md)
-- 209 unit tests plus 50 Playwright UI, mobile and accessibility checks
+- 211 unit tests plus 50 Playwright UI, mobile and accessibility checks
 - Companions, voice input, deep search toggle, labs demos and local-only diagnostics
 - Local backup/restore and PWA offline support
 
@@ -98,7 +98,7 @@ npm run test:e2e   # Playwright UI, mobile and axe checks
 ## Local RSS proxy
 
 Discovery can import a real RSS 2.0, Atom or RDF feed during `npm run dev` and `npm run preview`.
-The browser calls `GET /api/rss?url=…`; `server/rss.ts` validates the URL, follows at most three
+The browser calls `GET /api/rss?url=â€¦`; `server/rss.ts` validates the URL, follows at most three
 redirects, enforces a 9-second timeout and a 2 MB response limit, and rejects loopback/private
 hosts. Feed XML is parsed by `src/lib/rssParse.ts`, HTML is stripped from summaries, and up to
 five usable items become feed cards stored in localStorage.
@@ -158,12 +158,12 @@ npm run check:offline   # Playwright: reload the built app with the network disa
 intercepts `/api/` requests, so RSS and Orbit calls always go to the network when online. The
 service worker is registered only in production builds to avoid stale caches during development.
 
-In a supported browser, use the install button in **Settings → Account-free access** or the
-browser’s own “Install app” action.
+In a supported browser, use the install button in **Settings â†’ Account-free access** or the
+browserâ€™s own â€œInstall appâ€ action.
 
 ## Local backup
 
-Because there is no account, **Settings → Your data** can export every `digitalmate.web.v2.*`
+Because there is no account, **Settings â†’ Your data** can export every `digitalmate.web.v2.*`
 key to a JSON file and import it again. Export includes chats, calendar events, saved cards,
 RSS subscriptions, skills and settings. Import validates the app marker, version and keys,
 replaces only DigitalMate keys, then reloads the app. Unrelated browser storage is untouched.
@@ -172,7 +172,7 @@ replaces only DigitalMate keys, then reloads the app. Unrelated browser storage 
 
 **Skill center** can export every skill to `digitalmate-skills-YYYY-MM-DD.json` and import a
 bundle again. Imports are validated and sanitised, capped at 50 skills, and merged by id; an
-imported skill is installed and enabled locally. This is file-based sharing only — no account,
+imported skill is installed and enabled locally. This is file-based sharing only â€” no account,
 marketplace or OAuth flow.
 
 ## Local attachments
@@ -183,20 +183,20 @@ their text extracted locally with `pdfjs-dist` (up to 20 pages). Nothing is uplo
 messages keep the file name, size and kind, while the file contents stay in memory for the
 current session only.
 
-Then choose **Settings → Cloud connection → Orbit cloud**. The settings sheet shows whether the
+Then choose **Settings â†’ Cloud connection â†’ Orbit cloud**. The settings sheet shows whether the
 bridge is configured. If it is not, turns fall back to the local mock and say so.
 
 Endpoints:
 
 ```text
-GET  /api/orbit/health   → { configured, mode, gatewayHost, bindingId }
-POST /api/orbit/turn     → text/event-stream of ChatTurnEvent JSON
-POST /api/orbit/reset    → clear the bridge session cookie and cached room/submissions
+GET  /api/orbit/health   â†’ { configured, mode, gatewayHost, bindingId }
+POST /api/orbit/turn     â†’ text/event-stream of ChatTurnEvent JSON
+POST /api/orbit/reset    â†’ clear the bridge session cookie and cached room/submissions
 ```
 
 Flow per turn:
 
-1. open a WSS connection with `Authorization: Bearer …`,
+1. open a WSS connection with `Authorization: Bearer â€¦`,
 2. call `room.home` to authorise the room,
 3. send `room.message` with a `submission_id`,
 4. forward `orbit.task.text` / task error events as SSE,
@@ -261,7 +261,7 @@ cd android
 Local mode needs no account. The native shell adds share, local notifications and a
 home-screen widget. RSS/Orbit require `VITE_API_BASE` pointing at a hosted bridge; otherwise
 they fail gracefully while all local features keep working. Hive runs on its local mock unless
-`VITE_HIVE_BRIDGE_URL` (and optionally `VITE_HIVE_BRIDGE_TOKEN`) is set — see
+`VITE_HIVE_BRIDGE_URL` (and optionally `VITE_HIVE_BRIDGE_TOKEN`) is set â€” see
 [docs/hive-bridge-contract.md](docs/hive-bridge-contract.md). `VITE_HIVE_MODE=off` ships a build
 without Hive; `?hive=off|mock|bridge` overrides the mode at runtime. See
 [docs/android-build.md](docs/android-build.md).
@@ -295,7 +295,7 @@ src/
     queue.ts              throttling and coalescing for fast update streams
     demo.ts               protocol-driven demo surface
   lib/
-    mockEngine.ts         prompt → thinking / text / surface (both languages)
+    mockEngine.ts         prompt â†’ thinking / text / surface (both languages)
     markdown.tsx          small Markdown renderer
     storage.ts            localStorage helpers
     rss.ts                browser client for the local RSS proxy
@@ -318,7 +318,7 @@ public/
   sw.js                   offline shell and runtime cache
 docs/
   architecture.md         current layers and future Android/web split
-  roadmap.md              mock → protocol → real backend → Android
+  roadmap.md              mock â†’ protocol â†’ real backend â†’ Android
   android.md              PWA-first / Capacitor-later decision
   android-build.md        APK build, widget, sharing and signing
   threat-model.md         local-first assets, boundaries and mitigations
@@ -332,6 +332,7 @@ docs/
   release-0.5.0.md        Android 0.5.0 upgrade notes and what users see
   release-0.5.1.md        Android 0.5.1 notes: Word, zoom, announcements, .ics, reports
   openjiuwen-integration-plan.md  plan to make chat, Bees and tasks run on a real OpenJiuwen runtime
+  openjiuwen-deployment.md  running the bridge and runtime locally, on LAN, in Docker
   parity.md               feature coverage vs. the native app
   protocol/orbit.md       WSS/auth notes and known deployment topology
   protocol/a2ui.md        surface protocol and catalog coverage
@@ -345,7 +346,7 @@ server/
 services/bridge/
   index.ts                standalone production static + API server
 services/oj-bridge/
-  server.mjs              OpenJiuwen adapter: /api/orbit/* → JiuwenSwarm /api/v1/chat
+  server.mjs              OpenJiuwen adapter: /api/orbit/* â†’ JiuwenSwarm /api/v1/chat
 android/                  Capacitor Android project, widget and signing config
 tests/
   mockEngine.test.ts      mock replies, localized data and calendar surfaces
@@ -372,10 +373,10 @@ The UI now talks to a `ChatTransport`:
 
 ```text
 React UI
-  → ChatTransport
-      → MockChatTransport   (default)
-      → OrbitChatTransport  → /api/orbit/turn (SSE)
-                               → Node bridge → Jiuwen/Orbit Gateway (WSS)
+  â†’ ChatTransport
+      â†’ MockChatTransport   (default)
+      â†’ OrbitChatTransport  â†’ /api/orbit/turn (SSE)
+                               â†’ Node bridge â†’ Jiuwen/Orbit Gateway (WSS)
 ```
 
 A browser cannot safely perform the native Huawei/AGC login exchange or hold provider

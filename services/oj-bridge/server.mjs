@@ -21,14 +21,10 @@ export const OJ_BRIDGE_VERSION = 1;
 const DEFAULT_OJ_BASE = 'http://127.0.0.1:8770';
 const DEFAULT_PORT = 8790;
 
-const CORS_HEADERS = {
-  'access-control-allow-origin': '*',
-  'access-control-allow-headers': 'authorization,content-type',
-  'access-control-allow-methods': 'GET,POST,OPTIONS'
-};
+const DEFAULT_MAX_BODY_BYTES = 12 * 1024 * 1024;
 
 function json(response, status, body) {
-  response.writeHead(status, { 'content-type': 'application/json', ...CORS_HEADERS });
+  response.writeHead(status, { 'content-type': 'application/json' });
   response.end(JSON.stringify(body));
 }
 
@@ -36,9 +32,24 @@ function sse(response) {
   response.writeHead(200, {
     'content-type': 'text/event-stream',
     'cache-control': 'no-cache',
-    connection: 'keep-alive',
-    ...CORS_HEADERS
+    connection: 'keep-alive'
   });
+}
+
+/** Parses BRIDGE_ALLOWED_ORIGINS; `*` (the dev default) allows any origin. */
+export function parseAllowedOrigins(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw || raw === '*') return '*';
+  return raw
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
+export function allowedOrigin(origin, allowed) {
+  if (allowed === '*') return '*';
+  if (!origin) return null;
+  return allowed.includes(origin) ? origin : null;
 }
 
 function sendEvent(response, event) {
@@ -137,10 +148,25 @@ export function createOjBridge(options = {}) {
   const fetchImpl = options.fetch ?? globalThis.fetch;
   const hive = options.hive ?? new HiveOverOj({ ojBase, fetchImpl, now, token, statePath: options.statePath });
   const files = new Map();
+  const allowedOrigins = parseAllowedOrigins(
+    options.allowedOrigins ?? process.env.BRIDGE_ALLOWED_ORIGINS ?? ''
+  );
+  const maxBodyBytes = Number(
+    options.maxBodyBytes ?? process.env.BRIDGE_MAX_BODY_BYTES ?? DEFAULT_MAX_BODY_BYTES
+  );
 
   async function readJsonBody(request) {
     const chunks = [];
-    for await (const part of request) chunks.push(part);
+    let size = 0;
+    for await (const part of request) {
+      size += part.length;
+      if (size > maxBodyBytes) {
+        const error = new Error(`Request body exceeds ${maxBodyBytes} bytes.`);
+        error.status = 413;
+        throw error;
+      }
+      chunks.push(part);
+    }
     const text = Buffer.concat(chunks).toString('utf8');
     return text ? JSON.parse(text) : {};
   }
@@ -281,8 +307,7 @@ export function createOjBridge(options = {}) {
         }
         response.writeHead(200, {
           'content-type': file.type,
-          'content-length': file.buffer.length,
-          ...CORS_HEADERS
+          'content-length': file.buffer.length
         });
         response.end(file.buffer);
         return;
@@ -348,14 +373,25 @@ export function createOjBridge(options = {}) {
       }
       json(response, 404, { error: { code: 'UNKNOWN_METHOD' } });
     } catch (error) {
-      json(response, 503, { error: { code: 'UNAVAILABLE', message: String(error?.message ?? error) } });
+      json(response, error?.status === 413 ? 413 : 503, {
+        error: {
+          code: error?.status === 413 ? 'PAYLOAD_TOO_LARGE' : 'UNAVAILABLE',
+          message: String(error?.message ?? error)
+        }
+      });
     }
   }
 
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://localhost');
+    const allow = allowedOrigin(request.headers.origin, allowedOrigins);
+    if (allow) response.setHeader('access-control-allow-origin', allow);
+    response.setHeader('vary', 'origin');
     if (request.method === 'OPTIONS') {
-      response.writeHead(204, CORS_HEADERS);
+      response.writeHead(204, {
+        'access-control-allow-headers': 'authorization,content-type',
+        'access-control-allow-methods': 'GET,POST,OPTIONS'
+      });
       response.end();
       return;
     }
@@ -365,6 +401,25 @@ export function createOjBridge(options = {}) {
     }
 
     try {
+      if (url.pathname === '/' && request.method === 'GET') {
+        json(response, 200, {
+          service: 'digitalmate-oj-bridge',
+          version: OJ_BRIDGE_VERSION,
+          ojBase,
+          endpoints: [
+            'GET  /api/orbit/health',
+            'POST /api/orbit/turn',
+            'POST /api/orbit/reset',
+            'GET  /api/hive/capabilities',
+            'GET  /api/hive/snapshot',
+            'GET  /api/hive/events',
+            'POST /api/hive/send'
+          ],
+          note: 'API only. The app is served separately; set Settings -> Live backend to this origin.'
+        });
+        return;
+      }
+
       if (url.pathname === '/api/orbit/health' && request.method === 'GET') {
         try {
           await probe();
@@ -389,12 +444,14 @@ export function createOjBridge(options = {}) {
       }
 
       if (url.pathname === '/api/orbit/turn' && request.method === 'POST') {
-        const chunks = [];
-        for await (const part of request) chunks.push(part);
         let body = {};
         try {
-          body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-        } catch {
+          body = await readJsonBody(request);
+        } catch (error) {
+          if (error?.status === 413) {
+            json(response, 413, { error: { code: 'PAYLOAD_TOO_LARGE' } });
+            return;
+          }
           json(response, 400, { error: { code: 'BAD_JSON' } });
           return;
         }
@@ -426,7 +483,12 @@ export function createOjBridge(options = {}) {
 
       json(response, 404, { error: { code: 'NOT_FOUND' } });
     } catch (error) {
-      json(response, 500, { error: { code: 'INTERNAL', message: String(error?.message ?? error) } });
+      json(response, error?.status === 413 ? 413 : 500, {
+        error: {
+          code: error?.status === 413 ? 'PAYLOAD_TOO_LARGE' : 'INTERNAL',
+          message: String(error?.message ?? error)
+        }
+      });
     }
   });
 
@@ -437,7 +499,8 @@ export function startOjBridge(options = {}) {
   const { server, session } = createOjBridge(options);
   const port = options.port ?? Number(process.env.OJ_BRIDGE_PORT ?? DEFAULT_PORT);
   return new Promise(resolve => {
-    server.listen(port, options.host ?? '127.0.0.1', () => {
+    const host = options.host ?? process.env.OJ_BRIDGE_HOST ?? '127.0.0.1';
+    server.listen(port, host, () => {
       const address = server.address();
       resolve({ server, session, port: typeof address === 'object' && address ? address.port : port });
     });

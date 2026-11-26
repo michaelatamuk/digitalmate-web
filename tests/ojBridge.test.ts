@@ -136,8 +136,7 @@ describe('OpenJiuwen bridge', () => {
     }
   });
 
-  it('refuses an empty turn and rotates the session on reset', async () => {
-    const oj = await startFakeOj([frame('chat.final', { content: 'ok' })]);
+  it('refuses an empty turn and rotates the session on reset', async () => {    const oj = await startFakeOj([frame('chat.final', { content: 'ok' })]);
     const bridge = createOjBridge({ ojBase: `http://127.0.0.1:${oj.port}` });
     await new Promise<void>(resolve => bridge.server.listen(0, '127.0.0.1', resolve));
     try {
@@ -167,6 +166,50 @@ describe('OpenJiuwen bridge', () => {
       expect(secondSession).not.toBe(firstSession);
     } finally {
       await new Promise<void>(resolve => bridge.server.close(() => resolve()));
+      await oj.close();
+    }
+  });
+
+  it('only allows configured origins', async () => {
+    const oj = await startFakeOj([frame('chat.final', { content: 'ok' })]);
+    const bridge = await startOjBridge({
+      ojBase: `http://127.0.0.1:${oj.port}`,
+      port: 0,
+      allowedOrigins: ['https://localhost']
+    });
+    try {
+      const allowed = await fetch(`http://127.0.0.1:${bridge.port}/api/orbit/health`, {
+        headers: { origin: 'https://localhost' }
+      });
+      expect(allowed.headers.get('access-control-allow-origin')).toBe('https://localhost');
+
+      const denied = await fetch(`http://127.0.0.1:${bridge.port}/api/orbit/health`, {
+        headers: { origin: 'https://evil.example' }
+      });
+      expect(denied.headers.get('access-control-allow-origin')).toBeNull();
+    } finally {
+      await bridge.server.close();
+      await oj.close();
+    }
+  });
+
+  it('rejects a request body above the configured limit', async () => {
+    const oj = await startFakeOj([frame('chat.final', { content: 'ok' })]);
+    const bridge = await startOjBridge({
+      ojBase: `http://127.0.0.1:${oj.port}`,
+      port: 0,
+      maxBodyBytes: 64
+    });
+    try {
+      const response = await fetch(`http://127.0.0.1:${bridge.port}/api/orbit/turn`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ text: 'x'.repeat(200) })
+      });
+      expect(response.status).toBe(413);
+      expect(oj.requests).toHaveLength(0);
+    } finally {
+      await bridge.server.close();
       await oj.close();
     }
   });
